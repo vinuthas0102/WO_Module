@@ -13,13 +13,13 @@ const Header: React.FC = () => {
     try {
       setIsExporting(true);
 
-      const screenName = selectedModule?.name || 'Ticket_Tracker';
+      const screenName = selectedModule?.name || 'TrackSphere';
       const filename = `${screenName.replace(/\s+/g, '_')}_export`;
 
       await htmlExportService.exportFullPage({
         filename,
         includeTimestamp: true,
-        pageTitle: `${screenName} - Ticket Tracker Export`
+        pageTitle: `${screenName} - TrackSphere Export`
       });
 
       setTimeout(() => {
@@ -59,9 +59,9 @@ const Header: React.FC = () => {
             <div className="flex items-center space-x-3">
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-                  <span className="text-blue-600 font-bold text-sm">TT</span>
+                  <span className="text-blue-600 font-bold text-sm">TS</span>
                 </div>
-                <h1 className="text-xl font-bold text-white">Ticket Tracker System</h1>
+                <h1 className="text-xl font-bold text-white">TrackSphere</h1>
               </div>
               {selectedModule && (
                 <div className="flex items-center space-x-2">

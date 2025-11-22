@@ -23,7 +23,7 @@ const createSupabaseClient = () => {
       },
       global: {
         headers: {
-          'x-application-name': 'ticket-tracker'
+          'x-application-name': 'tracksphere'
         }
       }
     });

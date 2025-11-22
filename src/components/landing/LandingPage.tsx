@@ -111,10 +111,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-lg">TT</span>
+                <span className="text-white font-bold text-lg">TS</span>
               </div>
               <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                Ticket Tracker
+                TrackSphere
               </span>
             </div>
             <button
@@ -298,9 +298,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
             <div>
               <div className="flex items-center space-x-3 mb-4">
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold">TT</span>
+                  <span className="text-white font-bold">TS</span>
                 </div>
-                <span className="text-lg font-bold">Ticket Tracker</span>
+                <span className="text-lg font-bold">TrackSphere</span>
               </div>
               <p className="text-gray-400 leading-relaxed">
                 Streamline your workflow management with our comprehensive ticket tracking system.
@@ -339,7 +339,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
           </div>
           
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 Ticket Tracker. All rights reserved. Built with ❤️ for modern organizations.</p>
+            <p>&copy; 2024 TrackSphere. All rights reserved. Built with ❤️ for modern organizations.</p>
           </div>
         </div>
       </footer>

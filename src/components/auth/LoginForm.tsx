@@ -46,7 +46,7 @@ const LoginForm: React.FC = () => {
           <div className="mx-auto w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg transform rotate-3 hover:rotate-0 transition-transform duration-300">
             <LogIn className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Ticket Tracker System</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">TrackSphere</h1>
           <p className="text-gray-600 mt-3">Sign in to your account</p>
         </div>
 

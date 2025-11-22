@@ -14,8 +14,6 @@ import DependencySelector from './DependencySelector';
 import DependencyBadge from './DependencyBadge';
 import ProgressDocuments from './ProgressDocuments';
 import ProgressHistoryView from './ProgressHistoryView';
-import ItemAllocationModal from './ItemAllocationModal';
-import SpecAllocationModal from './SpecAllocationModal';
 import { DocumentMetadata, FileService } from '../../services/fileService';
 import { TicketService } from '../../services/ticketService';
 import { DependencyService } from '../../services/dependencyService';
@@ -1635,33 +1633,6 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
         />
       )}
 
-      {allocatingItemsForStep && user && (
-        <ItemAllocationModal
-          ticketId={ticket.id}
-          workflowStepId={allocatingItemsForStep.id}
-          workflowStepTitle={allocatingItemsForStep.title}
-          userId={user.id}
-          onClose={() => setAllocatingItemsForStep(null)}
-          onAllocated={() => {
-            setAllocatingItemsForStep(null);
-            window.location.reload();
-          }}
-        />
-      )}
-
-      {allocatingSpecsForStep && user && (
-        <SpecAllocationModal
-          ticketId={ticket.id}
-          workflowStepId={allocatingSpecsForStep.id}
-          workflowStepTitle={allocatingSpecsForStep.title}
-          userId={user.id}
-          onClose={() => setAllocatingSpecsForStep(null)}
-          onAllocated={() => {
-            setAllocatingSpecsForStep(null);
-            window.location.reload();
-          }}
-        />
-      )}
     </div>
   );
 };

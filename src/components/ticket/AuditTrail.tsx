@@ -5,6 +5,8 @@ import { useTickets } from '../../context/TicketContext';
 import { useAuth } from '../../context/AuthContext';
 import { DocumentMetadata, FileService } from '../../services/fileService';
 import StepSpecsDisplay from './StepSpecsDisplay';
+import SpecAllocationDisplay from './SpecAllocationDisplay';
+import ItemAllocationDisplay from './ItemAllocationDisplay';
 
 interface AuditTrailProps {
   ticket: Ticket;
@@ -13,9 +15,15 @@ interface AuditTrailProps {
   onViewProgressDocument?: (document: DocumentMetadata, workflowTitle: string) => void;
   viewingStepSpecs?: { stepId: string; stepTitle: string } | null;
   onCloseStepSpecs?: () => void;
+  allocatingSpec?: { ticketId: string; stepId: string; stepTitle: string; userId: string } | null;
+  onCloseSpecAllocation?: () => void;
+  onSpecAllocated?: () => void;
+  allocatingItem?: { ticketId: string; stepId: string; stepTitle: string; userId: string } | null;
+  onCloseItemAllocation?: () => void;
+  onItemAllocated?: () => void;
 }
 
-const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onCloseDocument, onViewProgressDocument, viewingStepSpecs, onCloseStepSpecs }) => {
+const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onCloseDocument, onViewProgressDocument, viewingStepSpecs, onCloseStepSpecs, allocatingSpec, onCloseSpecAllocation, onSpecAllocated, allocatingItem, onCloseItemAllocation, onItemAllocated }) => {
   const { users } = useTickets();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
@@ -144,6 +152,34 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
     link.click();
     document.body.removeChild(link);
   };
+
+  if (allocatingSpec && onCloseSpecAllocation && onSpecAllocated) {
+    return (
+      <SpecAllocationDisplay
+        ticketId={allocatingSpec.ticketId}
+        workflowStepId={allocatingSpec.stepId}
+        workflowStepTitle={allocatingSpec.stepTitle}
+        ticketNumber={ticket.ticketNumber}
+        userId={allocatingSpec.userId}
+        onClose={onCloseSpecAllocation}
+        onAllocated={onSpecAllocated}
+      />
+    );
+  }
+
+  if (allocatingItem && onCloseItemAllocation && onItemAllocated) {
+    return (
+      <ItemAllocationDisplay
+        ticketId={allocatingItem.ticketId}
+        workflowStepId={allocatingItem.stepId}
+        workflowStepTitle={allocatingItem.stepTitle}
+        ticketNumber={ticket.ticketNumber}
+        userId={allocatingItem.userId}
+        onClose={onCloseItemAllocation}
+        onAllocated={onItemAllocated}
+      />
+    );
+  }
 
   if (viewingStepSpecs && onCloseStepSpecs) {
     return (

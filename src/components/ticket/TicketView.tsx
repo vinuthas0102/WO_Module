@@ -32,6 +32,8 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
   const [loadingFinanceData, setLoadingFinanceData] = useState(false);
   const [viewingDocument, setViewingDocument] = useState<{ document: DocumentMetadata; workflowTitle: string } | null>(null);
   const [viewingStepSpecs, setViewingStepSpecs] = useState<{ stepId: string; stepTitle: string } | null>(null);
+  const [allocatingSpec, setAllocatingSpec] = useState<{ ticketId: string; stepId: string; stepTitle: string; userId: string } | null>(null);
+  const [allocatingItem, setAllocatingItem] = useState<{ ticketId: string; stepId: string; stepTitle: string; userId: string } | null>(null);
   const [ticketAttachments, setTicketAttachments] = useState<DocumentMetadata[]>([]);
   const [loadingAttachments, setLoadingAttachments] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -669,6 +671,16 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                 onViewStepSpecs={(stepId, stepTitle) => {
                   setViewingStepSpecs({ stepId, stepTitle });
                 }}
+                onAllocateSpec={(stepId, stepTitle) => {
+                  if (user) {
+                    setAllocatingSpec({ ticketId: ticket.id, stepId, stepTitle, userId: user.id });
+                  }
+                }}
+                onAllocateItem={(stepId, stepTitle) => {
+                  if (user) {
+                    setAllocatingItem({ ticketId: ticket.id, stepId, stepTitle, userId: user.id });
+                  }
+                }}
                 selectedModule={selectedModule}
                 completedWorkflows={completedWorkflows}
                 totalWorkflows={totalWorkflows}
@@ -688,6 +700,12 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                 }}
                 viewingStepSpecs={viewingStepSpecs}
                 onCloseStepSpecs={() => setViewingStepSpecs(null)}
+                allocatingSpec={allocatingSpec}
+                onCloseSpecAllocation={() => setAllocatingSpec(null)}
+                onSpecAllocated={() => setRefreshKey(prev => prev + 1)}
+                allocatingItem={allocatingItem}
+                onCloseItemAllocation={() => setAllocatingItem(null)}
+                onItemAllocated={() => setRefreshKey(prev => prev + 1)}
               />
             </div>
           </div>

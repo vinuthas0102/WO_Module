@@ -26,6 +26,8 @@ interface WorkflowManagementProps {
   canManage: boolean;
   onViewDocument?: (document: DocumentMetadata, step: WorkflowStep) => void;
   onViewStepSpecs?: (stepId: string, stepTitle: string) => void;
+  onAllocateSpec?: (stepId: string, stepTitle: string) => void;
+  onAllocateItem?: (stepId: string, stepTitle: string) => void;
 }
 
 const FileReferenceInfoDisplay: React.FC<{ stepId: string; ticketId: string; showFullInterface?: boolean; onViewDocument?: (document: DocumentMetadata) => void }> = ({ stepId, ticketId, showFullInterface = false, onViewDocument }) => {
@@ -298,7 +300,7 @@ const FileReferenceInfoDisplay: React.FC<{ stepId: string; ticketId: string; sho
   );
 };
 
-const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canManage, onViewDocument, onViewStepSpecs }) => {
+const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canManage, onViewDocument, onViewStepSpecs, onAllocateSpec, onAllocateItem }) => {
   const { selectedModule, user, displayPreferences } = useAuth();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingStep, setEditingStep] = useState<WorkflowStep | null>(null);
@@ -315,8 +317,6 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
   const [filterAssignedTo, setFilterAssignedTo] = useState('');
   const [filterHierarchyLevel, setFilterHierarchyLevel] = useState<'1' | '2' | '3' | ''>('');
   const [showFilters, setShowFilters] = useState(false);
-  const [allocatingItemsForStep, setAllocatingItemsForStep] = useState<WorkflowStep | null>(null);
-  const [allocatingSpecsForStep, setAllocatingSpecsForStep] = useState<WorkflowStep | null>(null);
   const { addStep, updateStep, deleteStep, users } = useTickets();
 
   const canManageWorkflows = user?.role === 'EO';
@@ -1115,23 +1115,27 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
 
     // For Work Order module, add allocation actions
     if (ticket.moduleId === '550e8400-e29b-41d4-a716-446655440106' && canManageWorkflow(step)) {
-      actions.push({
-        id: 'allocateItems',
-        icon: Package,
-        label: 'Allocate Items',
-        action: () => setAllocatingItemsForStep(step),
-        category: 'edit',
-        color: 'text-blue-600'
-      });
+      if (onAllocateItem) {
+        actions.push({
+          id: 'allocateItems',
+          icon: Package,
+          label: 'Allocate Items',
+          action: () => onAllocateItem(step.id, step.title),
+          category: 'edit',
+          color: 'text-blue-600'
+        });
+      }
 
-      actions.push({
-        id: 'allocateSpecs',
-        icon: FileCheck,
-        label: 'Allocate Specs',
-        action: () => setAllocatingSpecsForStep(step),
-        category: 'edit',
-        color: 'text-green-600'
-      });
+      if (onAllocateSpec) {
+        actions.push({
+          id: 'allocateSpecs',
+          icon: FileCheck,
+          label: 'Allocate Specs',
+          action: () => onAllocateSpec(step.id, step.title),
+          category: 'edit',
+          color: 'text-green-600'
+        });
+      }
     }
 
     // For Work Order module, add view specs action (available to all users)

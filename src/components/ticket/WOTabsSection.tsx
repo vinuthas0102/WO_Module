@@ -47,7 +47,7 @@ const WOTabsSection: React.FC<WOTabsSectionProps> = ({
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+      <div className="p-6">
         <div className="flex items-center justify-center py-8">
           <div className="text-gray-500 text-sm">Loading work order data...</div>
         </div>
@@ -60,12 +60,9 @@ const WOTabsSection: React.FC<WOTabsSectionProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-      <div className="px-6 py-3 border-b border-gray-200 bg-gray-50">
-        <h2 className="text-lg font-semibold text-gray-900">WO Details</h2>
-      </div>
+    <>
       <div className="border-b border-gray-200">
-        <div className="flex items-center justify-between px-6 py-4">
+        <div className="flex items-center px-6 py-4">
           <div className="flex space-x-1">
             <button
               onClick={() => setActiveTab('items')}
@@ -132,7 +129,7 @@ const WOTabsSection: React.FC<WOTabsSectionProps> = ({
           />
         )}
       </div>
-    </div>
+    </>
   );
 };
 

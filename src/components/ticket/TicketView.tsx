@@ -15,7 +15,7 @@ import { UserPreferencesService } from '../../services/userPreferencesService';
 import { getHierarchyLevel } from '../../lib/hierarchyColors';
 import WOItemSelector from './WOItemSelector';
 import WOSpecSelector from './WOSpecSelector';
-import WOTabsSection from './WOTabsSection';
+import WOWorkflowTabs from './WOWorkflowTabs';
 
 interface TicketViewProps {
   ticket: Ticket;
@@ -654,66 +654,22 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
               </CollapsibleSection>
             )}
 
-            {selectedModule?.id === '550e8400-e29b-41d4-a716-446655440106' && (
-              <WOTabsSection
-                ticketId={ticket.id}
-                canEdit={canEdit()}
-                refreshKey={refreshKey}
-                onRefresh={() => setRefreshKey(prev => prev + 1)}
-              />
-            )}
-
             {/* Hide workflow section from employees */}
             {user && user.role !== 'EMPLOYEE' && (
-              <CollapsibleSection
-                title={`Workflow ${totalWorkflows > 0 ? `(${completedWorkflows}/${totalWorkflows})` : ''}`}
-                defaultExpanded={true}
-                headerContent={
-                  totalWorkflows > 0 && (
-                    <div className="flex items-center space-x-3 text-xs">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-32 bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${(completedWorkflows / totalWorkflows) * 100}%` }}
-                          ></div>
-                        </div>
-                        <span className="text-gray-600">{Math.round((completedWorkflows / totalWorkflows) * 100)}%</span>
-                      </div>
-                      <div className="flex items-center space-x-2 border-l pl-3 border-gray-300">
-                        {workflowsByLevel.level1 > 0 && (
-                          <div className="flex items-center space-x-1">
-                            <div className="w-2.5 h-2.5 bg-blue-400 rounded-full"></div>
-                            <span className="text-xs text-gray-600">{workflowsByLevel.level1}</span>
-                          </div>
-                        )}
-                        {workflowsByLevel.level2 > 0 && (
-                          <div className="flex items-center space-x-1">
-                            <div className="w-2.5 h-2.5 bg-emerald-400 rounded-full"></div>
-                            <span className="text-xs text-gray-600">{workflowsByLevel.level2}</span>
-                          </div>
-                        )}
-                        {workflowsByLevel.level3 > 0 && (
-                          <div className="flex items-center space-x-1">
-                            <div className="w-2.5 h-2.5 bg-amber-400 rounded-full"></div>
-                            <span className="text-xs text-gray-600">{workflowsByLevel.level3}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )
-                }
-              >
-                <div className="pt-3">
-                  <WorkflowManagement
-                    ticket={ticket}
-                    canManage={canEdit()}
-                    onViewDocument={(doc, step) => {
-                      setViewingDocument({ document: doc, workflowTitle: step.title });
-                    }}
-                  />
-                </div>
-              </CollapsibleSection>
+              <WOWorkflowTabs
+                ticket={ticket}
+                canEdit={canEdit()}
+                canManage={canEdit()}
+                refreshKey={refreshKey}
+                onRefresh={() => setRefreshKey(prev => prev + 1)}
+                onViewDocument={(doc, workflowTitle) => {
+                  setViewingDocument({ document: doc, workflowTitle });
+                }}
+                selectedModule={selectedModule}
+                completedWorkflows={completedWorkflows}
+                totalWorkflows={totalWorkflows}
+                workflowsByLevel={workflowsByLevel}
+              />
             )}
           </div>
 

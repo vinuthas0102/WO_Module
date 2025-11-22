@@ -29,7 +29,8 @@ const TicketForm: React.FC<TicketFormProps> = ({ isOpen, onClose, ticket, copied
       '550e8400-e29b-41d4-a716-446655440102': 'CTKT', // Complaints Tracker
       '550e8400-e29b-41d4-a716-446655440103': 'GTKT', // Grievances Module
       '550e8400-e29b-41d4-a716-446655440104': 'RTKT', // RTI Tracker
-      '550e8400-e29b-41d4-a716-446655440105': 'PTKT'  // Project Execution Plan (PEP)
+      '550e8400-e29b-41d4-a716-446655440105': 'PTKT', // Project Execution Plan (PEP)
+      '550e8400-e29b-41d4-a716-446655440106': 'WO'    // Work Order Management
     };
     return modulePrefixes[moduleId] || 'TKT';
   };
@@ -68,7 +69,11 @@ const TicketForm: React.FC<TicketFormProps> = ({ isOpen, onClose, ticket, copied
     estCompletionDate: ticket?.dueDate ? ticket.dueDate.toISOString().split('T')[0] : '',
     department: sourceTicket?.department || user?.department || '',
     propertyId: sourceTicket?.propertyId || 'PROP001',
-    propertyLocation: sourceTicket?.propertyLocation || 'Location01'
+    propertyLocation: sourceTicket?.propertyLocation || 'Location01',
+    contractorName: (sourceTicket?.data as any)?.contractorName || '',
+    contractorContact: (sourceTicket?.data as any)?.contractorContact || '',
+    estimatedCost: (sourceTicket?.data as any)?.estimatedCost || '',
+    workOrderType: (sourceTicket?.data as any)?.workOrderType || 'General'
   });
 
   // Update ticket number when component mounts or tickets change
@@ -95,7 +100,11 @@ const TicketForm: React.FC<TicketFormProps> = ({ isOpen, onClose, ticket, copied
         estCompletionDate: '',
         department: copiedTicket.department || user?.department || '',
         propertyId: copiedTicket.propertyId || 'PROP001',
-        propertyLocation: copiedTicket.propertyLocation || 'Location01'
+        propertyLocation: copiedTicket.propertyLocation || 'Location01',
+        contractorName: (copiedTicket.data as any)?.contractorName || '',
+        contractorContact: (copiedTicket.data as any)?.contractorContact || '',
+        estimatedCost: (copiedTicket.data as any)?.estimatedCost || '',
+        workOrderType: (copiedTicket.data as any)?.workOrderType || 'General'
       });
     }
   }, [copiedTicket]);
@@ -111,7 +120,7 @@ const TicketForm: React.FC<TicketFormProps> = ({ isOpen, onClose, ticket, copied
 
     setLoading(true);
     try {
-      const ticketData = {
+      const ticketData: any = {
         moduleId: selectedModule.id,
         title: formData.title,
         description: formData.description,
@@ -125,6 +134,16 @@ const TicketForm: React.FC<TicketFormProps> = ({ isOpen, onClose, ticket, copied
         propertyLocation: formData.propertyLocation,
         createdBy: user.id,
       };
+
+      // Add Work Order specific data
+      if (selectedModule.id === '550e8400-e29b-41d4-a716-446655440106') {
+        ticketData.data = {
+          workOrderType: formData.workOrderType,
+          contractorName: formData.contractorName,
+          contractorContact: formData.contractorContact,
+          estimatedCost: formData.estimatedCost ? parseFloat(formData.estimatedCost) : undefined,
+        };
+      }
 
       let newTicketId: string | undefined;
 
@@ -468,6 +487,77 @@ const TicketForm: React.FC<TicketFormProps> = ({ isOpen, onClose, ticket, copied
                   />
                 </div>
               </div>
+
+              {/* Work Order Specific Fields */}
+              {selectedModule?.id === '550e8400-e29b-41d4-a716-446655440106' && (
+                <>
+                  <div className="border-t border-gray-200 pt-4">
+                    <h3 className="text-sm font-semibold text-gray-900 mb-3">Work Order Details</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Work Order Type *
+                        </label>
+                        <select
+                          value={formData.workOrderType}
+                          onChange={(e) => setFormData({ ...formData, workOrderType: e.target.value })}
+                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          required
+                        >
+                          <option value="General">General</option>
+                          <option value="Construction">Construction</option>
+                          <option value="Maintenance">Maintenance</option>
+                          <option value="Repair">Repair</option>
+                          <option value="Installation">Installation</option>
+                          <option value="Inspection">Inspection</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Estimated Cost (₹)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={formData.estimatedCost}
+                          onChange={(e) => setFormData({ ...formData, estimatedCost: e.target.value })}
+                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Enter estimated cost"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Contractor Name
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.contractorName}
+                          onChange={(e) => setFormData({ ...formData, contractorName: e.target.value })}
+                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Enter contractor name"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Contractor Contact
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.contractorContact}
+                          onChange={(e) => setFormData({ ...formData, contractorContact: e.target.value })}
+                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Enter contact number/email"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
 
               {/* Department and Assigned To */}
               {/* Department and Assigned To - Only show for EO */}

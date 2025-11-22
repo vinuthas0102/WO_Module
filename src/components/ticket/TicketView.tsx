@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Calendar, User, AlertTriangle, Clock, CheckCircle, XCircle, FileText, Users, Edit, Trash2, Plus, Paperclip, Download, Trash, Upload, IndianRupee, Package, FileCheck, RefreshCw } from 'lucide-react';
-import { Ticket, WorkflowStep, FinanceApproval } from '../../types';
+import { Ticket, WorkflowStep, FinanceApproval, ActionIconDefinition, UserDisplayPreferences } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { useTickets } from '../../context/TicketContext';
 import StatusTransitionModal from './StatusTransitionModal';
@@ -8,9 +8,10 @@ import FinanceApprovalActions from './FinanceApprovalActions';
 import WorkflowManagement from './StepManagement';
 import AuditTrail from './AuditTrail';
 import CollapsibleSection from '../common/CollapsibleSection';
-import ActionsDropdown from '../common/ActionsDropdown';
+import IconDisplayWrapper from '../iconDisplay/IconDisplayWrapper';
 import { DocumentMetadata, FileService } from '../../services/fileService';
 import { FinanceApprovalService } from '../../services/financeApprovalService';
+import { UserPreferencesService } from '../../services/userPreferencesService';
 import { getHierarchyLevel } from '../../lib/hierarchyColors';
 import WOItemSelector from './WOItemSelector';
 import WOSpecSelector from './WOSpecSelector';
@@ -37,9 +38,30 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
   const [showItemSelector, setShowItemSelector] = useState(false);
   const [showSpecSelector, setShowSpecSelector] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [userPreferences, setUserPreferences] = useState<UserDisplayPreferences | null>(null);
+  const [loadingPreferences, setLoadingPreferences] = useState(true);
 
   const createdByUser = users.find(u => u.id === ticket.createdBy);
   const assignedToUser = ticket.assignedTo ? users.find(u => u.id === ticket.assignedTo) : undefined;
+
+  useEffect(() => {
+    const fetchUserPreferences = async () => {
+      if (!user) return;
+
+      setLoadingPreferences(true);
+      try {
+        const prefs = await UserPreferencesService.getUserPreferences(user.id);
+        setUserPreferences(prefs || UserPreferencesService.getDefaultPreferences());
+      } catch (error) {
+        console.error('Error fetching user preferences:', error);
+        setUserPreferences(UserPreferencesService.getDefaultPreferences());
+      } finally {
+        setLoadingPreferences(false);
+      }
+    };
+
+    fetchUserPreferences();
+  }, [user]);
 
   useEffect(() => {
     const fetchTicketAttachments = async () => {
@@ -290,71 +312,69 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <ActionsDropdown
-                actionGroups={[
-                  {
-                    items: [
-                      {
-                        id: 'edit',
-                        label: 'Edit Ticket',
-                        icon: <Edit className="w-4 h-4" />,
-                        onClick: () => onEdit(ticket),
-                        variant: 'primary',
-                        show: canEdit()
+              {!loadingPreferences && (() => {
+                const actions: ActionIconDefinition[] = [];
+
+                if (canEdit()) {
+                  actions.push({
+                    id: 'edit',
+                    icon: Edit,
+                    label: 'Edit Ticket',
+                    action: () => onEdit(ticket),
+                    color: '#2563eb'
+                  });
+                }
+
+                if (canChangeStatus() && getAvailableStatusTransitions().length > 0) {
+                  actions.push({
+                    id: 'change-status',
+                    icon: RefreshCw,
+                    label: 'Change Status',
+                    action: () => setShowStatusModal(true),
+                    color: '#2563eb'
+                  });
+                }
+
+                if (selectedModule?.id === '550e8400-e29b-41d4-a716-446655440106' && canEdit()) {
+                  actions.push({
+                    id: 'add-item',
+                    icon: Package,
+                    label: 'Add Item',
+                    action: () => setShowItemSelector(true),
+                    color: '#16a34a'
+                  });
+
+                  actions.push({
+                    id: 'add-spec',
+                    icon: FileCheck,
+                    label: 'Add Spec',
+                    action: () => setShowSpecSelector(true),
+                    color: '#16a34a'
+                  });
+                }
+
+                if (canDelete()) {
+                  actions.push({
+                    id: 'delete',
+                    icon: Trash2,
+                    label: 'Delete Ticket',
+                    action: () => {
+                      if (confirm('Are you sure you want to delete this ticket?')) {
+                        onDelete(ticket.id);
+                        onClose();
                       }
-                    ]
-                  },
-                  {
-                    items: [
-                      {
-                        id: 'change-status',
-                        label: 'Change Status',
-                        icon: <RefreshCw className="w-4 h-4" />,
-                        onClick: () => setShowStatusModal(true),
-                        variant: 'primary',
-                        show: canChangeStatus() && getAvailableStatusTransitions().length > 0
-                      }
-                    ]
-                  },
-                  {
-                    items: [
-                      {
-                        id: 'add-item',
-                        label: 'Add Item',
-                        icon: <Package className="w-4 h-4" />,
-                        onClick: () => setShowItemSelector(true),
-                        variant: 'success',
-                        show: selectedModule?.id === '550e8400-e29b-41d4-a716-446655440106' && canEdit()
-                      },
-                      {
-                        id: 'add-spec',
-                        label: 'Add Spec',
-                        icon: <FileCheck className="w-4 h-4" />,
-                        onClick: () => setShowSpecSelector(true),
-                        variant: 'success',
-                        show: selectedModule?.id === '550e8400-e29b-41d4-a716-446655440106' && canEdit()
-                      }
-                    ]
-                  },
-                  {
-                    items: [
-                      {
-                        id: 'delete',
-                        label: 'Delete Ticket',
-                        icon: <Trash2 className="w-4 h-4" />,
-                        onClick: () => {
-                          if (confirm('Are you sure you want to delete this ticket?')) {
-                            onDelete(ticket.id);
-                            onClose();
-                          }
-                        },
-                        variant: 'danger',
-                        show: canDelete()
-                      }
-                    ]
-                  }
-                ]}
-              />
+                    },
+                    color: '#dc2626'
+                  });
+                }
+
+                return actions.length > 0 ? (
+                  <IconDisplayWrapper
+                    actions={actions}
+                    preferences={userPreferences || undefined}
+                  />
+                ) : null;
+              })()}
             </div>
           </div>
         </div>

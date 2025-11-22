@@ -84,7 +84,7 @@ const ActionsDropdown: React.FC<ActionsDropdownProps> = ({ actionGroups }) => {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+        <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-[60]">
           {visibleGroups.map((group, groupIndex) => (
             <React.Fragment key={groupIndex}>
               {groupIndex > 0 && (

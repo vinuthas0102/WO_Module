@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, CheckCircle, Clock, Users, Trash2, Edit, X, ChevronDown, ChevronRight, FileText, Upload, Layers, Search, Filter, XCircle, Workflow, ArrowRight, History, ExternalLink, AlertCircle } from 'lucide-react';
+import { Plus, CheckCircle, Clock, Users, Trash2, Edit, X, ChevronDown, ChevronRight, FileText, Upload, Layers, Search, Filter, XCircle, Workflow, ArrowRight, History, ExternalLink, AlertCircle, Package, FileCheck } from 'lucide-react';
 import { Ticket, WorkflowStep, WorkflowStepStatus, ActionIconDefinition, FileReferenceTemplate } from '../../types';
 import { FileReferenceService } from '../../services/fileReferenceService';
 import FileReferenceUpload from './FileReferenceUpload';
@@ -14,6 +14,8 @@ import DependencySelector from './DependencySelector';
 import DependencyBadge from './DependencyBadge';
 import ProgressDocuments from './ProgressDocuments';
 import ProgressHistoryView from './ProgressHistoryView';
+import ItemAllocationModal from './ItemAllocationModal';
+import SpecAllocationModal from './SpecAllocationModal';
 import { DocumentMetadata, FileService } from '../../services/fileService';
 import { TicketService } from '../../services/ticketService';
 import { DependencyService } from '../../services/dependencyService';
@@ -312,6 +314,8 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
   const [filterAssignedTo, setFilterAssignedTo] = useState('');
   const [filterHierarchyLevel, setFilterHierarchyLevel] = useState<'1' | '2' | '3' | ''>('');
   const [showFilters, setShowFilters] = useState(false);
+  const [allocatingItemsForStep, setAllocatingItemsForStep] = useState<WorkflowStep | null>(null);
+  const [allocatingSpecsForStep, setAllocatingSpecsForStep] = useState<WorkflowStep | null>(null);
   const { addStep, updateStep, deleteStep, users } = useTickets();
 
   const canManageWorkflows = user?.role === 'EO';
@@ -1108,6 +1112,27 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
   const getStepActions = (step: WorkflowStep): ActionIconDefinition[] => {
     const actions: ActionIconDefinition[] = [];
 
+    // For Work Order module, add allocation actions
+    if (ticket.moduleId === '550e8400-e29b-41d4-a716-446655440106' && canManageWorkflow(step)) {
+      actions.push({
+        id: 'allocateItems',
+        icon: Package,
+        label: 'Allocate Items',
+        action: () => setAllocatingItemsForStep(step),
+        category: 'edit',
+        color: 'text-blue-600'
+      });
+
+      actions.push({
+        id: 'allocateSpecs',
+        icon: FileCheck,
+        label: 'Allocate Specs',
+        action: () => setAllocatingSpecsForStep(step),
+        category: 'edit',
+        color: 'text-green-600'
+      });
+    }
+
     // Progress History
     actions.push({
       id: 'history',
@@ -1590,6 +1615,34 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
             setBulkParentStep(null);
           }}
           onSuccess={handleBulkSuccess}
+        />
+      )}
+
+      {allocatingItemsForStep && user && (
+        <ItemAllocationModal
+          ticketId={ticket.id}
+          workflowStepId={allocatingItemsForStep.id}
+          workflowStepTitle={allocatingItemsForStep.title}
+          userId={user.id}
+          onClose={() => setAllocatingItemsForStep(null)}
+          onAllocated={() => {
+            setAllocatingItemsForStep(null);
+            window.location.reload();
+          }}
+        />
+      )}
+
+      {allocatingSpecsForStep && user && (
+        <SpecAllocationModal
+          ticketId={ticket.id}
+          workflowStepId={allocatingSpecsForStep.id}
+          workflowStepTitle={allocatingSpecsForStep.title}
+          userId={user.id}
+          onClose={() => setAllocatingSpecsForStep(null)}
+          onAllocated={() => {
+            setAllocatingSpecsForStep(null);
+            window.location.reload();
+          }}
         />
       )}
     </div>

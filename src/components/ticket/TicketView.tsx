@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Calendar, User, AlertTriangle, Clock, CheckCircle, XCircle, FileText, Users, Edit, Trash2, Plus, Paperclip, Download, Trash, Upload, IndianRupee } from 'lucide-react';
+import { ArrowLeft, Calendar, User, AlertTriangle, Clock, CheckCircle, XCircle, FileText, Users, Edit, Trash2, Plus, Paperclip, Download, Trash, Upload, IndianRupee, Package, FileCheck } from 'lucide-react';
 import { Ticket, WorkflowStep, FinanceApproval } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { useTickets } from '../../context/TicketContext';
@@ -11,6 +11,10 @@ import CollapsibleSection from '../common/CollapsibleSection';
 import { DocumentMetadata, FileService } from '../../services/fileService';
 import { FinanceApprovalService } from '../../services/financeApprovalService';
 import { getHierarchyLevel } from '../../lib/hierarchyColors';
+import WOItemSelector from './WOItemSelector';
+import WOSpecSelector from './WOSpecSelector';
+import WOItemsDisplay from './WOItemsDisplay';
+import WOSpecsDisplay from './WOSpecsDisplay';
 
 interface TicketViewProps {
   ticket: Ticket;
@@ -30,6 +34,9 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
   const [loadingAttachments, setLoadingAttachments] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [showItemSelector, setShowItemSelector] = useState(false);
+  const [showSpecSelector, setShowSpecSelector] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const createdByUser = users.find(u => u.id === ticket.createdBy);
   const assignedToUser = ticket.assignedTo ? users.find(u => u.id === ticket.assignedTo) : undefined;
@@ -610,6 +617,60 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                 </div>
               </CollapsibleSection>
             )}
+
+            {selectedModule?.id === '550e8400-e29b-41d4-a716-446655440106' && (
+              <>
+                <CollapsibleSection
+                  title="Work Order Items"
+                  defaultOpen={true}
+                  icon={<Package className="w-4 h-4" />}
+                  headerActions={
+                    canEdit() && (
+                      <button
+                        onClick={() => setShowItemSelector(true)}
+                        className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-xs flex items-center space-x-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Add Item</span>
+                      </button>
+                    )
+                  }
+                >
+                  <div className="pt-3">
+                    <WOItemsDisplay
+                      key={`items-${refreshKey}`}
+                      ticketId={ticket.id}
+                      onRefresh={() => setRefreshKey(prev => prev + 1)}
+                    />
+                  </div>
+                </CollapsibleSection>
+
+                <CollapsibleSection
+                  title="Work Order Specifications"
+                  defaultOpen={true}
+                  icon={<FileCheck className="w-4 h-4" />}
+                  headerActions={
+                    canEdit() && (
+                      <button
+                        onClick={() => setShowSpecSelector(true)}
+                        className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 text-xs flex items-center space-x-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Add Spec</span>
+                      </button>
+                    )
+                  }
+                >
+                  <div className="pt-3">
+                    <WOSpecsDisplay
+                      key={`specs-${refreshKey}`}
+                      ticketId={ticket.id}
+                      onRefresh={() => setRefreshKey(prev => prev + 1)}
+                    />
+                  </div>
+                </CollapsibleSection>
+              </>
+            )}
           </div>
 
           <div className="lg:col-span-2">
@@ -633,6 +694,24 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
         ticket={ticket}
         availableTransitions={getAvailableStatusTransitions()}
       />
+
+      {showItemSelector && user && (
+        <WOItemSelector
+          ticketId={ticket.id}
+          userId={user.id}
+          onClose={() => setShowItemSelector(false)}
+          onItemAdded={() => setRefreshKey(prev => prev + 1)}
+        />
+      )}
+
+      {showSpecSelector && user && (
+        <WOSpecSelector
+          ticketId={ticket.id}
+          userId={user.id}
+          onClose={() => setShowSpecSelector(false)}
+          onSpecAdded={() => setRefreshKey(prev => prev + 1)}
+        />
+      )}
 
     </>
   );

@@ -4,15 +4,18 @@ import { Ticket, AuditActionCategory } from '../../types';
 import { useTickets } from '../../context/TicketContext';
 import { useAuth } from '../../context/AuthContext';
 import { DocumentMetadata, FileService } from '../../services/fileService';
+import StepSpecsDisplay from './StepSpecsDisplay';
 
 interface AuditTrailProps {
   ticket: Ticket;
   viewingDocument?: { document: DocumentMetadata; workflowTitle: string } | null;
   onCloseDocument?: () => void;
   onViewProgressDocument?: (document: DocumentMetadata, workflowTitle: string) => void;
+  viewingStepSpecs?: { stepId: string; stepTitle: string } | null;
+  onCloseStepSpecs?: () => void;
 }
 
-const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onCloseDocument, onViewProgressDocument }) => {
+const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onCloseDocument, onViewProgressDocument, viewingStepSpecs, onCloseStepSpecs }) => {
   const { users } = useTickets();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
@@ -141,6 +144,17 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
     link.click();
     document.body.removeChild(link);
   };
+
+  if (viewingStepSpecs && onCloseStepSpecs) {
+    return (
+      <StepSpecsDisplay
+        stepId={viewingStepSpecs.stepId}
+        stepTitle={viewingStepSpecs.stepTitle}
+        ticketNumber={ticket.ticketNumber}
+        onClose={onCloseStepSpecs}
+      />
+    );
+  }
 
   if (viewingDocument) {
     return (

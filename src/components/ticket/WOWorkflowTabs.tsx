@@ -14,6 +14,7 @@ interface WOWorkflowTabsProps {
   refreshKey: number;
   onRefresh: () => void;
   onViewDocument: (doc: DocumentMetadata, workflowTitle: string) => void;
+  onViewStepSpecs: (stepId: string, stepTitle: string) => void;
   selectedModule?: { id: string };
   completedWorkflows: number;
   totalWorkflows: number;
@@ -33,6 +34,7 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
   refreshKey,
   onRefresh,
   onViewDocument,
+  onViewStepSpecs,
   selectedModule,
   completedWorkflows,
   totalWorkflows,
@@ -186,6 +188,7 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
             onViewDocument={(doc, step) => {
               onViewDocument(doc, step.title);
             }}
+            onViewStepSpecs={onViewStepSpecs}
           />
         </div>
       )}

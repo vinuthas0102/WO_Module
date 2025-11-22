@@ -31,6 +31,7 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
   const [financeApprovals, setFinanceApprovals] = useState<FinanceApproval[]>([]);
   const [loadingFinanceData, setLoadingFinanceData] = useState(false);
   const [viewingDocument, setViewingDocument] = useState<{ document: DocumentMetadata; workflowTitle: string } | null>(null);
+  const [viewingStepSpecs, setViewingStepSpecs] = useState<{ stepId: string; stepTitle: string } | null>(null);
   const [ticketAttachments, setTicketAttachments] = useState<DocumentMetadata[]>([]);
   const [loadingAttachments, setLoadingAttachments] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -665,6 +666,9 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                 onViewDocument={(doc, workflowTitle) => {
                   setViewingDocument({ document: doc, workflowTitle });
                 }}
+                onViewStepSpecs={(stepId, stepTitle) => {
+                  setViewingStepSpecs({ stepId, stepTitle });
+                }}
                 selectedModule={selectedModule}
                 completedWorkflows={completedWorkflows}
                 totalWorkflows={totalWorkflows}
@@ -682,6 +686,8 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                 onViewProgressDocument={(doc, workflowTitle) => {
                   setViewingDocument({ document: doc, workflowTitle });
                 }}
+                viewingStepSpecs={viewingStepSpecs}
+                onCloseStepSpecs={() => setViewingStepSpecs(null)}
               />
             </div>
           </div>

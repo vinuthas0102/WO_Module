@@ -16,7 +16,6 @@ import ProgressDocuments from './ProgressDocuments';
 import ProgressHistoryView from './ProgressHistoryView';
 import ItemAllocationModal from './ItemAllocationModal';
 import SpecAllocationModal from './SpecAllocationModal';
-import ViewStepSpecsModal from './ViewStepSpecsModal';
 import { DocumentMetadata, FileService } from '../../services/fileService';
 import { TicketService } from '../../services/ticketService';
 import { DependencyService } from '../../services/dependencyService';
@@ -26,6 +25,7 @@ interface WorkflowManagementProps {
   ticket: Ticket;
   canManage: boolean;
   onViewDocument?: (document: DocumentMetadata, step: WorkflowStep) => void;
+  onViewStepSpecs?: (stepId: string, stepTitle: string) => void;
 }
 
 const FileReferenceInfoDisplay: React.FC<{ stepId: string; ticketId: string; showFullInterface?: boolean; onViewDocument?: (document: DocumentMetadata) => void }> = ({ stepId, ticketId, showFullInterface = false, onViewDocument }) => {
@@ -298,7 +298,7 @@ const FileReferenceInfoDisplay: React.FC<{ stepId: string; ticketId: string; sho
   );
 };
 
-const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canManage, onViewDocument }) => {
+const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canManage, onViewDocument, onViewStepSpecs }) => {
   const { selectedModule, user, displayPreferences } = useAuth();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingStep, setEditingStep] = useState<WorkflowStep | null>(null);
@@ -317,7 +317,6 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
   const [showFilters, setShowFilters] = useState(false);
   const [allocatingItemsForStep, setAllocatingItemsForStep] = useState<WorkflowStep | null>(null);
   const [allocatingSpecsForStep, setAllocatingSpecsForStep] = useState<WorkflowStep | null>(null);
-  const [viewingSpecsForStep, setViewingSpecsForStep] = useState<WorkflowStep | null>(null);
   const { addStep, updateStep, deleteStep, users } = useTickets();
 
   const canManageWorkflows = user?.role === 'EO';
@@ -1136,12 +1135,12 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
     }
 
     // For Work Order module, add view specs action (available to all users)
-    if (ticket.moduleId === '550e8400-e29b-41d4-a716-446655440106') {
+    if (ticket.moduleId === '550e8400-e29b-41d4-a716-446655440106' && onViewStepSpecs) {
       actions.push({
         id: 'viewSpecs',
         icon: FileCheck,
         label: 'View Specs',
-        action: () => setViewingSpecsForStep(step),
+        action: () => onViewStepSpecs(step.id, step.title),
         category: 'view',
         color: 'text-purple-600'
       });
@@ -1657,14 +1656,6 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
             setAllocatingSpecsForStep(null);
             window.location.reload();
           }}
-        />
-      )}
-
-      {viewingSpecsForStep && (
-        <ViewStepSpecsModal
-          stepId={viewingSpecsForStep.id}
-          stepTitle={viewingSpecsForStep.title}
-          onClose={() => setViewingSpecsForStep(null)}
         />
       )}
     </div>

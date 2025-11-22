@@ -13,8 +13,7 @@ import { FinanceApprovalService } from '../../services/financeApprovalService';
 import { getHierarchyLevel } from '../../lib/hierarchyColors';
 import WOItemSelector from './WOItemSelector';
 import WOSpecSelector from './WOSpecSelector';
-import WOItemsDisplay from './WOItemsDisplay';
-import WOSpecsDisplay from './WOSpecsDisplay';
+import WOTabsSection from './WOTabsSection';
 
 interface TicketViewProps {
   ticket: Ticket;
@@ -600,6 +599,17 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
               </CollapsibleSection>
             )}
 
+            {selectedModule?.id === '550e8400-e29b-41d4-a716-446655440106' && (
+              <WOTabsSection
+                ticketId={ticket.id}
+                canEdit={canEdit()}
+                onAddItem={() => setShowItemSelector(true)}
+                onAddSpec={() => setShowSpecSelector(true)}
+                refreshKey={refreshKey}
+                onRefresh={() => setRefreshKey(prev => prev + 1)}
+              />
+            )}
+
             {/* Hide workflow section from employees */}
             {user && user.role !== 'EMPLOYEE' && (
               <CollapsibleSection
@@ -651,60 +661,6 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                   />
                 </div>
               </CollapsibleSection>
-            )}
-
-            {selectedModule?.id === '550e8400-e29b-41d4-a716-446655440106' && (
-              <>
-                <CollapsibleSection
-                  title="Work Order Items"
-                  defaultOpen={true}
-                  icon={<Package className="w-4 h-4" />}
-                  headerActions={
-                    canEdit() && (
-                      <button
-                        onClick={() => setShowItemSelector(true)}
-                        className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-xs flex items-center space-x-1"
-                      >
-                        <Plus className="w-3 h-3" />
-                        <span>Add Item</span>
-                      </button>
-                    )
-                  }
-                >
-                  <div className="pt-3">
-                    <WOItemsDisplay
-                      key={`items-${refreshKey}`}
-                      ticketId={ticket.id}
-                      onRefresh={() => setRefreshKey(prev => prev + 1)}
-                    />
-                  </div>
-                </CollapsibleSection>
-
-                <CollapsibleSection
-                  title="Work Order Specifications"
-                  defaultOpen={true}
-                  icon={<FileCheck className="w-4 h-4" />}
-                  headerActions={
-                    canEdit() && (
-                      <button
-                        onClick={() => setShowSpecSelector(true)}
-                        className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 text-xs flex items-center space-x-1"
-                      >
-                        <Plus className="w-3 h-3" />
-                        <span>Add Spec</span>
-                      </button>
-                    )
-                  }
-                >
-                  <div className="pt-3">
-                    <WOSpecsDisplay
-                      key={`specs-${refreshKey}`}
-                      ticketId={ticket.id}
-                      onRefresh={() => setRefreshKey(prev => prev + 1)}
-                    />
-                  </div>
-                </CollapsibleSection>
-              </>
             )}
           </div>
 

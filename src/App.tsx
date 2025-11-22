@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Plus, Settings, MoreVertical, Ticket as TicketIcon, Layers, ChevronRight, Users, FileJson } from 'lucide-react';
+import { Plus, Settings, MoreVertical, Ticket as TicketIcon, Layers, ChevronRight, Users, FileJson, Package, FileCheck } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { TicketProvider, useTickets } from './context/TicketContext';
 import LoginForm from './components/auth/LoginForm';
@@ -18,6 +18,8 @@ import FieldConfigurationManager from './components/admin/FieldConfigurationMana
 import UserManagementPage from './components/admin/UserManagementPage';
 import UserPreferencesPage from './components/admin/UserPreferencesPage';
 import FileReferenceTemplateManager from './components/admin/FileReferenceTemplateManager';
+import ItemMasterManager from './components/admin/ItemMasterManager';
+import SpecMasterManager from './components/admin/SpecMasterManager';
 import { Ticket, TicketStatus } from './types';
 
 interface SearchFilters {
@@ -47,6 +49,8 @@ const Dashboard: React.FC = () => {
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [showUserPreferences, setShowUserPreferences] = useState(false);
   const [showFileReferenceManager, setShowFileReferenceManager] = useState(false);
+  const [showItemMasterManager, setShowItemMasterManager] = useState(false);
+  const [showSpecMasterManager, setShowSpecMasterManager] = useState(false);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
   const [showCreateSubmenu, setShowCreateSubmenu] = useState(false);
   const actionsMenuRef = useRef<HTMLDivElement>(null);
@@ -241,6 +245,26 @@ const Dashboard: React.FC = () => {
           <FileReferenceTemplateManager user={user} />
         </main>
       </div>
+    );
+  }
+
+  // Show item master manager
+  if (showItemMasterManager && user?.role === 'EO') {
+    return (
+      <ItemMasterManager
+        userId={user.id}
+        onClose={() => setShowItemMasterManager(false)}
+      />
+    );
+  }
+
+  // Show spec master manager
+  if (showSpecMasterManager && user?.role === 'EO') {
+    return (
+      <SpecMasterManager
+        userId={user.id}
+        onClose={() => setShowSpecMasterManager(false)}
+      />
     );
   }
 
@@ -464,6 +488,38 @@ const Dashboard: React.FC = () => {
                         <div>
                           <div className="font-medium text-sm">File References</div>
                           <div className="text-xs text-gray-500">Manage file reference templates</div>
+                        </div>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowItemMasterManager(true);
+                          setShowActionsMenu(false);
+                          setShowCreateSubmenu(false);
+                        }}
+                        className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center space-x-3 text-gray-700 hover:text-gray-900"
+                      >
+                        <div className="bg-gradient-to-r from-orange-600 to-red-600 p-2 rounded-lg">
+                          <Package className="w-4 h-4 text-white" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-sm">WO Items Master</div>
+                          <div className="text-xs text-gray-500">Manage work order items</div>
+                        </div>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowSpecMasterManager(true);
+                          setShowActionsMenu(false);
+                          setShowCreateSubmenu(false);
+                        }}
+                        className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center space-x-3 text-gray-700 hover:text-gray-900"
+                      >
+                        <div className="bg-gradient-to-r from-green-600 to-teal-600 p-2 rounded-lg">
+                          <FileCheck className="w-4 h-4 text-white" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-sm">WO Specs Master</div>
+                          <div className="text-xs text-gray-500">Manage work order specifications</div>
                         </div>
                       </button>
                     </>

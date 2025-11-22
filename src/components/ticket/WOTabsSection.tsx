@@ -38,6 +38,10 @@ const WOTabsSection: React.FC<WOTabsSectionProps> = ({
       ]);
       setItemsCount(items.length);
       setSpecsCount(specs.length);
+
+      if (items.length === 0 && specs.length > 0 && activeTab === 'items') {
+        setActiveTab('specs');
+      }
     } catch (error) {
       console.error('Error loading counts:', error);
     } finally {
@@ -64,17 +68,17 @@ const WOTabsSection: React.FC<WOTabsSectionProps> = ({
       <div className="border-b border-gray-200">
         <div className="flex items-center px-6 py-4">
           <div className="flex space-x-1">
-            <button
-              onClick={() => setActiveTab('items')}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                activeTab === 'items'
-                  ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              <Package className="w-4 h-4" />
-              <span>Items</span>
-              {itemsCount > 0 && (
+            {itemsCount > 0 && (
+              <button
+                onClick={() => setActiveTab('items')}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'items'
+                    ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <Package className="w-4 h-4" />
+                <span>Items</span>
                 <span
                   className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
                     activeTab === 'items'
@@ -84,20 +88,20 @@ const WOTabsSection: React.FC<WOTabsSectionProps> = ({
                 >
                   {itemsCount}
                 </span>
-              )}
-            </button>
+              </button>
+            )}
 
-            <button
-              onClick={() => setActiveTab('specs')}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                activeTab === 'specs'
-                  ? 'bg-green-50 text-green-700 border-b-2 border-green-600'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              <FileCheck className="w-4 h-4" />
-              <span>Specifications</span>
-              {specsCount > 0 && (
+            {specsCount > 0 && (
+              <button
+                onClick={() => setActiveTab('specs')}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'specs'
+                    ? 'bg-green-50 text-green-700 border-b-2 border-green-600'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <FileCheck className="w-4 h-4" />
+                <span>Specifications</span>
                 <span
                   className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
                     activeTab === 'specs'
@@ -107,21 +111,21 @@ const WOTabsSection: React.FC<WOTabsSectionProps> = ({
                 >
                   {specsCount}
                 </span>
-              )}
-            </button>
+              </button>
+            )}
           </div>
         </div>
       </div>
 
       <div className="p-6">
-        {activeTab === 'items' && (
+        {activeTab === 'items' && itemsCount > 0 && (
           <WOItemsDisplay
             key={`items-${refreshKey}`}
             ticketId={ticketId}
             onRefresh={onRefresh}
           />
         )}
-        {activeTab === 'specs' && (
+        {activeTab === 'specs' && specsCount > 0 && (
           <WOSpecsDisplay
             key={`specs-${refreshKey}`}
             ticketId={ticketId}

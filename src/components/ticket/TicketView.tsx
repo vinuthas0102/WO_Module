@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Calendar, User, AlertTriangle, Clock, CheckCircle, XCircle, FileText, Users, Edit, Trash2, Plus, Paperclip, Download, Trash, Upload, IndianRupee, Package, FileCheck } from 'lucide-react';
+import { ArrowLeft, Calendar, User, AlertTriangle, Clock, CheckCircle, XCircle, FileText, Users, Edit, Trash2, Plus, Paperclip, Download, Trash, Upload, IndianRupee, Package, FileCheck, RefreshCw } from 'lucide-react';
 import { Ticket, WorkflowStep, FinanceApproval } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { useTickets } from '../../context/TicketContext';
@@ -8,6 +8,7 @@ import FinanceApprovalActions from './FinanceApprovalActions';
 import WorkflowManagement from './StepManagement';
 import AuditTrail from './AuditTrail';
 import CollapsibleSection from '../common/CollapsibleSection';
+import ActionsDropdown from '../common/ActionsDropdown';
 import { DocumentMetadata, FileService } from '../../services/fileService';
 import { FinanceApprovalService } from '../../services/financeApprovalService';
 import { getHierarchyLevel } from '../../lib/hierarchyColors';
@@ -289,29 +290,71 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              {canEdit() && (
-                <button
-                  onClick={() => onEdit(ticket)}
-                  className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors duration-200 hover:bg-blue-50 rounded-lg"
-                  title="Edit ticket"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-              )}
-              {canDelete() && (
-                <button
-                  onClick={() => {
-                    if (confirm('Are you sure you want to delete this ticket?')) {
-                      onDelete(ticket.id);
-                      onClose();
-                    }
-                  }}
-                  className="p-1.5 text-gray-400 hover:text-red-600 transition-colors duration-200 hover:bg-red-50 rounded-lg"
-                  title="Delete ticket"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
+              <ActionsDropdown
+                actionGroups={[
+                  {
+                    items: [
+                      {
+                        id: 'edit',
+                        label: 'Edit Ticket',
+                        icon: <Edit className="w-4 h-4" />,
+                        onClick: () => onEdit(ticket),
+                        variant: 'primary',
+                        show: canEdit()
+                      }
+                    ]
+                  },
+                  {
+                    items: [
+                      {
+                        id: 'change-status',
+                        label: 'Change Status',
+                        icon: <RefreshCw className="w-4 h-4" />,
+                        onClick: () => setShowStatusModal(true),
+                        variant: 'primary',
+                        show: canChangeStatus() && getAvailableStatusTransitions().length > 0
+                      }
+                    ]
+                  },
+                  {
+                    items: [
+                      {
+                        id: 'add-item',
+                        label: 'Add Item',
+                        icon: <Package className="w-4 h-4" />,
+                        onClick: () => setShowItemSelector(true),
+                        variant: 'success',
+                        show: selectedModule?.id === '550e8400-e29b-41d4-a716-446655440106' && canEdit()
+                      },
+                      {
+                        id: 'add-spec',
+                        label: 'Add Spec',
+                        icon: <FileCheck className="w-4 h-4" />,
+                        onClick: () => setShowSpecSelector(true),
+                        variant: 'success',
+                        show: selectedModule?.id === '550e8400-e29b-41d4-a716-446655440106' && canEdit()
+                      }
+                    ]
+                  },
+                  {
+                    items: [
+                      {
+                        id: 'delete',
+                        label: 'Delete Ticket',
+                        icon: <Trash2 className="w-4 h-4" />,
+                        onClick: () => {
+                          if (confirm('Are you sure you want to delete this ticket?')) {
+                            onDelete(ticket.id);
+                            onClose();
+                          }
+                        },
+                        variant: 'danger',
+                        show: canDelete()
+                      }
+                    ]
+                  }
+                ]}
+              />
             </div>
           </div>
         </div>
@@ -338,14 +381,6 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                       <CheckCircle className="w-3 h-3" />
                       <span>{completedWorkflows}/{totalWorkflows}</span>
                     </div>
-                  )}
-                  {canChangeStatus() && getAvailableStatusTransitions().length > 0 && (
-                    <button
-                      onClick={() => setShowStatusModal(true)}
-                      className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-2 py-1 text-xs rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-sm"
-                    >
-                      Change Status
-                    </button>
                   )}
                 </div>
               }
@@ -603,8 +638,6 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
               <WOTabsSection
                 ticketId={ticket.id}
                 canEdit={canEdit()}
-                onAddItem={() => setShowItemSelector(true)}
-                onAddSpec={() => setShowSpecSelector(true)}
                 refreshKey={refreshKey}
                 onRefresh={() => setRefreshKey(prev => prev + 1)}
               />

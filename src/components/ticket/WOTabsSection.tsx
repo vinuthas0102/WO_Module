@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, FileCheck, Plus } from 'lucide-react';
+import { Package, FileCheck } from 'lucide-react';
 import WOItemsDisplay from './WOItemsDisplay';
 import WOSpecsDisplay from './WOSpecsDisplay';
 import { WorkOrderItemService } from '../../services/workOrderItemService';
@@ -8,8 +8,6 @@ import { WorkOrderSpecService } from '../../services/workOrderSpecService';
 interface WOTabsSectionProps {
   ticketId: string;
   canEdit: boolean;
-  onAddItem: () => void;
-  onAddSpec: () => void;
   refreshKey: number;
   onRefresh: () => void;
 }
@@ -19,8 +17,6 @@ type TabType = 'items' | 'specs';
 const WOTabsSection: React.FC<WOTabsSectionProps> = ({
   ticketId,
   canEdit,
-  onAddItem,
-  onAddSpec,
   refreshKey,
   onRefresh,
 }) => {
@@ -117,29 +113,6 @@ const WOTabsSection: React.FC<WOTabsSectionProps> = ({
               )}
             </button>
           </div>
-
-          {canEdit && (
-            <div>
-              {activeTab === 'items' && (
-                <button
-                  onClick={onAddItem}
-                  className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center space-x-1.5 transition-colors duration-200 shadow-sm hover:shadow-md"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add Item</span>
-                </button>
-              )}
-              {activeTab === 'specs' && (
-                <button
-                  onClick={onAddSpec}
-                  className="px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm flex items-center space-x-1.5 transition-colors duration-200 shadow-sm hover:shadow-md"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add Spec</span>
-                </button>
-              )}
-            </div>
-          )}
         </div>
       </div>
 

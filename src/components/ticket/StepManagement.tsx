@@ -16,6 +16,7 @@ import ProgressDocuments from './ProgressDocuments';
 import ProgressHistoryView from './ProgressHistoryView';
 import ItemAllocationModal from './ItemAllocationModal';
 import SpecAllocationModal from './SpecAllocationModal';
+import ViewStepSpecsModal from './ViewStepSpecsModal';
 import { DocumentMetadata, FileService } from '../../services/fileService';
 import { TicketService } from '../../services/ticketService';
 import { DependencyService } from '../../services/dependencyService';
@@ -316,6 +317,7 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
   const [showFilters, setShowFilters] = useState(false);
   const [allocatingItemsForStep, setAllocatingItemsForStep] = useState<WorkflowStep | null>(null);
   const [allocatingSpecsForStep, setAllocatingSpecsForStep] = useState<WorkflowStep | null>(null);
+  const [viewingSpecsForStep, setViewingSpecsForStep] = useState<WorkflowStep | null>(null);
   const { addStep, updateStep, deleteStep, users } = useTickets();
 
   const canManageWorkflows = user?.role === 'EO';
@@ -1133,6 +1135,18 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
       });
     }
 
+    // For Work Order module, add view specs action (available to all users)
+    if (ticket.moduleId === '550e8400-e29b-41d4-a716-446655440106') {
+      actions.push({
+        id: 'viewSpecs',
+        icon: FileCheck,
+        label: 'View Specs',
+        action: () => setViewingSpecsForStep(step),
+        category: 'view',
+        color: 'text-purple-600'
+      });
+    }
+
     // Progress History
     actions.push({
       id: 'history',
@@ -1643,6 +1657,14 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
             setAllocatingSpecsForStep(null);
             window.location.reload();
           }}
+        />
+      )}
+
+      {viewingSpecsForStep && (
+        <ViewStepSpecsModal
+          stepId={viewingSpecsForStep.id}
+          stepTitle={viewingSpecsForStep.title}
+          onClose={() => setViewingSpecsForStep(null)}
         />
       )}
     </div>

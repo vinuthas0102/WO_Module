@@ -300,6 +300,65 @@ export class WorkOrderSpecService {
     }
   }
 
+  static async getSpecDetailsForStep(stepId: string): Promise<Array<WorkOrderSpecDetail & { allocation: WorkOrderSpecAllocation }>> {
+    try {
+      const { data, error } = await supabase
+        .from('work_order_spec_allocations')
+        .select(`
+          *,
+          spec_detail:work_order_spec_details(
+            *,
+            spec_master:work_order_specs_master(*)
+          )
+        `)
+        .eq('workflow_step_id', stepId);
+
+      if (error) throw error;
+
+      return (data || []).map((alloc: any) => {
+        const spec = alloc.spec_detail;
+        return {
+          id: spec.id,
+          ticketId: spec.ticket_id,
+          specMasterId: spec.spec_master_id,
+          specMaster: spec.spec_master ? {
+            id: spec.spec_master.id,
+            specCode: spec.spec_master.spec_code,
+            description: spec.spec_master.description,
+            workChunk: spec.spec_master.work_chunk,
+            category: spec.spec_master.category,
+            defaultQuantity: parseFloat(spec.spec_master.default_quantity) || 0,
+            unit: spec.spec_master.unit,
+            isActive: spec.spec_master.is_active,
+            createdBy: spec.spec_master.created_by,
+            createdAt: new Date(spec.spec_master.created_at),
+            updatedAt: new Date(spec.spec_master.updated_at),
+          } : undefined,
+          quantity: parseFloat(spec.quantity) || 0,
+          unit: spec.unit,
+          remarks: spec.remarks,
+          addedBy: spec.added_by,
+          allocatedQuantity: 0,
+          remainingQuantity: 0,
+          createdAt: new Date(spec.created_at),
+          updatedAt: new Date(spec.updated_at),
+          allocation: {
+            id: alloc.id,
+            specDetailId: alloc.spec_detail_id,
+            workflowStepId: alloc.workflow_step_id,
+            allocatedQuantity: parseFloat(alloc.allocated_quantity) || 0,
+            allocatedBy: alloc.allocated_by,
+            createdAt: new Date(alloc.created_at),
+            updatedAt: new Date(alloc.updated_at),
+          }
+        };
+      });
+    } catch (error) {
+      console.error('Error fetching spec details for step:', error);
+      throw error;
+    }
+  }
+
   static async allocateSpecToStep(
     specDetailId: string,
     workflowStepId: string,

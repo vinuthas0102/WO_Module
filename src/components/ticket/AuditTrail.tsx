@@ -1,12 +1,14 @@
 import React, { useState, useMemo } from 'react';
-import { User, Clock, Search, X, Download, FileText, Image as ImageIcon, Filter, Shield, UserCog, Paperclip, Eye, ChevronDown, ChevronUp } from 'lucide-react';
-import { Ticket, AuditActionCategory } from '../../types';
+import { User, Clock, Search, X, Download, FileText, Image as ImageIcon, Filter, Shield, UserCog, Paperclip, Eye, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
+import { Ticket, AuditActionCategory, ClarificationThread } from '../../types';
 import { useTickets } from '../../context/TicketContext';
 import { useAuth } from '../../context/AuthContext';
 import { DocumentMetadata, FileService } from '../../services/fileService';
 import StepSpecsDisplay from './StepSpecsDisplay';
 import SpecAllocationDisplay from './SpecAllocationDisplay';
 import ItemAllocationDisplay from './ItemAllocationDisplay';
+import { ChatLogTab } from '../clarification/ChatLogTab';
+import { ClarificationThreadView } from '../clarification/ClarificationThreadView';
 
 interface AuditTrailProps {
   ticket: Ticket;
@@ -21,9 +23,12 @@ interface AuditTrailProps {
   allocatingItem?: { ticketId: string; stepId: string; stepTitle: string; userId: string } | null;
   onCloseItemAllocation?: () => void;
   onItemAllocated?: () => void;
+  activeClarificationThread?: ClarificationThread | null;
+  onCloseClarificationThread?: () => void;
+  onRefreshClarifications?: () => void;
 }
 
-const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onCloseDocument, onViewProgressDocument, viewingStepSpecs, onCloseStepSpecs, allocatingSpec, onCloseSpecAllocation, onSpecAllocated, allocatingItem, onCloseItemAllocation, onItemAllocated }) => {
+const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onCloseDocument, onViewProgressDocument, viewingStepSpecs, onCloseStepSpecs, allocatingSpec, onCloseSpecAllocation, onSpecAllocated, allocatingItem, onCloseItemAllocation, onItemAllocated, activeClarificationThread, onCloseClarificationThread, onRefreshClarifications }) => {
   const { users } = useTickets();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
@@ -33,6 +38,7 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
   const [documentUrl, setDocumentUrl] = useState<string | null>(null);
   const [loadingUrl, setLoadingUrl] = useState(false);
   const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState<'activity' | 'chat'>('activity');
 
   const formatDate = (date: Date | string) => {
     const dateObj = date instanceof Date ? date : new Date(date);
@@ -152,6 +158,17 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
     link.click();
     document.body.removeChild(link);
   };
+
+  if (activeClarificationThread && onCloseClarificationThread) {
+    return (
+      <ClarificationThreadView
+        thread={activeClarificationThread}
+        ticketNumber={ticket.ticketNumber}
+        onClose={onCloseClarificationThread}
+        onRefresh={onRefreshClarifications}
+      />
+    );
+  }
 
   if (allocatingSpec && onCloseSpecAllocation && onSpecAllocated) {
     return (
@@ -306,9 +323,35 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
   return (
     <div className="space-y-2">
       <div className="sticky top-0 bg-white bg-opacity-95 backdrop-blur-sm z-10 pb-2 space-y-2">
-        <h3 className="text-sm font-semibold text-gray-900">
-          Audit Trail ({ticket.auditTrail.length})
-        </h3>
+        <div className="flex items-center space-x-1 mb-2 border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('activity')}
+            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
+              activeTab === 'activity'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Activity Log ({ticket.auditTrail.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('chat')}
+            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 flex items-center space-x-1 ${
+              activeTab === 'chat'
+                ? 'border-indigo-500 text-indigo-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <MessageSquare className="w-4 h-4" />
+            <span>Chat Log</span>
+          </button>
+        </div>
+
+        {activeTab === 'activity' ? (
+          <>
+            <h3 className="text-sm font-semibold text-gray-900">
+              Audit Trail ({ticket.auditTrail.length})
+            </h3>
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
           <input
@@ -373,9 +416,8 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
             </button>
           </div>
         )}
-      </div>
 
-      {sortedAuditTrail.length === 0 ? (
+        {sortedAuditTrail.length === 0 ? (
         <div className="text-center py-8">
           <p className="text-gray-500 text-sm">No matching audit entries found.</p>
         </div>
@@ -563,6 +605,23 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
           </ul>
         </div>
       )}
+      </>
+        ) : (
+          <ChatLogTab
+            ticket={ticket}
+            onOpenThread={(thread) => {
+              if (onCloseClarificationThread) {
+                onCloseClarificationThread();
+              }
+              setTimeout(() => {
+                if (onRefreshClarifications) {
+                  onRefreshClarifications();
+                }
+              }, 100);
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 };

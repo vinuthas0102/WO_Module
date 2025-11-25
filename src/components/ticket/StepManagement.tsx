@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, CheckCircle, Clock, Users, Trash2, Edit, X, ChevronDown, ChevronRight, FileText, Upload, Layers, Search, Filter, XCircle, Workflow, ArrowRight, History, ExternalLink, AlertCircle, Package, FileCheck } from 'lucide-react';
+import { Plus, CheckCircle, Clock, Users, Trash2, Edit, X, ChevronDown, ChevronRight, FileText, Upload, Layers, Search, Filter, XCircle, Workflow, ArrowRight, History, ExternalLink, AlertCircle, Package, FileCheck, MessageCircle } from 'lucide-react';
 import { Ticket, WorkflowStep, WorkflowStepStatus, ActionIconDefinition, FileReferenceTemplate } from '../../types';
 import { FileReferenceService } from '../../services/fileReferenceService';
 import FileReferenceUpload from './FileReferenceUpload';
@@ -26,6 +26,7 @@ interface WorkflowManagementProps {
   onViewStepSpecs?: (stepId: string, stepTitle: string) => void;
   onAllocateSpec?: (stepId: string, stepTitle: string) => void;
   onAllocateItem?: (stepId: string, stepTitle: string) => void;
+  onOpenClarification?: (stepId: string, stepTitle: string, assignedUserId: string | undefined) => void;
 }
 
 const FileReferenceInfoDisplay: React.FC<{ stepId: string; ticketId: string; showFullInterface?: boolean; onViewDocument?: (document: DocumentMetadata) => void }> = ({ stepId, ticketId, showFullInterface = false, onViewDocument }) => {
@@ -1145,6 +1146,18 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
         action: () => onViewStepSpecs(step.id, step.title),
         category: 'view',
         color: 'text-purple-600'
+      });
+    }
+
+    // Chat / Clarification (available to all users)
+    if (onOpenClarification) {
+      actions.push({
+        id: 'chat',
+        icon: MessageCircle,
+        label: 'Chat',
+        action: () => onOpenClarification(step.id, step.title, step.assignedTo),
+        category: 'communication',
+        color: 'text-indigo-600'
       });
     }
 

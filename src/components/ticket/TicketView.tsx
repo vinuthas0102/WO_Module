@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Calendar, User, AlertTriangle, Clock, CheckCircle, XCircle, FileText, Users, Edit, Trash2, Plus, Paperclip, Download, Trash, Upload, IndianRupee, Package, FileCheck, RefreshCw } from 'lucide-react';
-import { Ticket, WorkflowStep, FinanceApproval, ActionIconDefinition, UserDisplayPreferences } from '../../types';
+import { Ticket, WorkflowStep, FinanceApproval, ActionIconDefinition, UserDisplayPreferences, ClarificationThread, NotificationChannel } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { useTickets } from '../../context/TicketContext';
 import StatusTransitionModal from './StatusTransitionModal';
@@ -12,10 +12,12 @@ import IconDisplayWrapper from '../iconDisplay/IconDisplayWrapper';
 import { DocumentMetadata, FileService } from '../../services/fileService';
 import { FinanceApprovalService } from '../../services/financeApprovalService';
 import { UserPreferencesService } from '../../services/userPreferencesService';
+import { ClarificationService } from '../../services/clarificationService';
 import { getHierarchyLevel } from '../../lib/hierarchyColors';
 import WOItemSelector from './WOItemSelector';
 import WOSpecSelector from './WOSpecSelector';
 import WOWorkflowTabs from './WOWorkflowTabs';
+import { NewClarificationModal } from '../clarification/NewClarificationModal';
 
 interface TicketViewProps {
   ticket: Ticket;
@@ -43,6 +45,9 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
   const [refreshKey, setRefreshKey] = useState(0);
   const [userPreferences, setUserPreferences] = useState<UserDisplayPreferences | null>(null);
   const [loadingPreferences, setLoadingPreferences] = useState(true);
+  const [activeClarificationThread, setActiveClarificationThread] = useState<ClarificationThread | null>(null);
+  const [showNewClarificationModal, setShowNewClarificationModal] = useState(false);
+  const [clarificationModalData, setClarificationModalData] = useState<{ stepId: string; stepTitle: string; assignedUserId: string | undefined } | null>(null);
 
   const createdByUser = users.find(u => u.id === ticket.createdBy);
   const assignedToUser = ticket.assignedTo ? users.find(u => u.id === ticket.assignedTo) : undefined;
@@ -169,6 +174,57 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
     } finally {
       setUploadingFile(false);
     }
+  };
+
+  const handleOpenClarification = async (stepId: string, stepTitle: string, assignedUserId: string | undefined) => {
+    if (!user) return;
+
+    const assignedUser = assignedUserId ? users.find(u => u.id === assignedUserId) : undefined;
+
+    if (!assignedUser) {
+      alert('Cannot create clarification: No user assigned to this task');
+      return;
+    }
+
+    setClarificationModalData({ stepId, stepTitle, assignedUserId });
+    setShowNewClarificationModal(true);
+  };
+
+  const handleCreateClarification = async (data: {
+    subject: string;
+    message: string;
+    attachmentFile?: File;
+    notificationChannels: NotificationChannel[];
+  }) => {
+    if (!user || !clarificationModalData) return;
+
+    try {
+      const thread = await ClarificationService.createThread({
+        ticketId: ticket.id,
+        stepId: clarificationModalData.stepId,
+        subject: data.subject,
+        initialMessage: data.message,
+        createdBy: user.id,
+        assignedTo: clarificationModalData.assignedUserId!,
+        attachmentFile: data.attachmentFile,
+        notificationChannels: data.notificationChannels
+      });
+
+      setActiveClarificationThread(thread);
+      setShowNewClarificationModal(false);
+      setClarificationModalData(null);
+    } catch (error) {
+      console.error('Error creating clarification:', error);
+      throw error;
+    }
+  };
+
+  const handleCloseClarificationThread = () => {
+    setActiveClarificationThread(null);
+  };
+
+  const handleRefreshClarifications = () => {
+    setRefreshKey(prev => prev + 1);
   };
 
   const getStatusIcon = (status: string) => {
@@ -681,6 +737,7 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                     setAllocatingItem({ ticketId: ticket.id, stepId, stepTitle, userId: user.id });
                   }
                 }}
+                onOpenClarification={handleOpenClarification}
                 selectedModule={selectedModule}
                 completedWorkflows={completedWorkflows}
                 totalWorkflows={totalWorkflows}
@@ -706,6 +763,9 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                 allocatingItem={allocatingItem}
                 onCloseItemAllocation={() => setAllocatingItem(null)}
                 onItemAllocated={() => setRefreshKey(prev => prev + 1)}
+                activeClarificationThread={activeClarificationThread}
+                onCloseClarificationThread={handleCloseClarificationThread}
+                onRefreshClarifications={handleRefreshClarifications}
               />
             </div>
           </div>
@@ -734,6 +794,21 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
           userId={user.id}
           onClose={() => setShowSpecSelector(false)}
           onSpecAdded={() => setRefreshKey(prev => prev + 1)}
+        />
+      )}
+
+      {showNewClarificationModal && clarificationModalData && (
+        <NewClarificationModal
+          isOpen={showNewClarificationModal}
+          onClose={() => {
+            setShowNewClarificationModal(false);
+            setClarificationModalData(null);
+          }}
+          ticketId={ticket.id}
+          stepId={clarificationModalData.stepId}
+          stepTitle={clarificationModalData.stepTitle}
+          assignedUser={clarificationModalData.assignedUserId ? users.find(u => u.id === clarificationModalData.assignedUserId) : undefined}
+          onSubmit={handleCreateClarification}
         />
       )}
 

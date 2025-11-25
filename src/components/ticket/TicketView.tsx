@@ -227,6 +227,10 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
     setRefreshKey(prev => prev + 1);
   };
 
+  const handleOpenClarificationThread = (thread: ClarificationThread) => {
+    setActiveClarificationThread(thread);
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'DRAFT': return <FileText className="w-4 h-4" />;
@@ -766,6 +770,7 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                 activeClarificationThread={activeClarificationThread}
                 onCloseClarificationThread={handleCloseClarificationThread}
                 onRefreshClarifications={handleRefreshClarifications}
+                onOpenClarificationThread={handleOpenClarificationThread}
               />
             </div>
           </div>

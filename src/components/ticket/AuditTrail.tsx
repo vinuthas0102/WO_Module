@@ -26,9 +26,10 @@ interface AuditTrailProps {
   activeClarificationThread?: ClarificationThread | null;
   onCloseClarificationThread?: () => void;
   onRefreshClarifications?: () => void;
+  onOpenClarificationThread?: (thread: ClarificationThread) => void;
 }
 
-const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onCloseDocument, onViewProgressDocument, viewingStepSpecs, onCloseStepSpecs, allocatingSpec, onCloseSpecAllocation, onSpecAllocated, allocatingItem, onCloseItemAllocation, onItemAllocated, activeClarificationThread, onCloseClarificationThread, onRefreshClarifications }) => {
+const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onCloseDocument, onViewProgressDocument, viewingStepSpecs, onCloseStepSpecs, allocatingSpec, onCloseSpecAllocation, onSpecAllocated, allocatingItem, onCloseItemAllocation, onItemAllocated, activeClarificationThread, onCloseClarificationThread, onRefreshClarifications, onOpenClarificationThread }) => {
   const { users } = useTickets();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
@@ -610,14 +611,9 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
           <ChatLogTab
             ticket={ticket}
             onOpenThread={(thread) => {
-              if (onCloseClarificationThread) {
-                onCloseClarificationThread();
+              if (onOpenClarificationThread) {
+                onOpenClarificationThread(thread);
               }
-              setTimeout(() => {
-                if (onRefreshClarifications) {
-                  onRefreshClarifications();
-                }
-              }, 100);
             }}
           />
         )}

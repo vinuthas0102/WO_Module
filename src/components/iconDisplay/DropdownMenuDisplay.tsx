@@ -21,7 +21,7 @@ const DropdownMenuDisplay: React.FC<DropdownMenuDisplayProps> = ({
   triggerButtonClassName
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [triggerPosition, setTriggerPosition] = useState({ x: 0, y: 0, alignRight: true });
+  const [triggerPosition, setTriggerPosition] = useState({ x: 0, y: 0, alignRight: true, maxHeight: 400 });
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -42,15 +42,21 @@ const DropdownMenuDisplay: React.FC<DropdownMenuDisplayProps> = ({
       if (triggerRef.current) {
         const rect = triggerRef.current.getBoundingClientRect();
         const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
         const panelWidth = 192;
         const spaceOnLeft = rect.left;
         const spaceOnRight = viewportWidth - rect.right;
         const alignRight = spaceOnLeft > panelWidth || spaceOnLeft > spaceOnRight;
 
+        // Calculate available space below the trigger
+        const spaceBelow = viewportHeight - rect.bottom - 16; // 16px for padding
+        const maxHeight = Math.max(200, Math.min(spaceBelow, 500)); // Min 200px, max 500px
+
         setTriggerPosition({
           x: alignRight ? rect.left : rect.right,
           y: rect.bottom,
-          alignRight
+          alignRight,
+          maxHeight
         });
       }
     };
@@ -112,13 +118,14 @@ const DropdownMenuDisplay: React.FC<DropdownMenuDisplayProps> = ({
       />
       <div
         ref={menuRef}
-        className={`fixed min-w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-[9999] ${
+        className={`fixed min-w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-[9999] overflow-y-auto ${
           animationEnabled ? 'animate-fadeIn' : ''
         }`}
         style={{
           left: `${triggerPosition.x}px`,
           top: `${triggerPosition.y + 8}px`,
-          transform: triggerPosition.alignRight ? 'translateX(-100%)' : 'translateX(0)'
+          transform: triggerPosition.alignRight ? 'translateX(-100%)' : 'translateX(0)',
+          maxHeight: `${triggerPosition.maxHeight}px`
         }}
         role="menu"
         aria-orientation="vertical"

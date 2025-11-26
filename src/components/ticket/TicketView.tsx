@@ -48,6 +48,7 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
   const [activeClarificationThread, setActiveClarificationThread] = useState<ClarificationThread | null>(null);
   const [showNewClarificationModal, setShowNewClarificationModal] = useState(false);
   const [clarificationModalData, setClarificationModalData] = useState<{ stepId: string; stepTitle: string; assignedUserId: string | undefined } | null>(null);
+  const [creatingInlineClarification, setCreatingInlineClarification] = useState<{ stepId: string; stepTitle: string; assignedUserId: string } | null>(null);
 
   const createdByUser = users.find(u => u.id === ticket.createdBy);
   const assignedToUser = ticket.assignedTo ? users.find(u => u.id === ticket.assignedTo) : undefined;
@@ -186,8 +187,7 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
       return;
     }
 
-    setClarificationModalData({ stepId, stepTitle, assignedUserId });
-    setShowNewClarificationModal(true);
+    setCreatingInlineClarification({ stepId, stepTitle, assignedUserId });
   };
 
   const handleCreateClarification = async (data: {
@@ -219,8 +219,41 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
     }
   };
 
+  const handleSubmitInlineClarification = async (data: {
+    subject: string;
+    message: string;
+    attachmentFile?: File;
+    notificationChannels: NotificationChannel[];
+  }) => {
+    if (!user || !creatingInlineClarification) return;
+
+    try {
+      const thread = await ClarificationService.createThread({
+        ticketId: ticket.id,
+        stepId: creatingInlineClarification.stepId,
+        subject: data.subject,
+        initialMessage: data.message,
+        createdBy: user.id,
+        assignedTo: creatingInlineClarification.assignedUserId,
+        attachmentFile: data.attachmentFile,
+        notificationChannels: data.notificationChannels
+      });
+
+      setCreatingInlineClarification(null);
+      setActiveClarificationThread(thread);
+    } catch (error) {
+      console.error('Error creating clarification:', error);
+      throw error;
+    }
+  };
+
+  const handleCancelInlineClarification = () => {
+    setCreatingInlineClarification(null);
+  };
+
   const handleCloseClarificationThread = () => {
     setActiveClarificationThread(null);
+    setCreatingInlineClarification(null);
   };
 
   const handleRefreshClarifications = () => {
@@ -771,6 +804,9 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                 onCloseClarificationThread={handleCloseClarificationThread}
                 onRefreshClarifications={handleRefreshClarifications}
                 onOpenClarificationThread={handleOpenClarificationThread}
+                creatingClarification={creatingInlineClarification}
+                onCancelNewClarification={handleCancelInlineClarification}
+                onSubmitNewClarification={handleSubmitInlineClarification}
               />
             </div>
           </div>

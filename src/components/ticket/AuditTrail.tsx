@@ -9,6 +9,7 @@ import SpecAllocationDisplay from './SpecAllocationDisplay';
 import ItemAllocationDisplay from './ItemAllocationDisplay';
 import { ChatLogTab } from '../clarification/ChatLogTab';
 import { ClarificationThreadView } from '../clarification/ClarificationThreadView';
+import { NewClarificationForm } from '../clarification/NewClarificationForm';
 
 interface AuditTrailProps {
   ticket: Ticket;
@@ -27,9 +28,12 @@ interface AuditTrailProps {
   onCloseClarificationThread?: () => void;
   onRefreshClarifications?: () => void;
   onOpenClarificationThread?: (thread: ClarificationThread) => void;
+  creatingClarification?: { stepId: string; stepTitle: string; assignedUserId: string } | null;
+  onCancelNewClarification?: () => void;
+  onSubmitNewClarification?: (data: { subject: string; message: string; attachmentFile?: File; notificationChannels: any[] }) => Promise<void>;
 }
 
-const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onCloseDocument, onViewProgressDocument, viewingStepSpecs, onCloseStepSpecs, allocatingSpec, onCloseSpecAllocation, onSpecAllocated, allocatingItem, onCloseItemAllocation, onItemAllocated, activeClarificationThread, onCloseClarificationThread, onRefreshClarifications, onOpenClarificationThread }) => {
+const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onCloseDocument, onViewProgressDocument, viewingStepSpecs, onCloseStepSpecs, allocatingSpec, onCloseSpecAllocation, onSpecAllocated, allocatingItem, onCloseItemAllocation, onItemAllocated, activeClarificationThread, onCloseClarificationThread, onRefreshClarifications, onOpenClarificationThread, creatingClarification, onCancelNewClarification, onSubmitNewClarification }) => {
   const { users } = useTickets();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
@@ -159,6 +163,19 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
     link.click();
     document.body.removeChild(link);
   };
+
+  if (creatingClarification && onCancelNewClarification && onSubmitNewClarification) {
+    const assignedUser = users.find(u => u.id === creatingClarification.assignedUserId);
+    return (
+      <NewClarificationForm
+        ticketNumber={ticket.ticketNumber}
+        stepTitle={creatingClarification.stepTitle}
+        assignedUser={assignedUser}
+        onSubmit={onSubmitNewClarification}
+        onCancel={onCancelNewClarification}
+      />
+    );
+  }
 
   if (activeClarificationThread && onCloseClarificationThread) {
     return (

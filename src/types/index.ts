@@ -147,6 +147,15 @@ export interface AuditEntry {
   progressDocs?: ProgressDocumentInfo[];
 }
 
+export interface TicketUserNote {
+  id: string;
+  ticketId: string;
+  userId: string;
+  noteContent: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface StatusTransitionRequest {
   ticketId: string;
   newStatus: TicketStatus;

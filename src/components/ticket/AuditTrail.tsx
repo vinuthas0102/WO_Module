@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { User, Clock, Search, X, Download, FileText, Image as ImageIcon, Filter, Shield, UserCog, Paperclip, Eye, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
+import { User, Clock, Search, X, Download, FileText, Image as ImageIcon, Filter, Shield, UserCog, Paperclip, Eye, ChevronDown, ChevronUp, MessageSquare, StickyNote } from 'lucide-react';
 import { Ticket, AuditActionCategory, ClarificationThread } from '../../types';
 import { useTickets } from '../../context/TicketContext';
 import { useAuth } from '../../context/AuthContext';
@@ -10,6 +10,7 @@ import ItemAllocationDisplay from './ItemAllocationDisplay';
 import { ChatLogTab } from '../clarification/ChatLogTab';
 import { ClarificationThreadView } from '../clarification/ClarificationThreadView';
 import { NewClarificationForm } from '../clarification/NewClarificationForm';
+import { MyNotesTab } from './MyNotesTab';
 
 interface AuditTrailProps {
   ticket: Ticket;
@@ -31,9 +32,11 @@ interface AuditTrailProps {
   creatingClarification?: { stepId: string; stepTitle: string; assignedUserId: string } | null;
   onCancelNewClarification?: () => void;
   onSubmitNewClarification?: (data: { subject: string; message: string; attachmentFile?: File; notificationChannels: any[] }) => Promise<void>;
+  activeTab?: 'activity' | 'chat' | 'notes';
+  onTabChange?: (tab: 'activity' | 'chat' | 'notes') => void;
 }
 
-const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onCloseDocument, onViewProgressDocument, viewingStepSpecs, onCloseStepSpecs, allocatingSpec, onCloseSpecAllocation, onSpecAllocated, allocatingItem, onCloseItemAllocation, onItemAllocated, activeClarificationThread, onCloseClarificationThread, onRefreshClarifications, onOpenClarificationThread, creatingClarification, onCancelNewClarification, onSubmitNewClarification }) => {
+const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onCloseDocument, onViewProgressDocument, viewingStepSpecs, onCloseStepSpecs, allocatingSpec, onCloseSpecAllocation, onSpecAllocated, allocatingItem, onCloseItemAllocation, onItemAllocated, activeClarificationThread, onCloseClarificationThread, onRefreshClarifications, onOpenClarificationThread, creatingClarification, onCancelNewClarification, onSubmitNewClarification, activeTab: externalActiveTab, onTabChange }) => {
   const { users } = useTickets();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
@@ -43,7 +46,17 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
   const [documentUrl, setDocumentUrl] = useState<string | null>(null);
   const [loadingUrl, setLoadingUrl] = useState(false);
   const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
-  const [activeTab, setActiveTab] = useState<'activity' | 'chat'>('activity');
+  const [internalActiveTab, setInternalActiveTab] = useState<'activity' | 'chat' | 'notes'>('activity');
+
+  const activeTab = externalActiveTab !== undefined ? externalActiveTab : internalActiveTab;
+
+  const handleTabChange = (tab: 'activity' | 'chat' | 'notes') => {
+    if (onTabChange) {
+      onTabChange(tab);
+    } else {
+      setInternalActiveTab(tab);
+    }
+  };
 
   const formatDate = (date: Date | string) => {
     const dateObj = date instanceof Date ? date : new Date(date);
@@ -343,7 +356,7 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
       <div className="sticky top-0 bg-white bg-opacity-95 backdrop-blur-sm z-10 pb-2 space-y-2">
         <div className="flex items-center space-x-1 mb-2 border-b border-gray-200">
           <button
-            onClick={() => setActiveTab('activity')}
+            onClick={() => handleTabChange('activity')}
             className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
               activeTab === 'activity'
                 ? 'border-blue-500 text-blue-600'
@@ -353,7 +366,7 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
             Activity Log ({ticket.auditTrail.length})
           </button>
           <button
-            onClick={() => setActiveTab('chat')}
+            onClick={() => handleTabChange('chat')}
             className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 flex items-center space-x-1 ${
               activeTab === 'chat'
                 ? 'border-indigo-500 text-indigo-600'
@@ -362,6 +375,17 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
           >
             <MessageSquare className="w-4 h-4" />
             <span>Chat Log</span>
+          </button>
+          <button
+            onClick={() => handleTabChange('notes')}
+            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 flex items-center space-x-1 ${
+              activeTab === 'notes'
+                ? 'border-green-500 text-green-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <StickyNote className="w-4 h-4" />
+            <span>My Notes</span>
           </button>
         </div>
 
@@ -624,7 +648,7 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
         </div>
       )}
       </>
-        ) : (
+        ) : activeTab === 'chat' ? (
           <ChatLogTab
             ticket={ticket}
             onOpenThread={(thread) => {
@@ -633,6 +657,8 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
               }
             }}
           />
+        ) : (
+          <MyNotesTab ticketId={ticket.id} />
         )}
       </div>
     </div>

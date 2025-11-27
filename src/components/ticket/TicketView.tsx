@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Calendar, User, AlertTriangle, Clock, CheckCircle, XCircle, FileText, Users, CreditCard as Edit, Trash2, Plus, Paperclip, Download, Trash, Upload, IndianRupee, Package, FileCheck, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Calendar, User, AlertTriangle, Clock, CheckCircle, XCircle, FileText, Users, CreditCard as Edit, Trash2, Plus, Paperclip, Download, Trash, Upload, IndianRupee, Package, FileCheck, RefreshCw, StickyNote } from 'lucide-react';
 import { Ticket, WorkflowStep, FinanceApproval, ActionIconDefinition, UserDisplayPreferences, ClarificationThread, NotificationChannel } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { useTickets } from '../../context/TicketContext';
@@ -49,6 +49,7 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
   const [showNewClarificationModal, setShowNewClarificationModal] = useState(false);
   const [clarificationModalData, setClarificationModalData] = useState<{ stepId: string; stepTitle: string; assignedUserId: string | undefined } | null>(null);
   const [creatingInlineClarification, setCreatingInlineClarification] = useState<{ stepId: string; stepTitle: string; assignedUserId: string } | null>(null);
+  const [activeRightPanelTab, setActiveRightPanelTab] = useState<'activity' | 'chat' | 'notes'>('activity');
 
   const createdByUser = users.find(u => u.id === ticket.createdBy);
   const assignedToUser = ticket.assignedTo ? users.find(u => u.id === ticket.assignedTo) : undefined;
@@ -431,6 +432,16 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                   });
                 }
 
+                if (user) {
+                  actions.push({
+                    id: 'my-notes',
+                    icon: StickyNote,
+                    label: 'My Notes',
+                    action: () => setActiveRightPanelTab('notes'),
+                    color: '#16a34a'
+                  });
+                }
+
                 if (selectedModule?.id === '550e8400-e29b-41d4-a716-446655440106' && canEdit()) {
                   actions.push({
                     id: 'add-item',
@@ -807,6 +818,8 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                 creatingClarification={creatingInlineClarification}
                 onCancelNewClarification={handleCancelInlineClarification}
                 onSubmitNewClarification={handleSubmitInlineClarification}
+                activeTab={activeRightPanelTab}
+                onTabChange={setActiveRightPanelTab}
               />
             </div>
           </div>

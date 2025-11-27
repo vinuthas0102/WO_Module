@@ -14,6 +14,7 @@ import { FinanceApprovalService } from '../../services/financeApprovalService';
 import { UserPreferencesService } from '../../services/userPreferencesService';
 import { ClarificationService } from '../../services/clarificationService';
 import { getHierarchyLevel } from '../../lib/hierarchyColors';
+import { getModuleTerminology, getModuleTerminologyLower } from '../../lib/utils';
 import WOItemSelector from './WOItemSelector';
 import WOSpecSelector from './WOSpecSelector';
 import WOWorkflowTabs from './WOWorkflowTabs';
@@ -386,6 +387,9 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
 
   const isOverdue = ticket.dueDate && new Date() > ticket.dueDate && ticket.status !== 'COMPLETED' && ticket.status !== 'CANCELLED';
 
+  const terminology = getModuleTerminology(selectedModule?.id, 'singular');
+  const terminologyLower = getModuleTerminologyLower(selectedModule?.id, 'singular');
+
   return (
     <>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -395,7 +399,7 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
               <button
                 onClick={onClose}
                 className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors duration-200 hover:bg-gray-100 rounded-lg"
-                title="Back to tickets"
+                title={`Back to ${getModuleTerminologyLower(selectedModule?.id, 'plural')}`}
               >
                 <ArrowLeft className="w-4 h-4" />
               </button>
@@ -416,7 +420,7 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                   actions.push({
                     id: 'edit',
                     icon: Edit,
-                    label: 'Edit Ticket',
+                    label: `Edit ${terminology}`,
                     action: () => onEdit(ticket),
                     color: '#2563eb'
                   });
@@ -464,9 +468,9 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                   actions.push({
                     id: 'delete',
                     icon: Trash2,
-                    label: 'Delete Ticket',
+                    label: `Delete ${terminology}`,
                     action: () => {
-                      if (confirm('Are you sure you want to delete this ticket?')) {
+                      if (confirm(`Are you sure you want to delete this ${terminologyLower}?`)) {
                         onDelete(ticket.id);
                         onClose();
                       }
@@ -489,7 +493,7 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
           <div className="lg:col-span-3 space-y-3">
             <CollapsibleSection
-              title="Ticket Details"
+              title={`${terminology} Details`}
               defaultExpanded={false}
               headerContent={
                 <div className="flex items-center space-x-2">
@@ -532,7 +536,7 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                   <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center space-x-2">
                     <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0" />
                     <div>
-                      <h3 className="text-red-800 font-medium text-xs">This ticket is overdue!</h3>
+                      <h3 className="text-red-800 font-medium text-xs">This {terminologyLower} is overdue!</h3>
                       <p className="text-red-700 text-xs">Due date was {formatDate(ticket.dueDate!)}</p>
                     </div>
                   </div>
@@ -545,7 +549,7 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                   <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-                    <h3 className="text-sm font-medium text-gray-900 mb-2">Ticket Information</h3>
+                    <h3 className="text-sm font-medium text-gray-900 mb-2">{terminology} Information</h3>
 
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-0.5">Created By</label>

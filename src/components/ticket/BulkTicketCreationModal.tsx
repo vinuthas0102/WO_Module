@@ -3,6 +3,7 @@ import { X, Plus, Trash2, Save, AlertCircle, CheckCircle, Layers, Upload, Paperc
 import { BulkTicketRow, BulkTicketInput, TicketStatus } from '../../types';
 import { useTickets } from '../../context/TicketContext';
 import { useAuth } from '../../context/AuthContext';
+import { getModuleTerminology } from '../../lib/utils';
 
 interface BulkTicketCreationModalProps {
   onClose: () => void;
@@ -15,6 +16,8 @@ const BulkTicketCreationModal: React.FC<BulkTicketCreationModalProps> = ({
 }) => {
   const { users, createTicketsBulk, bulkOperationInProgress } = useTickets();
   const { user, selectedModule } = useAuth();
+  const terminology = getModuleTerminology(selectedModule?.id, 'singular');
+  const terminologyPlural = getModuleTerminology(selectedModule?.id, 'plural');
   const [rows, setRows] = useState<BulkTicketRow[]>([]);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [operationResult, setOperationResult] = useState<{
@@ -197,10 +200,10 @@ const BulkTicketCreationModal: React.FC<BulkTicketCreationModalProps> = ({
             <div>
               <h2 className="text-2xl font-bold flex items-center space-x-2">
                 <Layers className="w-6 h-6" />
-                <span>Bulk Create Tickets</span>
+                <span>Bulk Create {terminologyPlural}</span>
               </h2>
               <p className="text-orange-100 text-sm mt-1">
-                Create multiple tickets at once for {selectedModule?.name || 'your module'}
+                Create multiple {terminologyPlural.toLowerCase()} at once for {selectedModule?.name || 'your module'}
               </p>
             </div>
             <button
@@ -521,7 +524,7 @@ const BulkTicketCreationModal: React.FC<BulkTicketCreationModalProps> = ({
               disabled={validRowsCount === 0 || bulkOperationInProgress}
             >
               <Save className="w-4 h-4" />
-              <span>{bulkOperationInProgress ? 'Creating...' : `Create ${validRowsCount} Ticket${validRowsCount !== 1 ? 's' : ''}`}</span>
+              <span>{bulkOperationInProgress ? 'Creating...' : `Create ${validRowsCount} ${validRowsCount !== 1 ? terminologyPlural : terminology}`}</span>
             </button>
           </div>
         </div>
@@ -560,7 +563,7 @@ const BulkTicketCreationModal: React.FC<BulkTicketCreationModalProps> = ({
                 className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm"
                 disabled={bulkOperationInProgress}
               >
-                {bulkOperationInProgress ? 'Creating...' : 'Yes, Create Tickets'}
+                {bulkOperationInProgress ? 'Creating...' : `Yes, Create ${terminologyPlural}`}
               </button>
             </div>
           </div>

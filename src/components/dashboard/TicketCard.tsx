@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
 import { Calendar, User, AlertTriangle, Clock, CheckCircle, XCircle, FileText, Users, Edit, Check, X, RotateCcw, Eye, Play, IndianRupee } from 'lucide-react';
-import { Ticket, User as UserType, ActionIconDefinition } from '../../types';
+import { Ticket, User as UserType, ActionIconDefinition, Module } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { useTickets } from '../../context/TicketContext';
 import { getHierarchyLevel } from '../../lib/hierarchyColors';
+import { getModuleTerminology, getModuleTerminologyLower } from '../../lib/utils';
 import IconDisplayWrapper from '../iconDisplay/IconDisplayWrapper';
 
 interface TicketCardProps {
@@ -23,6 +24,7 @@ interface TicketCardProps {
   onView?: (ticket: Ticket) => void;
   isExpanded?: boolean;
   viewMode?: 'grid' | 'list' | 'compact';
+  selectedModule?: Module;
 }
 
 const TicketCard: React.FC<TicketCardProps> = ({
@@ -41,8 +43,11 @@ const TicketCard: React.FC<TicketCardProps> = ({
   onSendToFinance,
   onView,
   isExpanded = false,
-  viewMode = 'grid'
+  viewMode = 'grid',
+  selectedModule
 }) => {
+  const terminology = getModuleTerminology(selectedModule?.id, 'singular');
+  const terminologyLower = getModuleTerminologyLower(selectedModule?.id, 'singular');
   const { user, displayPreferences } = useAuth();
   const { changeTicketStatus } = useTickets();
 

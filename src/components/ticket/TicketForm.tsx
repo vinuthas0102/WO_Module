@@ -4,6 +4,7 @@ import { Ticket } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { useTickets } from '../../context/TicketContext';
 import { FileService } from '../../services/fileService';
+import { getModuleTerminology } from '../../lib/utils';
 
 interface TicketFormProps {
   isOpen: boolean;
@@ -57,6 +58,9 @@ const TicketForm: React.FC<TicketFormProps> = ({ isOpen, onClose, ticket, copied
 
   const sourceTicket = ticket || copiedTicket;
   const isCopying = !ticket && !!copiedTicket;
+  const isEditing = !!ticket;
+
+  const terminology = getModuleTerminology(selectedModule?.id, 'singular');
 
   const [formData, setFormData] = useState({
     ticketNumber: ticket?.ticketNumber || '', // Will be generated on form render
@@ -108,8 +112,6 @@ const TicketForm: React.FC<TicketFormProps> = ({ isOpen, onClose, ticket, copied
       });
     }
   }, [copiedTicket]);
-
-  const isEditing = !!ticket;
 
   if (!isOpen) return null;
 
@@ -286,7 +288,7 @@ const TicketForm: React.FC<TicketFormProps> = ({ isOpen, onClose, ticket, copied
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <div>
               <h2 className="text-lg font-bold text-gray-900">
-                {isEditing ? 'Edit Ticket' : isCopying ? 'Create New Ticket from Copy' : 'Create New Ticket'}
+                {isEditing ? `Edit ${terminology}` : isCopying ? `Create New ${terminology} from Copy` : `Create New ${terminology}`}
               </h2>
               {isCopying && copiedTicket && (
                 <div className="mt-2 flex items-center space-x-2 text-sm">
@@ -654,7 +656,7 @@ const TicketForm: React.FC<TicketFormProps> = ({ isOpen, onClose, ticket, copied
                 disabled={loading}
                 className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Saving...' : isEditing ? 'Update Ticket' : 'Create Ticket'}
+                {loading ? 'Saving...' : isEditing ? `Update ${terminology}` : `Create ${terminology}`}
               </button>
             </div>
           </form>

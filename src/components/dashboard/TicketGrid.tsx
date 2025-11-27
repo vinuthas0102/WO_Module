@@ -3,6 +3,8 @@ import { Ticket, User } from '../../types';
 import TicketCard from './TicketCard';
 import { useTickets } from '../../context/TicketContext';
 import StatusTransitionModal from '../ticket/StatusTransitionModal';
+import { useAuth } from '../../context/AuthContext';
+import { getModuleTerminology, getModuleTerminologyLower } from '../../lib/utils';
 
 interface TicketGridProps {
   tickets: Ticket[];
@@ -13,15 +15,19 @@ interface TicketGridProps {
   viewMode: 'grid' | 'list' | 'compact';
 }
 
-const TicketGrid: React.FC<TicketGridProps> = ({ 
-  tickets, 
-  onTicketClick, 
-  expandedTickets, 
+const TicketGrid: React.FC<TicketGridProps> = ({
+  tickets,
+  onTicketClick,
+  expandedTickets,
   onToggleExpand,
   onModifyTicket,
   viewMode
 }) => {
   const { users, changeTicketStatus } = useTickets();
+  const { selectedModule } = useAuth();
+  const terminology = getModuleTerminology(selectedModule?.id, 'singular');
+  const terminologyLower = getModuleTerminologyLower(selectedModule?.id, 'singular');
+  const terminologyPluralLower = getModuleTerminologyLower(selectedModule?.id, 'plural');
   const [statusModalTicket, setStatusModalTicket] = React.useState<Ticket | null>(null);
   const [statusModalAction, setStatusModalAction] = React.useState<string>('');
   
@@ -46,11 +52,11 @@ const TicketGrid: React.FC<TicketGridProps> = ({
 
   const getActionLabel = (action: string) => {
     switch (action) {
-      case 'approve': return 'Approve Ticket';
-      case 'close': return 'Close Ticket';
-      case 'cancel': return 'Cancel Ticket';
-      case 'reopen': return 'Reopen Ticket';
-      case 'reinstate': return 'Reinstate Ticket';
+      case 'approve': return `Approve ${terminology}`;
+      case 'close': return `Close ${terminology}`;
+      case 'cancel': return `Cancel ${terminology}`;
+      case 'reopen': return `Reopen ${terminology}`;
+      case 'reinstate': return `Reinstate ${terminology}`;
       case 'sendToFinance': return 'Send to Finance';
       default: return 'Change Status';
     }
@@ -65,8 +71,8 @@ const TicketGrid: React.FC<TicketGridProps> = ({
                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
-          <h3 className="text-xl font-bold bg-gradient-to-r from-gray-600 to-gray-800 bg-clip-text text-transparent mb-3">No tickets found</h3>
-          <p className="text-gray-600">Try adjusting your search criteria or create a new ticket.</p>
+          <h3 className="text-xl font-bold bg-gradient-to-r from-gray-600 to-gray-800 bg-clip-text text-transparent mb-3">No {terminologyPluralLower} found</h3>
+          <p className="text-gray-600">Try adjusting your search criteria or create a new {terminologyLower}.</p>
         </div>
       </div>
     );
@@ -97,6 +103,7 @@ const TicketGrid: React.FC<TicketGridProps> = ({
             onMarkInProgress={(ticket) => handleStatusChange(ticket, 'inprogress')}
             onReopen={(ticket) => handleStatusChange(ticket, 'reopen')}
             onReinstate={(ticket) => handleStatusChange(ticket, 'reinstate')}
+            selectedModule={selectedModule || undefined}
             onSendToFinance={(ticket) => handleStatusChange(ticket, 'sendToFinance')}
             onView={onTicketClick}
             viewMode={viewMode}

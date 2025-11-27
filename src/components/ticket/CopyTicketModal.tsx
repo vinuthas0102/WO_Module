@@ -3,6 +3,7 @@ import { X, Copy, Search, Filter, ChevronRight, List, Table as TableIcon, Grid, 
 import { Ticket, TicketStatus, FileAttachment } from '../../types';
 import { useTickets } from '../../context/TicketContext';
 import { useAuth } from '../../context/AuthContext';
+import { getModuleTerminology, getModuleTerminologyLower } from '../../lib/utils';
 import { supabase } from '../../lib/supabase';
 import { FileService } from '../../services/fileService';
 
@@ -26,6 +27,8 @@ interface TicketAttachment {
 const CopyTicketModal: React.FC<CopyTicketModalProps> = ({ onClose, onSelectTicket }) => {
   const { tickets } = useTickets();
   const { user, selectedModule } = useAuth();
+  const terminology = getModuleTerminology(selectedModule?.id, 'singular');
+  const terminologyPluralLower = getModuleTerminologyLower(selectedModule?.id, 'plural');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<TicketStatus | ''>('');
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
@@ -489,7 +492,7 @@ const CopyTicketModal: React.FC<CopyTicketModalProps> = ({ onClose, onSelectTick
               onClick={() => setShowAttachmentSelection(false)}
               className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors text-sm"
             >
-              Back to Ticket Selection
+              Back to {terminology} Selection
             </button>
             <button
               onClick={handleFinalCopy}
@@ -497,7 +500,7 @@ const CopyTicketModal: React.FC<CopyTicketModalProps> = ({ onClose, onSelectTick
             >
               <Copy className="w-4 h-4" />
               <span>
-                Copy Ticket {selectedAttachmentIds.size > 0 && `& ${selectedAttachmentIds.size} File${selectedAttachmentIds.size !== 1 ? 's' : ''}`}
+                Copy {terminology} {selectedAttachmentIds.size > 0 && `& ${selectedAttachmentIds.size} File${selectedAttachmentIds.size !== 1 ? 's' : ''}`}
               </span>
             </button>
           </div>
@@ -606,7 +609,7 @@ const CopyTicketModal: React.FC<CopyTicketModalProps> = ({ onClose, onSelectTick
           {eligibleTickets.length === 0 ? (
             <div className="text-center py-12">
               <Copy className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 text-lg">No tickets found</p>
+              <p className="text-gray-500 text-lg">No {terminologyPluralLower} found</p>
               <p className="text-gray-400 text-sm mt-2">
                 {searchTerm || statusFilter
                   ? 'Try adjusting your search or filters'

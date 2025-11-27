@@ -41,3 +41,29 @@ export function validateUUID(uuid: string, fieldName: string = 'UUID'): void {
     throw new Error(`Invalid ${fieldName} format: ${uuid}`);
   }
 }
+
+/**
+ * Gets module-specific terminology for UI display
+ * @param moduleId - The ID of the module
+ * @param termType - Type of term: 'singular' or 'plural'
+ * @returns The appropriate terminology for the module
+ */
+export function getModuleTerminology(moduleId: string | undefined, termType: 'singular' | 'plural' = 'singular'): string {
+  const WO_MODULE_ID = '550e8400-e29b-41d4-a716-446655440106';
+
+  if (moduleId === WO_MODULE_ID) {
+    return termType === 'singular' ? 'Work Order' : 'Work Orders';
+  }
+
+  return termType === 'singular' ? 'Ticket' : 'Tickets';
+}
+
+/**
+ * Gets module-specific terminology in lowercase for UI display
+ * @param moduleId - The ID of the module
+ * @param termType - Type of term: 'singular' or 'plural'
+ * @returns The appropriate terminology for the module in lowercase
+ */
+export function getModuleTerminologyLower(moduleId: string | undefined, termType: 'singular' | 'plural' = 'singular'): string {
+  return getModuleTerminology(moduleId, termType).toLowerCase();
+}

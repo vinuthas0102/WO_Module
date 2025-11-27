@@ -18,6 +18,7 @@ import FieldConfigurationManager from './components/admin/FieldConfigurationMana
 import UserManagementPage from './components/admin/UserManagementPage';
 import UserPreferencesPage from './components/admin/UserPreferencesPage';
 import FileReferenceTemplateManager from './components/admin/FileReferenceTemplateManager';
+import { getModuleTerminologyLower } from './lib/utils';
 import ItemMasterManager from './components/admin/ItemMasterManager';
 import SpecMasterManager from './components/admin/SpecMasterManager';
 import { Ticket, TicketStatus } from './types';
@@ -544,7 +545,7 @@ const Dashboard: React.FC = () => {
 
         <div className="mb-2 flex justify-between items-center">
           <div className="text-sm text-gray-600">
-            <span className="bg-white bg-opacity-70 px-3 py-1 rounded-full">Showing {filteredTickets.length} ticket{filteredTickets.length !== 1 ? 's' : ''}</span>
+            <span className="bg-white bg-opacity-70 px-3 py-1 rounded-full">Showing {filteredTickets.length} {getModuleTerminologyLower(selectedModule?.id, filteredTickets.length !== 1 ? 'plural' : 'singular')}</span>
           </div>
         </div>
 

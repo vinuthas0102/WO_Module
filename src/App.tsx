@@ -35,6 +35,9 @@ const Dashboard: React.FC = () => {
   const { user, selectedModule, availableModules } = useAuth();
   const { tickets, loading, error, getFilteredTickets } = useTickets();
 
+  const terminology = getModuleTerminologyLower(selectedModule?.id, 'singular');
+  const terminologyPlural = getModuleTerminologyLower(selectedModule?.id, 'plural');
+
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [showTicketView, setShowTicketView] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -361,7 +364,7 @@ const Dashboard: React.FC = () => {
                         </div>
                         <div>
                           <div className="font-semibold text-sm">Create</div>
-                          <div className="text-xs text-gray-500">New ticket options</div>
+                          <div className="text-xs text-gray-500">New {terminology} options</div>
                         </div>
                       </div>
                       <ChevronRight className={`w-4 h-4 transition-transform ${showCreateSubmenu ? 'rotate-90' : ''}`} />
@@ -382,8 +385,8 @@ const Dashboard: React.FC = () => {
                             <TicketIcon className="w-3.5 h-3.5 text-white" />
                           </div>
                           <div>
-                            <div className="font-medium text-sm text-blue-700">Single Ticket</div>
-                            <div className="text-xs text-blue-600">Create one ticket</div>
+                            <div className="font-medium text-sm text-blue-700">Single {terminology.charAt(0).toUpperCase() + terminology.slice(1)}</div>
+                            <div className="text-xs text-blue-600">Create one {terminology}</div>
                           </div>
                         </button>
 
@@ -400,7 +403,7 @@ const Dashboard: React.FC = () => {
                           </div>
                           <div>
                             <div className="font-medium text-sm text-purple-700">Copy from Old</div>
-                            <div className="text-xs text-purple-600">Clone existing ticket</div>
+                            <div className="text-xs text-purple-600">Clone existing {terminology}</div>
                           </div>
                         </button>
 
@@ -417,7 +420,7 @@ const Dashboard: React.FC = () => {
                           </div>
                           <div>
                             <div className="font-medium text-sm text-green-700">Bulk Create</div>
-                            <div className="text-xs text-green-600">Multiple tickets</div>
+                            <div className="text-xs text-green-600">Multiple {terminologyPlural}</div>
                           </div>
                         </button>
                       </div>

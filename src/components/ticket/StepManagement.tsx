@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, CheckCircle, Clock, Users, Trash2, Edit, X, ChevronDown, ChevronRight, FileText, Upload, Layers, Search, Filter, XCircle, Workflow, ArrowRight, History, ExternalLink, AlertCircle, Package, FileCheck, MessageCircle } from 'lucide-react';
+import { Plus, CheckCircle, Clock, Users, Trash2, Edit, X, ChevronDown, ChevronRight, FileText, Upload, Layers, Search, Filter, XCircle, Workflow, ArrowRight, History, ExternalLink, AlertCircle, Package, FileCheck, MessageCircle, PlusCircle } from 'lucide-react';
 import { Ticket, WorkflowStep, WorkflowStepStatus, ActionIconDefinition, FileReferenceTemplate } from '../../types';
 import { FileReferenceService } from '../../services/fileReferenceService';
 import FileReferenceUpload from './FileReferenceUpload';
@@ -25,6 +25,7 @@ interface WorkflowManagementProps {
   onViewDocument?: (document: DocumentMetadata, step: WorkflowStep) => void;
   onViewStepSpecs?: (stepId: string, stepTitle: string) => void;
   onAllocateSpec?: (stepId: string, stepTitle: string) => void;
+  onCreateSpec?: (stepId: string, stepTitle: string) => void;
   onAllocateItem?: (stepId: string, stepTitle: string) => void;
   onOpenClarification?: (stepId: string, stepTitle: string, assignedUserId: string | undefined) => void;
 }
@@ -299,7 +300,7 @@ const FileReferenceInfoDisplay: React.FC<{ stepId: string; ticketId: string; sho
   );
 };
 
-const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canManage, onViewDocument, onViewStepSpecs, onAllocateSpec, onAllocateItem, onOpenClarification }) => {
+const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canManage, onViewDocument, onViewStepSpecs, onAllocateSpec, onCreateSpec, onAllocateItem, onOpenClarification }) => {
   const { selectedModule, user, displayPreferences } = useAuth();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingStep, setEditingStep] = useState<WorkflowStep | null>(null);
@@ -1129,10 +1130,21 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
         actions.push({
           id: 'allocateSpecs',
           icon: FileCheck,
-          label: 'Allocate Specs',
+          label: 'Add from Master',
           action: () => onAllocateSpec(step.id, step.title),
           category: 'edit',
           color: 'text-green-600'
+        });
+      }
+
+      if (onCreateSpec) {
+        actions.push({
+          id: 'createSpec',
+          icon: PlusCircle,
+          label: 'Add Specs',
+          action: () => onCreateSpec(step.id, step.title),
+          category: 'edit',
+          color: 'text-blue-600'
         });
       }
     }

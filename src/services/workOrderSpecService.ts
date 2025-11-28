@@ -441,4 +441,58 @@ export class WorkOrderSpecService {
       throw error;
     }
   }
+
+  static async createSpecWithAutoAllocation(
+    specData: Omit<WorkOrderSpecMaster, 'id' | 'createdAt' | 'updatedAt'>,
+    ticketId: string,
+    workflowStepId: string,
+    quantity: number,
+    remarks: string | undefined,
+    userId: string
+  ): Promise<{ specMasterId: string; specDetailId: string; allocationId: string }> {
+    try {
+      const specMasterId = await this.createSpecMaster(specData, userId);
+
+      const { data: specDetailData, error: detailError } = await supabase
+        .from('work_order_specs_detail')
+        .insert([
+          {
+            ticket_id: ticketId,
+            spec_master_id: specMasterId,
+            quantity: quantity,
+            unit: specData.unit,
+            remarks: remarks,
+            added_by: userId,
+          },
+        ])
+        .select()
+        .single();
+
+      if (detailError) throw detailError;
+
+      const { data: allocationData, error: allocationError } = await supabase
+        .from('work_order_spec_allocations')
+        .insert([
+          {
+            spec_detail_id: specDetailData.id,
+            workflow_step_id: workflowStepId,
+            allocated_quantity: quantity,
+            allocated_by: userId,
+          },
+        ])
+        .select()
+        .single();
+
+      if (allocationError) throw allocationError;
+
+      return {
+        specMasterId: specMasterId,
+        specDetailId: specDetailData.id,
+        allocationId: allocationData.id,
+      };
+    } catch (error) {
+      console.error('Error creating spec with auto allocation:', error);
+      throw error;
+    }
+  }
 }

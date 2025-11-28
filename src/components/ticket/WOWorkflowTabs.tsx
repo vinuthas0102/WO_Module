@@ -16,6 +16,7 @@ interface WOWorkflowTabsProps {
   onViewDocument: (doc: DocumentMetadata, workflowTitle: string) => void;
   onViewStepSpecs: (stepId: string, stepTitle: string) => void;
   onAllocateSpec: (stepId: string, stepTitle: string) => void;
+  onCreateSpec?: (stepId: string, stepTitle: string) => void;
   onAllocateItem: (stepId: string, stepTitle: string) => void;
   onOpenClarification?: (stepId: string, stepTitle: string, assignedUserId: string | undefined) => void;
   selectedModule?: { id: string };
@@ -39,6 +40,7 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
   onViewDocument,
   onViewStepSpecs,
   onAllocateSpec,
+  onCreateSpec,
   onAllocateItem,
   onOpenClarification,
   selectedModule,
@@ -196,6 +198,7 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
             }}
             onViewStepSpecs={onViewStepSpecs}
             onAllocateSpec={onAllocateSpec}
+            onCreateSpec={onCreateSpec}
             onAllocateItem={onAllocateItem}
             onOpenClarification={onOpenClarification}
           />

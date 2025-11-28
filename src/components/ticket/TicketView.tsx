@@ -19,6 +19,7 @@ import WOItemSelector from './WOItemSelector';
 import WOSpecSelector from './WOSpecSelector';
 import WOWorkflowTabs from './WOWorkflowTabs';
 import { NewClarificationModal } from '../clarification/NewClarificationModal';
+import InlineSpecCreation from './InlineSpecCreation';
 
 interface TicketViewProps {
   ticket: Ticket;
@@ -50,6 +51,7 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
   const [showNewClarificationModal, setShowNewClarificationModal] = useState(false);
   const [clarificationModalData, setClarificationModalData] = useState<{ stepId: string; stepTitle: string; assignedUserId: string | undefined } | null>(null);
   const [creatingInlineClarification, setCreatingInlineClarification] = useState<{ stepId: string; stepTitle: string; assignedUserId: string } | null>(null);
+  const [creatingInlineSpec, setCreatingInlineSpec] = useState<{ ticketId: string; stepId: string; stepTitle: string; userId: string } | null>(null);
   const [activeRightPanelTab, setActiveRightPanelTab] = useState<'activity' | 'chat' | 'notes'>('activity');
 
   const createdByUser = users.find(u => u.id === ticket.createdBy);
@@ -784,6 +786,11 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                     setAllocatingSpec({ ticketId: ticket.id, stepId, stepTitle, userId: user.id });
                   }
                 }}
+                onCreateSpec={(stepId, stepTitle) => {
+                  if (user) {
+                    setCreatingInlineSpec({ ticketId: ticket.id, stepId, stepTitle, userId: user.id });
+                  }
+                }}
                 onAllocateItem={(stepId, stepTitle) => {
                   if (user) {
                     setAllocatingItem({ ticketId: ticket.id, stepId, stepTitle, userId: user.id });
@@ -800,7 +807,21 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
 
           <div className="lg:col-span-2">
             <div className="bg-white bg-opacity-80 backdrop-blur-sm rounded-xl shadow-lg border border-white border-opacity-30 p-3 sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto space-y-3 z-[1]">
-              <AuditTrail
+              {creatingInlineSpec ? (
+                <InlineSpecCreation
+                  ticketId={creatingInlineSpec.ticketId}
+                  ticketNumber={ticket.ticketNumber}
+                  stepId={creatingInlineSpec.stepId}
+                  stepTitle={creatingInlineSpec.stepTitle}
+                  userId={creatingInlineSpec.userId}
+                  onClose={() => setCreatingInlineSpec(null)}
+                  onSpecCreated={() => {
+                    setRefreshKey(prev => prev + 1);
+                    setCreatingInlineSpec(null);
+                  }}
+                />
+              ) : (
+                <AuditTrail
                 ticket={ticket}
                 viewingDocument={viewingDocument}
                 onCloseDocument={() => setViewingDocument(null)}
@@ -825,6 +846,7 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                 activeTab={activeRightPanelTab}
                 onTabChange={setActiveRightPanelTab}
               />
+              )}
             </div>
           </div>
         </div>

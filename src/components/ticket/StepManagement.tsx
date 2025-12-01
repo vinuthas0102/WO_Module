@@ -28,6 +28,7 @@ interface WorkflowManagementProps {
   onCreateSpec?: (stepId: string, stepTitle: string) => void;
   onAllocateItem?: (stepId: string, stepTitle: string) => void;
   onOpenClarification?: (stepId: string, stepTitle: string, assignedUserId: string | undefined) => void;
+  onViewProgress?: (stepId: string, stepTitle: string) => void;
 }
 
 const FileReferenceInfoDisplay: React.FC<{ stepId: string; ticketId: string; showFullInterface?: boolean; onViewDocument?: (document: DocumentMetadata) => void }> = ({ stepId, ticketId, showFullInterface = false, onViewDocument }) => {
@@ -300,7 +301,7 @@ const FileReferenceInfoDisplay: React.FC<{ stepId: string; ticketId: string; sho
   );
 };
 
-const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canManage, onViewDocument, onViewStepSpecs, onAllocateSpec, onCreateSpec, onAllocateItem, onOpenClarification }) => {
+const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canManage, onViewDocument, onViewStepSpecs, onAllocateSpec, onCreateSpec, onAllocateItem, onOpenClarification, onViewProgress }) => {
   const { selectedModule, user, displayPreferences } = useAuth();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingStep, setEditingStep] = useState<WorkflowStep | null>(null);
@@ -1170,6 +1171,18 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
         action: () => onOpenClarification(step.id, step.title, step.assignedTo),
         category: 'communication',
         color: 'text-indigo-600'
+      });
+    }
+
+    // Track Progress (available to all users)
+    if (onViewProgress) {
+      actions.push({
+        id: 'trackProgress',
+        icon: TrendingUp,
+        label: 'Track Progress',
+        action: () => onViewProgress(step.id, step.title),
+        category: 'view',
+        color: 'text-blue-600'
       });
     }
 

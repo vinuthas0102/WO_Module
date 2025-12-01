@@ -36,6 +36,7 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
   const [loadingFinanceData, setLoadingFinanceData] = useState(false);
   const [viewingDocument, setViewingDocument] = useState<{ document: DocumentMetadata; workflowTitle: string } | null>(null);
   const [viewingStepSpecs, setViewingStepSpecs] = useState<{ stepId: string; stepTitle: string } | null>(null);
+  const [viewingProgress, setViewingProgress] = useState<{ stepId: string; stepTitle: string } | null>(null);
   const [allocatingSpec, setAllocatingSpec] = useState<{ ticketId: string; stepId: string; stepTitle: string; userId: string } | null>(null);
   const [allocatingItem, setAllocatingItem] = useState<{ ticketId: string; stepId: string; stepTitle: string; userId: string } | null>(null);
   const [ticketAttachments, setTicketAttachments] = useState<DocumentMetadata[]>([]);
@@ -781,6 +782,9 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                 onViewStepSpecs={(stepId, stepTitle) => {
                   setViewingStepSpecs({ stepId, stepTitle });
                 }}
+                onViewProgress={(stepId, stepTitle) => {
+                  setViewingProgress({ stepId, stepTitle });
+                }}
                 onAllocateSpec={(stepId, stepTitle) => {
                   if (user) {
                     setAllocatingSpec({ ticketId: ticket.id, stepId, stepTitle, userId: user.id });
@@ -830,6 +834,8 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                 }}
                 viewingStepSpecs={viewingStepSpecs}
                 onCloseStepSpecs={() => setViewingStepSpecs(null)}
+                viewingProgress={viewingProgress}
+                onCloseProgress={() => setViewingProgress(null)}
                 allocatingSpec={allocatingSpec}
                 onCloseSpecAllocation={() => setAllocatingSpec(null)}
                 onSpecAllocated={() => setRefreshKey(prev => prev + 1)}

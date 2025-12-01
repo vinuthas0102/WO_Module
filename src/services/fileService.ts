@@ -573,10 +573,12 @@ export class FileService {
 
   // Progress Document Methods
   static async uploadProgressDocument(
-    file: File,
     stepId: string,
     ticketId: string,
     userId: string,
+    file: File,
+    progressEntryId?: string,
+    comment?: string,
     auditLogId?: string,
     onProgress?: (progress: FileUploadProgress) => void
   ): Promise<ProgressDocumentMetadata> {
@@ -632,6 +634,7 @@ export class FileService {
           step_id: stepId,
           ticket_id: ticketId,
           audit_log_id: auditLogId || null,
+          progress_entry_id: progressEntryId || null,
           file_name: file.name,
           file_path: storagePath,
           file_size: file.size,

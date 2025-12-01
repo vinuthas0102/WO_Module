@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { User, Clock, Search, X, Download, FileText, Image as ImageIcon, Filter, Shield, UserCog, Paperclip, Eye, ChevronDown, ChevronUp, MessageSquare, StickyNote } from 'lucide-react';
+import { User, Clock, Search, X, Download, FileText, Image as ImageIcon, Filter, Shield, UserCog, Paperclip, Eye, ChevronDown, ChevronUp, MessageSquare, StickyNote, TrendingUp } from 'lucide-react';
 import { Ticket, AuditActionCategory, ClarificationThread } from '../../types';
 import { useTickets } from '../../context/TicketContext';
 import { useAuth } from '../../context/AuthContext';
@@ -11,6 +11,7 @@ import { ChatLogTab } from '../clarification/ChatLogTab';
 import { ClarificationThreadView } from '../clarification/ClarificationThreadView';
 import { NewClarificationForm } from '../clarification/NewClarificationForm';
 import { MyNotesTab } from './MyNotesTab';
+import { TrackProgressSection } from './TrackProgressSection';
 
 interface AuditTrailProps {
   ticket: Ticket;
@@ -19,6 +20,8 @@ interface AuditTrailProps {
   onViewProgressDocument?: (document: DocumentMetadata, workflowTitle: string) => void;
   viewingStepSpecs?: { stepId: string; stepTitle: string } | null;
   onCloseStepSpecs?: () => void;
+  viewingProgress?: { stepId: string; stepTitle: string } | null;
+  onCloseProgress?: () => void;
   allocatingSpec?: { ticketId: string; stepId: string; stepTitle: string; userId: string } | null;
   onCloseSpecAllocation?: () => void;
   onSpecAllocated?: () => void;
@@ -32,11 +35,11 @@ interface AuditTrailProps {
   creatingClarification?: { stepId: string; stepTitle: string; assignedUserId: string } | null;
   onCancelNewClarification?: () => void;
   onSubmitNewClarification?: (data: { subject: string; message: string; attachmentFile?: File; notificationChannels: any[] }) => Promise<void>;
-  activeTab?: 'activity' | 'chat' | 'notes';
-  onTabChange?: (tab: 'activity' | 'chat' | 'notes') => void;
+  activeTab?: 'activity' | 'chat' | 'notes' | 'progress';
+  onTabChange?: (tab: 'activity' | 'chat' | 'notes' | 'progress') => void;
 }
 
-const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onCloseDocument, onViewProgressDocument, viewingStepSpecs, onCloseStepSpecs, allocatingSpec, onCloseSpecAllocation, onSpecAllocated, allocatingItem, onCloseItemAllocation, onItemAllocated, activeClarificationThread, onCloseClarificationThread, onRefreshClarifications, onOpenClarificationThread, creatingClarification, onCancelNewClarification, onSubmitNewClarification, activeTab: externalActiveTab, onTabChange }) => {
+const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onCloseDocument, onViewProgressDocument, viewingStepSpecs, onCloseStepSpecs, allocatingSpec, onCloseSpecAllocation, onSpecAllocated, allocatingItem, onCloseItemAllocation, onItemAllocated, activeClarificationThread, onCloseClarificationThread, onRefreshClarifications, onOpenClarificationThread, creatingClarification, onCancelNewClarification, onSubmitNewClarification, activeTab: externalActiveTab, onTabChange, viewingProgress, onCloseProgress }) => {
   const { users } = useTickets();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
@@ -46,11 +49,11 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
   const [documentUrl, setDocumentUrl] = useState<string | null>(null);
   const [loadingUrl, setLoadingUrl] = useState(false);
   const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
-  const [internalActiveTab, setInternalActiveTab] = useState<'activity' | 'chat' | 'notes'>('activity');
+  const [internalActiveTab, setInternalActiveTab] = useState<'activity' | 'chat' | 'notes' | 'progress'>('activity');
 
   const activeTab = externalActiveTab !== undefined ? externalActiveTab : internalActiveTab;
 
-  const handleTabChange = (tab: 'activity' | 'chat' | 'notes') => {
+  const handleTabChange = (tab: 'activity' | 'chat' | 'notes' | 'progress') => {
     if (onTabChange) {
       onTabChange(tab);
     } else {
@@ -227,6 +230,35 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
         onAllocated={onItemAllocated}
       />
     );
+  }
+
+  if (viewingProgress && onCloseProgress) {
+    const step = ticket.workflow.find(s => s.id === viewingProgress.stepId);
+    if (step) {
+      return (
+        <div className="h-full flex flex-col">
+          <div className="flex items-center justify-between p-3 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 flex items-center">
+                <TrendingUp className="w-4 h-4 mr-2 text-blue-600" />
+                Track Progress: {viewingProgress.stepTitle}
+              </h3>
+              <p className="text-xs text-gray-600 mt-0.5">{ticket.ticketNumber}</p>
+            </div>
+            <button
+              onClick={onCloseProgress}
+              className="p-1.5 text-gray-600 hover:bg-white rounded transition-colors"
+              title="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-hidden">
+            <TrackProgressSection step={step} ticketId={ticket.id} />
+          </div>
+        </div>
+      );
+    }
   }
 
   if (viewingStepSpecs && onCloseStepSpecs) {

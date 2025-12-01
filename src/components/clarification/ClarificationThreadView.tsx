@@ -207,9 +207,7 @@ export const ClarificationThreadView: React.FC<ClarificationThreadViewProps> = (
           <div className="flex items-center space-x-2 ml-4">
             <ClarificationActionMenu
               threadStatus={thread.status}
-              canParticipate={canParticipate}
               canTakeAdminAction={canTakeAdminAction}
-              onResolve={handleResolveThread}
               onComplete={() => handleActionClick('complete')}
               onClose={() => handleActionClick('close')}
               onCancel={() => handleActionClick('cancel')}

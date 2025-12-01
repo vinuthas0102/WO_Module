@@ -14,9 +14,7 @@ interface ActionMenuItem {
 
 interface ClarificationActionMenuProps {
   threadStatus: ClarificationThreadStatus;
-  canParticipate: boolean;
   canTakeAdminAction: boolean;
-  onResolve: () => void;
   onComplete: () => void;
   onClose: () => void;
   onCancel: () => void;
@@ -25,9 +23,7 @@ interface ClarificationActionMenuProps {
 
 export const ClarificationActionMenu: React.FC<ClarificationActionMenuProps> = ({
   threadStatus,
-  canParticipate,
   canTakeAdminAction,
-  onResolve,
   onComplete,
   onClose,
   onCancel,
@@ -64,21 +60,6 @@ export const ClarificationActionMenu: React.FC<ClarificationActionMenuProps> = (
     const actions: ActionMenuItem[] = [];
 
     if (threadStatus === 'OPEN') {
-      if (canParticipate) {
-        actions.push({
-          id: 'resolve',
-          label: 'Resolve',
-          icon: CheckCircle,
-          color: 'text-blue-700',
-          bgColor: 'bg-blue-50',
-          hoverColor: 'hover:bg-blue-100',
-          action: () => {
-            setIsOpen(false);
-            onResolve();
-          }
-        });
-      }
-
       if (canTakeAdminAction) {
         actions.push({
           id: 'complete',
@@ -150,20 +131,6 @@ export const ClarificationActionMenu: React.FC<ClarificationActionMenuProps> = (
         });
       }
 
-      if (canParticipate) {
-        actions.push({
-          id: 'reopen',
-          label: 'Reopen',
-          icon: XCircle,
-          color: 'text-blue-700',
-          bgColor: 'bg-blue-50',
-          hoverColor: 'hover:bg-blue-100',
-          action: () => {
-            setIsOpen(false);
-            onReopen();
-          }
-        });
-      }
     }
 
     if (threadStatus === 'COMPLETED' || threadStatus === 'CLOSED' || threadStatus === 'CANCELLED') {

@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, Paperclip, CheckCircle, XCircle, FileText, Loader } from 'lucide-react';
+import { X, Send, Paperclip, CheckCircle, XCircle, FileText, Loader, Lock, Ban } from 'lucide-react';
 import { ClarificationThread, ClarificationMessage, NotificationChannel } from '../../types';
 import { ClarificationService } from '../../services/clarificationService';
 import { ClarificationMessageBubble } from './ClarificationMessageBubble';
 import { NotificationChannelSelector } from './NotificationChannelSelector';
 import { FileService } from '../../services/fileService';
 import { useAuth } from '../../context/AuthContext';
+import { ActionConfirmationModal } from './ActionConfirmationModal';
 
 interface ClarificationThreadViewProps {
   thread: ClarificationThread;
@@ -30,11 +31,16 @@ export const ClarificationThreadView: React.FC<ClarificationThreadViewProps> = (
   const [selectedChannels, setSelectedChannels] = useState<NotificationChannel[]>([]);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showActionModal, setShowActionModal] = useState(false);
+  const [actionType, setActionType] = useState<'complete' | 'close' | 'cancel'>('complete');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const canParticipate = user && (thread.createdBy === user.id || thread.assignedTo === user.id);
   const canResolve = canParticipate;
+  const isEO = user?.role === 'EO';
+  const isCreator = user?.id === thread.createdBy;
+  const canTakeAdminAction = isEO || isCreator;
   const recipientId = user?.id === thread.createdBy ? thread.assignedTo : thread.createdBy;
 
   useEffect(() => {
@@ -126,10 +132,34 @@ export const ClarificationThreadView: React.FC<ClarificationThreadViewProps> = (
     if (!user) return;
 
     try {
-      await ClarificationService.updateThreadStatus(thread.id, 'OPEN', user.id);
+      await ClarificationService.reopenThread(thread.id, user.id);
       if (onRefresh) onRefresh();
     } catch (err) {
       setError('Failed to reopen thread');
+    }
+  };
+
+  const handleActionClick = (type: 'complete' | 'close' | 'cancel') => {
+    setActionType(type);
+    setShowActionModal(true);
+  };
+
+  const handleActionConfirm = async (notesOrReason: string) => {
+    if (!user) return;
+
+    try {
+      if (actionType === 'complete') {
+        await ClarificationService.completeThread(thread.id, user.id, notesOrReason || undefined);
+      } else if (actionType === 'close') {
+        await ClarificationService.closeThread(thread.id, user.id, notesOrReason || undefined);
+      } else if (actionType === 'cancel') {
+        await ClarificationService.cancelThread(thread.id, user.id, notesOrReason);
+      }
+
+      if (onRefresh) onRefresh();
+      await loadMessages();
+    } catch (err: any) {
+      throw new Error(err.message || `Failed to ${actionType} thread`);
     }
   };
 
@@ -137,11 +167,22 @@ export const ClarificationThreadView: React.FC<ClarificationThreadViewProps> = (
     const statusStyles = {
       OPEN: 'bg-green-100 text-green-700 border-green-300',
       RESOLVED: 'bg-blue-100 text-blue-700 border-blue-300',
-      CLOSED: 'bg-gray-100 text-gray-700 border-gray-300'
+      COMPLETED: 'bg-green-100 text-green-700 border-green-300',
+      CLOSED: 'bg-gray-100 text-gray-700 border-gray-300',
+      CANCELLED: 'bg-red-100 text-red-700 border-red-300'
+    };
+
+    const statusIcons = {
+      OPEN: null,
+      RESOLVED: <CheckCircle className="w-3 h-3 inline mr-1" />,
+      COMPLETED: <CheckCircle className="w-3 h-3 inline mr-1" />,
+      CLOSED: <Lock className="w-3 h-3 inline mr-1" />,
+      CANCELLED: <Ban className="w-3 h-3 inline mr-1" />
     };
 
     return (
-      <span className={`px-2 py-1 text-xs font-medium rounded-full border ${statusStyles[thread.status]}`}>
+      <span className={`px-2 py-1 text-xs font-medium rounded-full border ${statusStyles[thread.status]} flex items-center`}>
+        {statusIcons[thread.status]}
         {thread.status}
       </span>
     );
@@ -173,7 +214,41 @@ export const ClarificationThreadView: React.FC<ClarificationThreadViewProps> = (
                 <span>Resolve</span>
               </button>
             )}
-            {canResolve && thread.status === 'RESOLVED' && (
+
+            {canTakeAdminAction && (thread.status === 'OPEN' || thread.status === 'RESOLVED') && (
+              <button
+                onClick={() => handleActionClick('complete')}
+                className="px-3 py-1 text-xs font-medium text-green-700 bg-green-100 hover:bg-green-200 rounded-lg transition-colors flex items-center space-x-1"
+                title="Mark as Completed"
+              >
+                <CheckCircle className="w-3.5 h-3.5" />
+                <span>Complete</span>
+              </button>
+            )}
+
+            {canTakeAdminAction && thread.status !== 'CLOSED' && thread.status !== 'CANCELLED' && (
+              <button
+                onClick={() => handleActionClick('close')}
+                className="px-3 py-1 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors flex items-center space-x-1"
+                title="Close Thread"
+              >
+                <Lock className="w-3.5 h-3.5" />
+                <span>Close</span>
+              </button>
+            )}
+
+            {canTakeAdminAction && thread.status === 'OPEN' && (
+              <button
+                onClick={() => handleActionClick('cancel')}
+                className="px-3 py-1 text-xs font-medium text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-colors flex items-center space-x-1"
+                title="Cancel Thread"
+              >
+                <Ban className="w-3.5 h-3.5" />
+                <span>Cancel</span>
+              </button>
+            )}
+
+            {canTakeAdminAction && (thread.status === 'COMPLETED' || thread.status === 'CLOSED' || thread.status === 'CANCELLED') && (
               <button
                 onClick={handleReopenThread}
                 className="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors flex items-center space-x-1"
@@ -183,6 +258,7 @@ export const ClarificationThreadView: React.FC<ClarificationThreadViewProps> = (
                 <span>Reopen</span>
               </button>
             )}
+
             <button
               onClick={onClose}
               className="p-1.5 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
@@ -216,10 +292,18 @@ export const ClarificationThreadView: React.FC<ClarificationThreadViewProps> = (
         <div ref={messagesEndRef} />
       </div>
 
-      {!canParticipate && user?.role === 'EO' && (
-        <div className="flex-shrink-0 px-4 py-3 bg-yellow-50 border-t border-yellow-200">
-          <p className="text-xs text-yellow-700">
-            You are viewing this conversation. To participate, navigate to the specific task.
+      {!canParticipate && isEO && (
+        <div className="flex-shrink-0 px-4 py-3 bg-blue-50 border-t border-blue-200">
+          <p className="text-xs text-blue-700">
+            <strong>EO View:</strong> You can manage this clarification using Complete/Close/Cancel actions above.
+          </p>
+        </div>
+      )}
+
+      {canParticipate && isCreator && (
+        <div className="flex-shrink-0 px-4 py-3 bg-green-50 border-t border-green-200">
+          <p className="text-xs text-green-700">
+            <strong>Initiator:</strong> You can manage this clarification using Complete/Close/Cancel actions above.
           </p>
         </div>
       )}
@@ -310,6 +394,14 @@ export const ClarificationThreadView: React.FC<ClarificationThreadViewProps> = (
           />
         </div>
       )}
+
+      <ActionConfirmationModal
+        isOpen={showActionModal}
+        actionType={actionType}
+        threadSubject={thread.subject}
+        onConfirm={handleActionConfirm}
+        onCancel={() => setShowActionModal(false)}
+      />
     </div>
   );
 };

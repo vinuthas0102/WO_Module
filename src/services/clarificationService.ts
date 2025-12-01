@@ -313,6 +313,176 @@ export class ClarificationService {
     }
   }
 
+  static async completeThread(
+    threadId: string,
+    userId: string,
+    notes?: string
+  ): Promise<void> {
+    try {
+      if (!supabase) {
+        throw new Error('Supabase client not available');
+      }
+
+      const updateData: any = {
+        status: 'COMPLETED',
+        completion_notes: notes || null,
+        action_taken_by: userId,
+        action_taken_at: new Date().toISOString(),
+        resolved_at: new Date().toISOString(),
+        resolved_by: userId
+      };
+
+      const { error } = await supabase
+        .from('clarification_threads')
+        .update(updateData)
+        .eq('id', threadId);
+
+      if (error) throw error;
+
+      await this.createSystemMessage(threadId, userId, 'COMPLETED', notes);
+    } catch (error) {
+      console.error('Error completing thread:', error);
+      throw error;
+    }
+  }
+
+  static async closeThread(
+    threadId: string,
+    userId: string,
+    notes?: string
+  ): Promise<void> {
+    try {
+      if (!supabase) {
+        throw new Error('Supabase client not available');
+      }
+
+      const updateData: any = {
+        status: 'CLOSED',
+        closure_notes: notes || null,
+        action_taken_by: userId,
+        action_taken_at: new Date().toISOString()
+      };
+
+      const { error } = await supabase
+        .from('clarification_threads')
+        .update(updateData)
+        .eq('id', threadId);
+
+      if (error) throw error;
+
+      await this.createSystemMessage(threadId, userId, 'CLOSED', notes);
+    } catch (error) {
+      console.error('Error closing thread:', error);
+      throw error;
+    }
+  }
+
+  static async cancelThread(
+    threadId: string,
+    userId: string,
+    reason: string
+  ): Promise<void> {
+    try {
+      if (!supabase) {
+        throw new Error('Supabase client not available');
+      }
+
+      if (!reason || reason.trim().length < 10) {
+        throw new Error('Cancellation reason must be at least 10 characters');
+      }
+
+      const updateData: any = {
+        status: 'CANCELLED',
+        cancellation_reason: reason.trim(),
+        action_taken_by: userId,
+        action_taken_at: new Date().toISOString()
+      };
+
+      const { error } = await supabase
+        .from('clarification_threads')
+        .update(updateData)
+        .eq('id', threadId);
+
+      if (error) throw error;
+
+      await this.createSystemMessage(threadId, userId, 'CANCELLED', reason);
+    } catch (error) {
+      console.error('Error cancelling thread:', error);
+      throw error;
+    }
+  }
+
+  static async reopenThread(
+    threadId: string,
+    userId: string
+  ): Promise<void> {
+    try {
+      if (!supabase) {
+        throw new Error('Supabase client not available');
+      }
+
+      const updateData: any = {
+        status: 'OPEN',
+        resolved_at: null,
+        resolved_by: null,
+        completion_notes: null,
+        cancellation_reason: null,
+        closure_notes: null,
+        action_taken_by: null,
+        action_taken_at: null
+      };
+
+      const { error } = await supabase
+        .from('clarification_threads')
+        .update(updateData)
+        .eq('id', threadId);
+
+      if (error) throw error;
+
+      await this.createSystemMessage(threadId, userId, 'REOPENED', null);
+    } catch (error) {
+      console.error('Error reopening thread:', error);
+      throw error;
+    }
+  }
+
+  private static async createSystemMessage(
+    threadId: string,
+    userId: string,
+    action: string,
+    notes: string | null | undefined
+  ): Promise<void> {
+    try {
+      if (!supabase) return;
+
+      let messageText = '';
+      switch (action) {
+        case 'COMPLETED':
+          messageText = `Thread marked as completed${notes ? `: ${notes}` : ''}`;
+          break;
+        case 'CLOSED':
+          messageText = `Thread closed${notes ? `: ${notes}` : ''}`;
+          break;
+        case 'CANCELLED':
+          messageText = `Thread cancelled: ${notes}`;
+          break;
+        case 'REOPENED':
+          messageText = 'Thread reopened';
+          break;
+      }
+
+      await supabase
+        .from('clarification_messages')
+        .insert({
+          thread_id: threadId,
+          sender_id: userId,
+          message_text: `[SYSTEM] ${messageText}`
+        });
+    } catch (error) {
+      console.error('Error creating system message:', error);
+    }
+  }
+
   static async uploadAttachment(
     file: File,
     threadId: string,
@@ -427,7 +597,12 @@ export class ClarificationService {
       createdAt: new Date(data.created_at),
       updatedAt: new Date(data.updated_at),
       resolvedAt: data.resolved_at ? new Date(data.resolved_at) : undefined,
-      resolvedBy: data.resolved_by
+      resolvedBy: data.resolved_by,
+      completionNotes: data.completion_notes,
+      cancellationReason: data.cancellation_reason,
+      closureNotes: data.closure_notes,
+      actionTakenBy: data.action_taken_by,
+      actionTakenAt: data.action_taken_at ? new Date(data.action_taken_at) : undefined
     };
   }
 

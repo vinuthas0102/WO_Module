@@ -583,7 +583,7 @@ export interface WorkOrderSpecAllocation {
   updatedAt: Date;
 }
 
-export type ClarificationThreadStatus = 'OPEN' | 'RESOLVED' | 'CLOSED';
+export type ClarificationThreadStatus = 'OPEN' | 'RESOLVED' | 'COMPLETED' | 'CLOSED' | 'CANCELLED';
 
 export type NotificationChannel = 'SMS' | 'EMAIL' | 'WHATSAPP';
 
@@ -599,6 +599,11 @@ export interface ClarificationThread {
   updatedAt: Date;
   resolvedAt?: Date;
   resolvedBy?: string;
+  completionNotes?: string;
+  cancellationReason?: string;
+  closureNotes?: string;
+  actionTakenBy?: string;
+  actionTakenAt?: Date;
   messages?: ClarificationMessage[];
   creatorUser?: User;
   assignedUser?: User;

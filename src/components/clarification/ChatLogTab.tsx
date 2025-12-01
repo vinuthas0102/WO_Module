@@ -118,7 +118,9 @@ export const ChatLogTab: React.FC<ChatLogTabProps> = ({ ticket, onOpenThread }) 
           <option value="">All Status</option>
           <option value="OPEN">Open</option>
           <option value="RESOLVED">Resolved</option>
+          <option value="COMPLETED">Completed</option>
           <option value="CLOSED">Closed</option>
+          <option value="CANCELLED">Cancelled</option>
         </select>
       </div>
 
@@ -140,7 +142,9 @@ export const ChatLogTab: React.FC<ChatLogTabProps> = ({ ticket, onOpenThread }) 
             const statusColors = {
               OPEN: 'bg-green-100 text-green-700 border-green-300',
               RESOLVED: 'bg-blue-100 text-blue-700 border-blue-300',
-              CLOSED: 'bg-gray-100 text-gray-700 border-gray-300'
+              COMPLETED: 'bg-green-100 text-green-700 border-green-300',
+              CLOSED: 'bg-gray-100 text-gray-700 border-gray-300',
+              CANCELLED: 'bg-red-100 text-red-700 border-red-300'
             };
 
             return (

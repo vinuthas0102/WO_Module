@@ -16,6 +16,7 @@ export const ClarificationMessageBubble: React.FC<ClarificationMessageBubbleProp
 }) => {
   const isCurrentUser = message.senderId === currentUserId;
   const senderName = message.sender?.name || 'Unknown User';
+  const isSystemMessage = message.messageText.startsWith('[SYSTEM]');
 
   const formatTime = (date: Date) => {
     const now = new Date();
@@ -36,6 +37,18 @@ export const ClarificationMessageBubble: React.FC<ClarificationMessageBubbleProp
       <div className="flex justify-start mb-4">
         <div className="max-w-[70%] bg-gray-100 rounded-lg px-4 py-2">
           <p className="text-xs text-gray-500 italic">Message deleted</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isSystemMessage) {
+    const messageContent = message.messageText.replace('[SYSTEM] ', '');
+    return (
+      <div className="flex justify-center mb-4">
+        <div className="max-w-[80%] bg-gray-100 border-l-4 border-blue-500 rounded-lg px-4 py-2">
+          <p className="text-xs text-gray-700 italic text-center">{messageContent}</p>
+          <p className="text-xs text-gray-500 text-center mt-1">{formatTime(message.createdAt)}</p>
         </div>
       </div>
     );

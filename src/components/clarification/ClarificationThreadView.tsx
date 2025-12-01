@@ -7,6 +7,7 @@ import { NotificationChannelSelector } from './NotificationChannelSelector';
 import { FileService } from '../../services/fileService';
 import { useAuth } from '../../context/AuthContext';
 import { ActionConfirmationModal } from './ActionConfirmationModal';
+import { ClarificationActionMenu } from './ClarificationActionMenu';
 
 interface ClarificationThreadViewProps {
   thread: ClarificationThread;
@@ -204,61 +205,16 @@ export const ClarificationThreadView: React.FC<ClarificationThreadViewProps> = (
             </div>
           </div>
           <div className="flex items-center space-x-2 ml-4">
-            {canResolve && thread.status === 'OPEN' && (
-              <button
-                onClick={handleResolveThread}
-                className="px-3 py-1 text-xs font-medium text-green-700 bg-green-100 hover:bg-green-200 rounded-lg transition-colors flex items-center space-x-1"
-                title="Mark as Resolved"
-              >
-                <CheckCircle className="w-3.5 h-3.5" />
-                <span>Resolve</span>
-              </button>
-            )}
-
-            {canTakeAdminAction && (thread.status === 'OPEN' || thread.status === 'RESOLVED') && (
-              <button
-                onClick={() => handleActionClick('complete')}
-                className="px-3 py-1 text-xs font-medium text-green-700 bg-green-100 hover:bg-green-200 rounded-lg transition-colors flex items-center space-x-1"
-                title="Mark as Completed"
-              >
-                <CheckCircle className="w-3.5 h-3.5" />
-                <span>Complete</span>
-              </button>
-            )}
-
-            {canTakeAdminAction && thread.status !== 'CLOSED' && thread.status !== 'CANCELLED' && (
-              <button
-                onClick={() => handleActionClick('close')}
-                className="px-3 py-1 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors flex items-center space-x-1"
-                title="Close Thread"
-              >
-                <Lock className="w-3.5 h-3.5" />
-                <span>Close</span>
-              </button>
-            )}
-
-            {canTakeAdminAction && thread.status === 'OPEN' && (
-              <button
-                onClick={() => handleActionClick('cancel')}
-                className="px-3 py-1 text-xs font-medium text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-colors flex items-center space-x-1"
-                title="Cancel Thread"
-              >
-                <Ban className="w-3.5 h-3.5" />
-                <span>Cancel</span>
-              </button>
-            )}
-
-            {canTakeAdminAction && (thread.status === 'COMPLETED' || thread.status === 'CLOSED' || thread.status === 'CANCELLED') && (
-              <button
-                onClick={handleReopenThread}
-                className="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors flex items-center space-x-1"
-                title="Reopen Thread"
-              >
-                <XCircle className="w-3.5 h-3.5" />
-                <span>Reopen</span>
-              </button>
-            )}
-
+            <ClarificationActionMenu
+              threadStatus={thread.status}
+              canParticipate={canParticipate}
+              canTakeAdminAction={canTakeAdminAction}
+              onResolve={handleResolveThread}
+              onComplete={() => handleActionClick('complete')}
+              onClose={() => handleActionClick('close')}
+              onCancel={() => handleActionClick('cancel')}
+              onReopen={handleReopenThread}
+            />
             <button
               onClick={onClose}
               className="p-1.5 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"

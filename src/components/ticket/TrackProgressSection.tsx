@@ -143,34 +143,42 @@ export const TrackProgressSection: React.FC<TrackProgressSectionProps> = ({
   }
 
   return (
-    <div className="h-full flex">
-      <div className="w-80 border-r border-gray-200 bg-gray-50 flex flex-col">
-        <div className="p-4 border-b border-gray-200 bg-white">
-          <h3 className="text-lg font-bold text-gray-900 flex items-center">
+    <div className="h-full flex flex-col bg-white">
+      <div className="border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+        <div className="px-6 py-4">
+          <h3 className="text-lg font-bold text-gray-900 flex items-center mb-3">
             <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
             Track Progress
           </h3>
-          <p className="text-xs text-gray-600 mt-1">Select or create a progress entry</p>
-        </div>
 
-        <div className="p-4">
           <div className="relative">
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-lg hover:border-blue-400 transition-colors flex items-center justify-between"
+              className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-lg hover:border-blue-400 transition-colors flex items-center justify-between shadow-sm"
             >
-              <span className="text-sm font-medium text-gray-700">
-                {selectedEntry
-                  ? `Entry #${selectedEntry.entryNumber}`
-                  : showNewForm
-                  ? 'NEW Entry'
-                  : 'Select an entry...'}
-              </span>
-              <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+              <div className="flex items-center space-x-3 flex-1">
+                {selectedEntry ? (
+                  <>
+                    <span className="text-sm font-semibold text-gray-900">Entry #{selectedEntry.entryNumber}</span>
+                    <span className="text-lg font-bold text-blue-600">{selectedEntry.progressPercentage}%</span>
+                    {selectedEntry.isLatest && (
+                      <span className="px-2 py-0.5 text-xs font-bold bg-green-100 text-green-700 rounded">
+                        LATEST
+                      </span>
+                    )}
+                    <span className="text-xs text-gray-500">{formatDate(selectedEntry.createdAt)}</span>
+                  </>
+                ) : showNewForm ? (
+                  <span className="text-sm font-semibold text-green-700">NEW Entry</span>
+                ) : (
+                  <span className="text-sm font-medium text-gray-500">Select or create a progress entry...</span>
+                )}
+              </div>
+              <ChevronDown className={`w-5 h-5 text-gray-600 transition-transform ml-2 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {isOpen && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-96 overflow-y-auto">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto">
                 <button
                   onClick={handleNewEntry}
                   className="w-full px-4 py-3 text-left hover:bg-blue-50 border-b border-gray-200 flex items-center space-x-3 transition-colors"
@@ -226,58 +234,26 @@ export const TrackProgressSection: React.FC<TrackProgressSectionProps> = ({
             )}
           </div>
         </div>
-
-        {entries.length > 0 && (
-          <div className="flex-1 overflow-y-auto p-4 space-y-2">
-            <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Recent Entries</h4>
-            {entries.map((entry) => (
-              <button
-                key={entry.id}
-                onClick={() => handleSelectEntry(entry.id)}
-                className={`w-full p-3 rounded-lg border-2 text-left transition-all ${
-                  selectedEntry?.id === entry.id
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 bg-white hover:border-gray-300'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-semibold text-gray-900">#{entry.entryNumber}</span>
-                  <span className="text-sm font-bold text-blue-600">{entry.progressPercentage}%</span>
-                </div>
-                <div className="flex items-center space-x-1 text-xs text-gray-500">
-                  <Clock className="w-3 h-3" />
-                  <span>{formatDate(entry.createdAt)}</span>
-                </div>
-                {entry.isLatest && (
-                  <div className="mt-2">
-                    <span className="px-2 py-0.5 text-xs font-bold bg-green-100 text-green-700 rounded-full">
-                      LATEST
-                    </span>
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {entries.length === 0 && !showNewForm && (
-          <div className="flex-1 flex items-center justify-center p-4">
-            <div className="text-center">
-              <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-sm text-gray-600 mb-3">No progress entries yet</p>
-              <button
-                onClick={handleNewEntry}
-                className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 mx-auto"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Create First Entry</span>
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
-      <div className="flex-1 bg-white">
+      {entries.length === 0 && !showNewForm && (
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="text-center">
+            <AlertCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-600 text-lg font-medium mb-2">No progress entries yet</p>
+            <p className="text-gray-400 text-sm mb-4">Create your first progress entry to get started</p>
+            <button
+              onClick={handleNewEntry}
+              className="px-6 py-3 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 mx-auto"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Create First Entry</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="flex-1 overflow-y-auto">
         {loadingDetails ? (
           <div className="h-full flex items-center justify-center">
             <Loader className="w-8 h-8 text-blue-600 animate-spin" />
@@ -290,73 +266,72 @@ export const TrackProgressSection: React.FC<TrackProgressSectionProps> = ({
           />
         ) : showNewForm ? (
           <div className="h-full flex flex-col">
-            <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-green-50 to-emerald-50">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center">
-                <Plus className="w-5 h-5 mr-2 text-green-600" />
-                Create New Progress Entry
-              </h3>
-              <p className="text-xs text-gray-600 mt-1">Add a new progress update for this workflow step</p>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <label className="text-sm font-semibold text-gray-700">Progress Percentage</label>
-                  <span className="text-2xl font-bold text-blue-600">{newProgress}%</span>
+            <div className="flex-1 overflow-y-auto p-8">
+              <div className="max-w-3xl mx-auto space-y-6">
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <label className="text-sm font-semibold text-gray-700">Progress Percentage</label>
+                    <span className="text-3xl font-bold text-blue-600">{newProgress}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={newProgress}
+                    onChange={(e) => setNewProgress(parseInt(e.target.value))}
+                    className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                    disabled={creating}
+                  />
+                  <div className="flex justify-between mt-2 text-xs text-gray-500">
+                    <span>0%</span>
+                    <span>50%</span>
+                    <span>100%</span>
+                  </div>
                 </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={newProgress}
-                  onChange={(e) => setNewProgress(parseInt(e.target.value))}
-                  className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                  disabled={creating}
-                />
-              </div>
 
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Comment / Notes
-                </label>
-                <textarea
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  rows={6}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Add any notes or comments about this progress update..."
-                  disabled={creating}
-                />
-              </div>
+                <div className="bg-white border border-gray-200 rounded-xl p-6">
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    Comment / Notes
+                  </label>
+                  <textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    rows={8}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Add any notes or comments about this progress update..."
+                    disabled={creating}
+                  />
+                </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-start space-x-3">
-                  <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-blue-800">
-                    <p className="font-medium mb-1">Before you create this entry:</p>
-                    <ul className="list-disc list-inside space-y-1 text-xs">
-                      <li>This action will be recorded in the audit trail</li>
-                      <li>You can edit this entry later (only the latest entry can be edited)</li>
-                      <li>You can add documents after creating the entry</li>
-                    </ul>
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
+                  <div className="flex items-start space-x-3">
+                    <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-blue-800">
+                      <p className="font-medium mb-2">Before you create this entry:</p>
+                      <ul className="list-disc list-inside space-y-1 text-xs">
+                        <li>This action will be recorded in the audit trail</li>
+                        <li>You can edit this entry later (only the latest entry can be edited)</li>
+                        <li>You can add documents after creating the entry</li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="border-t border-gray-200 p-4 bg-gray-50">
-              <div className="flex items-center justify-end space-x-3">
+            <div className="border-t border-gray-200 p-6 bg-gray-50">
+              <div className="max-w-3xl mx-auto flex items-center justify-end space-x-3">
                 <button
                   onClick={() => setShowNewForm(false)}
                   disabled={creating}
-                  className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                  className="px-5 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleCreateEntry}
                   disabled={creating}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
+                  className="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
                 >
                   <CheckCircle className="w-4 h-4" />
                   <span>{creating ? 'Creating...' : 'Create Entry'}</span>

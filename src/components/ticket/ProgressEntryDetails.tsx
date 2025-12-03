@@ -201,7 +201,8 @@ export const ProgressEntryDetails: React.FC<ProgressEntryDetailsProps> = ({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto p-8">
+        <div className="max-w-3xl mx-auto space-y-6">
         {!entry.isLatest && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <div className="flex items-start space-x-3">
@@ -392,11 +393,12 @@ export const ProgressEntryDetails: React.FC<ProgressEntryDetailsProps> = ({
             )}
           </div>
         </div>
+        </div>
       </div>
 
       {isEditing && (
-        <div className="border-t border-gray-200 p-4 bg-gray-50">
-          <div className="flex items-center justify-end space-x-3">
+        <div className="border-t border-gray-200 p-6 bg-gray-50">
+          <div className="max-w-3xl mx-auto flex items-center justify-end space-x-3">
             <button
               onClick={handleCancel}
               disabled={saving}

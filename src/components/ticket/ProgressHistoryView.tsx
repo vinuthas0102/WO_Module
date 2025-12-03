@@ -167,7 +167,8 @@ const ProgressHistoryView: React.FC<ProgressHistoryViewProps> = ({ step, ticketI
 
   const canEditComment = (entry: ProgressHistoryEntry): boolean => {
     if (!user) return false;
-    return entry.userId === user.id && user.role === 'DO';
+    // Only the user who created the entry can edit the comment
+    return entry.userId === user.id;
   };
 
   const canDeleteDocument = (doc: ProgressDocumentMetadata): boolean => {

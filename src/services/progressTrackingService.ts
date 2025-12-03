@@ -335,16 +335,14 @@ export class ProgressTrackingService {
 
   /**
    * Check if a user can edit a progress entry
+   * Only the creator of the entry can edit it, regardless of role
    */
   static canEditEntry(entry: ProgressEntry, userId: string, userRole: string): boolean {
     if (!entry.isLatest) {
       return false;
     }
 
-    if (userRole === 'EO' || userRole === 'DO' || userRole === 'eo' || userRole === 'dept_officer') {
-      return true;
-    }
-
+    // Only the user who created the entry can edit it
     return entry.createdBy === userId;
   }
 }

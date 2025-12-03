@@ -1186,16 +1186,6 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
       });
     }
 
-    // Progress History
-    actions.push({
-      id: 'history',
-      icon: History,
-      label: showProgressHistory.has(step.id) ? 'Hide progress history' : 'Show progress history',
-      action: () => toggleProgressHistory(step.id),
-      category: 'view',
-      color: showProgressHistory.has(step.id) ? 'text-blue-600' : 'text-gray-600'
-    });
-
     // Upload Documents
     actions.push({
       id: 'upload',

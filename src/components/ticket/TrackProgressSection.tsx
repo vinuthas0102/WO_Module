@@ -41,7 +41,7 @@ export const TrackProgressSection: React.FC<TrackProgressSectionProps> = ({
   const loadEntries = async () => {
     try {
       setLoading(true);
-      const data = await ProgressTrackingService.getProgressEntries(step.id, 20);
+      const data = await ProgressTrackingService.getProgressEntries(step.id, 5);
       setEntries(data);
     } catch (error) {
       console.error('Failed to load progress entries:', error);
@@ -146,7 +146,8 @@ export const TrackProgressSection: React.FC<TrackProgressSectionProps> = ({
     <div className="h-full flex flex-col bg-white">
       <div className="border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
         <div className="px-6 py-4">
-          <h3 className="text-lg font-bold text-gray-900 mb-3">
+          <h3 className="text-lg font-bold text-gray-900 flex items-center mb-3">
+            <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
             Track Progress
           </h3>
 

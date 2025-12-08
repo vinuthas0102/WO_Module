@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
-  TrendingUp, Plus, ChevronDown, AlertCircle, Loader,
-  Calendar, User, CheckCircle, Clock
+  TrendingUp, Plus, AlertCircle, Loader,
+  Calendar, User, CheckCircle, Clock, Upload, ChevronRight,
+  FileText
 } from 'lucide-react';
 import {
   ProgressEntry,
@@ -29,7 +30,6 @@ export const TrackProgressSection: React.FC<TrackProgressSectionProps> = ({
   const [selectedEntry, setSelectedEntry] = useState<ProgressEntryWithDocuments | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [showNewForm, setShowNewForm] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
   const [newProgress, setNewProgress] = useState(step.progress || 0);
   const [newComment, setNewComment] = useState('');
   const [creating, setCreating] = useState(false);
@@ -41,7 +41,7 @@ export const TrackProgressSection: React.FC<TrackProgressSectionProps> = ({
   const loadEntries = async () => {
     try {
       setLoading(true);
-      const data = await ProgressTrackingService.getProgressEntries(step.id, 5);
+      const data = await ProgressTrackingService.getProgressEntries(step.id, 50);
       setEntries(data);
     } catch (error) {
       console.error('Failed to load progress entries:', error);
@@ -56,7 +56,6 @@ export const TrackProgressSection: React.FC<TrackProgressSectionProps> = ({
       const entryWithDocs = await ProgressTrackingService.getProgressEntryWithDocuments(entryId);
       setSelectedEntry(entryWithDocs);
       setShowNewForm(false);
-      setIsOpen(false);
     } catch (error) {
       console.error('Failed to load entry details:', error);
       alert(`Failed to load entry: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -70,7 +69,6 @@ export const TrackProgressSection: React.FC<TrackProgressSectionProps> = ({
     setSelectedEntry(null);
     setNewProgress(step.progress || 0);
     setNewComment('');
-    setIsOpen(false);
   };
 
   const handleCreateEntry = async () => {
@@ -117,21 +115,34 @@ export const TrackProgressSection: React.FC<TrackProgressSectionProps> = ({
     setShowNewForm(false);
   };
 
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit'
-    }).format(date);
+  const formatTimeAgo = (date: Date) => {
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString();
   };
 
   const getRoleColor = (role: string) => {
     const roleLower = role?.toLowerCase() || '';
-    if (roleLower === 'eo') return 'text-purple-600';
-    if (roleLower === 'dept_officer') return 'text-blue-600';
-    if (roleLower === 'vendor') return 'text-orange-600';
-    return 'text-gray-600';
+    if (roleLower === 'eo') return 'bg-purple-100 text-purple-700 border-purple-300';
+    if (roleLower === 'dept_officer') return 'bg-blue-100 text-blue-700 border-blue-300';
+    if (roleLower === 'vendor') return 'bg-orange-100 text-orange-700 border-orange-300';
+    return 'bg-gray-100 text-gray-700 border-gray-300';
+  };
+
+  const getAvatarColor = (role: string) => {
+    const roleLower = role?.toLowerCase() || '';
+    if (roleLower === 'eo') return 'from-purple-400 to-purple-600';
+    if (roleLower === 'dept_officer') return 'from-blue-400 to-blue-600';
+    if (roleLower === 'vendor') return 'from-orange-400 to-orange-600';
+    return 'from-gray-400 to-gray-600';
   };
 
   if (loading) {
@@ -142,129 +153,21 @@ export const TrackProgressSection: React.FC<TrackProgressSectionProps> = ({
     );
   }
 
+  const isCurrentUser = (entry: ProgressEntry) => entry.createdBy === user?.id;
+
   return (
     <div className="h-full flex flex-col bg-white">
-      <div className="border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-        <div className="px-6 py-4">
-          <h3 className="text-lg font-bold text-gray-900 flex items-center mb-3">
-            <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
-            Track Progress
-          </h3>
-
-          <div className="relative">
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-lg hover:border-blue-400 transition-colors flex items-center justify-between shadow-sm"
-            >
-              <div className="flex items-center space-x-3 flex-1">
-                {selectedEntry ? (
-                  <>
-                    <span className="text-sm font-semibold text-gray-900">Entry #{selectedEntry.entryNumber}</span>
-                    <span className="text-lg font-bold text-blue-600">{selectedEntry.progressPercentage}%</span>
-                    {selectedEntry.isLatest && (
-                      <span className="px-2 py-0.5 text-xs font-bold bg-green-100 text-green-700 rounded">
-                        LATEST
-                      </span>
-                    )}
-                    <span className="text-xs text-gray-500">{formatDate(selectedEntry.createdAt)}</span>
-                  </>
-                ) : showNewForm ? (
-                  <span className="text-sm font-semibold text-green-700">NEW Entry</span>
-                ) : (
-                  <span className="text-sm font-medium text-gray-500">Select or create a progress entry...</span>
-                )}
-              </div>
-              <ChevronDown className={`w-5 h-5 text-gray-600 transition-transform ml-2 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
-            </button>
-
-            {isOpen && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto">
-                <button
-                  onClick={handleNewEntry}
-                  className="w-full px-4 py-3 text-left hover:bg-blue-50 border-b border-gray-200 flex items-center space-x-3 transition-colors"
-                >
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <Plus className="w-4 h-4 text-green-600" />
-                  </div>
-                  <div className="flex-1">
-                    <span className="text-sm font-semibold text-green-700">Create NEW Entry</span>
-                    <p className="text-xs text-gray-600">Add a new progress update</p>
-                  </div>
-                </button>
-
-                {entries.length === 0 ? (
-                  <div className="p-4 text-center text-sm text-gray-500">
-                    No entries yet. Create a new one!
-                  </div>
-                ) : (
-                  entries.map((entry) => (
-                    <button
-                      key={entry.id}
-                      onClick={() => handleSelectEntry(entry.id)}
-                      className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors"
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm font-semibold text-gray-900">Entry #{entry.entryNumber}</span>
-                          {entry.isLatest && (
-                            <span className="px-1.5 py-0.5 text-xs font-bold bg-green-100 text-green-700 rounded">
-                              LATEST
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-lg font-bold text-blue-600">{entry.progressPercentage}%</span>
-                      </div>
-                      <div className="flex items-center space-x-2 text-xs text-gray-500 mb-1">
-                        <Calendar className="w-3 h-3" />
-                        <span>{formatDate(entry.createdAt)}</span>
-                      </div>
-                      <div className="flex items-center space-x-2 text-xs">
-                        <User className="w-3 h-3" />
-                        <span className={`font-medium ${getRoleColor(entry.creatorRole || '')}`}>
-                          {entry.creatorName || 'Unknown'}
-                        </span>
-                      </div>
-                      {entry.comment && (
-                        <p className="text-xs text-gray-600 mt-2 line-clamp-2">{entry.comment}</p>
-                      )}
-                    </button>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
+      {loadingDetails ? (
+        <div className="h-full flex items-center justify-center">
+          <Loader className="w-8 h-8 text-blue-600 animate-spin" />
         </div>
-      </div>
-
-      {entries.length === 0 && !showNewForm && (
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="text-center">
-            <AlertCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-600 text-lg font-medium mb-2">No progress entries yet</p>
-            <p className="text-gray-400 text-sm mb-4">Create your first progress entry to get started</p>
-            <button
-              onClick={handleNewEntry}
-              className="px-6 py-3 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 mx-auto"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Create First Entry</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      <div className="flex-1 overflow-y-auto">
-        {loadingDetails ? (
-          <div className="h-full flex items-center justify-center">
-            <Loader className="w-8 h-8 text-blue-600 animate-spin" />
-          </div>
-        ) : selectedEntry ? (
-          <ProgressEntryDetails
-            entry={selectedEntry}
-            onUpdate={handleUpdate}
-            onClose={handleCloseDetails}
-          />
-        ) : showNewForm ? (
+      ) : selectedEntry ? (
+        <ProgressEntryDetails
+          entry={selectedEntry}
+          onUpdate={handleUpdate}
+          onClose={handleCloseDetails}
+        />
+      ) : showNewForm ? (
           <div className="h-full flex flex-col">
             <div className="flex-1 overflow-y-auto p-8">
               <div className="max-w-3xl mx-auto space-y-6">
@@ -340,15 +243,117 @@ export const TrackProgressSection: React.FC<TrackProgressSectionProps> = ({
             </div>
           </div>
         ) : (
-          <div className="h-full flex items-center justify-center">
-            <div className="text-center">
-              <TrendingUp className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 text-lg font-medium">Select a progress entry</p>
-              <p className="text-gray-400 text-sm mt-2">Choose from the list or create a new one</p>
+          <div className="h-full flex flex-col">
+            <div className="border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-900 flex items-center">
+                  <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
+                  Track Progress
+                </h3>
+                <span className="text-sm text-gray-600">{entries.length} {entries.length === 1 ? 'entry' : 'entries'}</span>
+              </div>
+
+              <button
+                onClick={handleNewEntry}
+                className="w-full px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 shadow-md hover:shadow-lg"
+              >
+                <Plus className="w-5 h-5" />
+                <span className="font-semibold">Add New Progress Entry</span>
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-4 py-4 bg-gray-50">
+              {entries.length === 0 ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <TrendingUp className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-600 text-lg font-medium mb-2">No progress entries yet</p>
+                    <p className="text-gray-400 text-sm">Click the button above to create your first entry</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {entries.map((entry) => {
+                    const isOwn = isCurrentUser(entry);
+                    return (
+                      <div key={entry.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[90%] ${isOwn ? 'order-2' : 'order-1'}`}>
+                          {!isOwn && (
+                            <div className="flex items-center space-x-2 mb-1 px-1">
+                              <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${getAvatarColor(entry.creatorRole || '')} flex items-center justify-center text-white text-xs font-semibold shadow-sm`}>
+                                {(entry.creatorName || 'U').charAt(0).toUpperCase()}
+                              </div>
+                              <span className="text-xs font-medium text-gray-700">{entry.creatorName || 'Unknown'}</span>
+                              <span className={`text-xs px-2 py-0.5 rounded-full border ${getRoleColor(entry.creatorRole || '')}`}>
+                                {entry.creatorRole === 'dept_officer' ? 'Manager' : (entry.creatorRole || 'USER').toUpperCase()}
+                              </span>
+                            </div>
+                          )}
+
+                          <button
+                            onClick={() => handleSelectEntry(entry.id)}
+                            className={`
+                              w-full text-left rounded-lg px-4 py-3 shadow-sm transition-all duration-200 hover:shadow-md
+                              ${isOwn
+                                ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700'
+                                : 'bg-white text-gray-900 border border-gray-200 hover:border-blue-300'
+                              }
+                            `}
+                          >
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex items-center space-x-2 flex-wrap gap-1">
+                                <span className={`px-2 py-0.5 text-xs font-medium rounded-full border flex items-center space-x-1 ${isOwn ? 'bg-blue-400 bg-opacity-30 text-white border-blue-300' : 'bg-blue-100 text-blue-700 border-blue-300'}`}>
+                                  <TrendingUp className="w-3 h-3" />
+                                  <span>Entry #{entry.entryNumber}</span>
+                                </span>
+                                {entry.isLatest && (
+                                  <span className={`px-2 py-0.5 text-xs font-bold rounded-full border ${isOwn ? 'bg-green-400 bg-opacity-30 text-white border-green-300' : 'bg-green-100 text-green-700 border-green-300'}`}>
+                                    LATEST
+                                  </span>
+                                )}
+                                {isOwn && (
+                                  <span className="text-xs px-2 py-0.5 rounded-full bg-blue-400 bg-opacity-30 text-white border border-blue-300 font-medium">
+                                    You
+                                  </span>
+                                )}
+                              </div>
+                              <span className={`text-xl font-bold ml-2 ${isOwn ? 'text-white' : 'text-blue-600'}`}>
+                                {entry.progressPercentage}%
+                              </span>
+                            </div>
+
+                            <div className="mb-2">
+                              <div className={`w-full rounded-full h-1.5 ${isOwn ? 'bg-blue-400 bg-opacity-30' : 'bg-gray-200'}`}>
+                                <div
+                                  className={`h-1.5 rounded-full transition-all duration-300 ${isOwn ? 'bg-white' : 'bg-blue-600'}`}
+                                  style={{ width: `${entry.progressPercentage}%` }}
+                                ></div>
+                              </div>
+                            </div>
+
+                            {entry.comment && (
+                              <p className={`text-sm whitespace-pre-wrap line-clamp-2 mb-2 ${isOwn ? 'text-white' : 'text-gray-800'}`}>
+                                {entry.comment}
+                              </p>
+                            )}
+
+                            <div className={`mt-2 flex items-center justify-between text-xs ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}>
+                              <div className="flex items-center space-x-1">
+                                <Clock className="w-3 h-3" />
+                                <span>{formatTimeAgo(entry.createdAt)}</span>
+                              </div>
+                              <ChevronRight className={`w-3.5 h-3.5 ${isOwn ? 'text-white' : 'text-gray-400'}`} />
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         )}
-      </div>
     </div>
   );
 };

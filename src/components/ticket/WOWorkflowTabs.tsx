@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Package, ListChecks } from 'lucide-react';
+import { Package, ListChecks, FileText } from 'lucide-react';
 import WOTabsSection from './WOTabsSection';
 import WorkflowManagement from './StepManagement';
+import WOInfoDisplay from './WOInfoDisplay';
 import { Ticket } from '../../types';
 import { DocumentMetadata } from '../../services/fileService';
 import { WorkOrderItemService } from '../../services/workOrderItemService';
@@ -30,7 +31,7 @@ interface WOWorkflowTabsProps {
   };
 }
 
-type TabType = 'wo-details' | 'workflow';
+type TabType = 'wo-info' | 'wo-details' | 'workflow';
 
 const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
   ticket,
@@ -83,20 +84,44 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
   }, [ticket.id, refreshKey, isWOModule]);
 
   const hasWOData = woItemsCount > 0 || woSpecsCount > 0;
-  const showWOTab = isWOModule && hasWOData;
+  const showWODetailsTab = isWOModule && hasWOData;
+
+  const workOrderData = ticket.data as any;
+  const hasWOInfo = workOrderData?.workOrderType ||
+                    workOrderData?.estimatedCost ||
+                    workOrderData?.contractorName ||
+                    workOrderData?.contractorContact;
+  const showWOInfoTab = isWOModule && hasWOInfo;
 
   useEffect(() => {
     if (!loadingWoCounts && !hasWOData && activeTab === 'wo-details') {
       setActiveTab('workflow');
     }
-  }, [hasWOData, loadingWoCounts, activeTab]);
+    if (!hasWOInfo && activeTab === 'wo-info') {
+      setActiveTab('workflow');
+    }
+  }, [hasWOData, hasWOInfo, loadingWoCounts, activeTab]);
 
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
       <div className="border-b border-gray-200">
         <div className="flex items-center px-6 py-4">
           <div className="flex space-x-1">
-            {showWOTab && (
+            {showWOInfoTab && (
+              <button
+                onClick={() => setActiveTab('wo-info')}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'wo-info'
+                    ? 'bg-orange-50 text-orange-700 border-b-2 border-orange-600'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <FileText className="w-4 h-4" />
+                <span>WO Info</span>
+              </button>
+            )}
+
+            {showWODetailsTab && (
               <button
                 onClick={() => setActiveTab('wo-details')}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -181,7 +206,11 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
         </div>
       </div>
 
-      {activeTab === 'wo-details' && showWOTab && (
+      {activeTab === 'wo-info' && showWOInfoTab && (
+        <WOInfoDisplay workOrderData={workOrderData} />
+      )}
+
+      {activeTab === 'wo-details' && showWODetailsTab && (
         <WOTabsSection
           ticketId={ticket.id}
           canEdit={canEdit}

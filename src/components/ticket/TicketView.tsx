@@ -606,41 +606,6 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                   </div>
                 </div>
 
-                {selectedModule?.id === '550e8400-e29b-41d4-a716-446655440106' && ticket.data && (
-                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-                    <h3 className="text-sm font-medium text-gray-900 mb-2 flex items-center space-x-2">
-                      <Package className="w-4 h-4 text-orange-600" />
-                      <span>Work Order Details</span>
-                    </h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      {(ticket.data as any).workOrderType && (
-                        <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-0.5">Type</label>
-                          <span className="text-sm text-gray-900">{(ticket.data as any).workOrderType}</span>
-                        </div>
-                      )}
-                      {(ticket.data as any).estimatedCost && (
-                        <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-0.5">Estimated Cost</label>
-                          <span className="text-sm text-gray-900">₹{(ticket.data as any).estimatedCost.toLocaleString()}</span>
-                        </div>
-                      )}
-                      {(ticket.data as any).contractorName && (
-                        <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-0.5">Contractor</label>
-                          <span className="text-sm text-gray-900">{(ticket.data as any).contractorName}</span>
-                        </div>
-                      )}
-                      {(ticket.data as any).contractorContact && (
-                        <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-0.5">Contact</label>
-                          <span className="text-sm text-gray-900">{(ticket.data as any).contractorContact}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
                 <div className="bg-gray-50 rounded-lg p-3 mt-3">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-sm font-medium text-gray-900 flex items-center space-x-2">

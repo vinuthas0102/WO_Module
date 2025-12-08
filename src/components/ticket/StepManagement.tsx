@@ -1116,19 +1116,21 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
 
     // For Work Order module, add allocation actions
     if (ticket.moduleId === '550e8400-e29b-41d4-a716-446655440106' && canManageWorkflow(step)) {
-      if (onAllocateItem) {
-        actions.push({
-          id: 'allocateItems',
-          icon: Package,
-          label: 'Allocate Items',
-          action: () => onAllocateItem(step.id, step.title),
+      const subActions: ActionIconDefinition[] = [];
+
+      if (onCreateSpec) {
+        subActions.push({
+          id: 'createSpec',
+          icon: PlusCircle,
+          label: 'Add Specs',
+          action: () => onCreateSpec(step.id, step.title),
           category: 'edit',
           color: 'text-blue-600'
         });
       }
 
       if (onAllocateSpec) {
-        actions.push({
+        subActions.push({
           id: 'allocateSpecs',
           icon: FileCheck,
           label: 'Add from Master',
@@ -1138,14 +1140,15 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
         });
       }
 
-      if (onCreateSpec) {
+      if (subActions.length > 0) {
         actions.push({
-          id: 'createSpec',
+          id: 'add',
           icon: PlusCircle,
-          label: 'Add Specs',
-          action: () => onCreateSpec(step.id, step.title),
+          label: 'Add',
+          action: () => {},
           category: 'edit',
-          color: 'text-blue-600'
+          color: 'text-blue-600',
+          subActions: subActions
         });
       }
     }

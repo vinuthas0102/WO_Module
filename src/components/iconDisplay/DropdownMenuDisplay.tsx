@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { MoreVertical } from 'lucide-react';
+import { MoreVertical, ChevronRight } from 'lucide-react';
 import { ActionIconDefinition, IconSize } from '../../types';
 
 interface DropdownMenuDisplayProps {
@@ -22,8 +22,12 @@ const DropdownMenuDisplay: React.FC<DropdownMenuDisplayProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [triggerPosition, setTriggerPosition] = useState({ x: 0, y: 0, alignRight: true, maxHeight: 400 });
+  const [activeSubMenu, setActiveSubMenu] = useState<string | null>(null);
+  const [subMenuPosition, setSubMenuPosition] = useState({ x: 0, y: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const subMenuRef = useRef<HTMLDivElement>(null);
+  const parentItemRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
 
   const iconSizeClass = {
     small: 'w-4 h-4',
@@ -78,8 +82,10 @@ const DropdownMenuDisplay: React.FC<DropdownMenuDisplayProps> = ({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node) &&
-          triggerRef.current && !triggerRef.current.contains(event.target as Node)) {
+          triggerRef.current && !triggerRef.current.contains(event.target as Node) &&
+          (!subMenuRef.current || !subMenuRef.current.contains(event.target as Node))) {
         setIsOpen(false);
+        setActiveSubMenu(null);
       }
     };
 
@@ -92,9 +98,61 @@ const DropdownMenuDisplay: React.FC<DropdownMenuDisplayProps> = ({
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    if (activeSubMenu) {
+      const parentElement = parentItemRefs.current.get(activeSubMenu);
+      if (parentElement && menuRef.current) {
+        const parentRect = parentElement.getBoundingClientRect();
+        const menuRect = menuRef.current.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+
+        const spaceOnRight = window.innerWidth - menuRect.right;
+        const subMenuWidth = 192;
+
+        let xPos = menuRect.right;
+        if (spaceOnRight < subMenuWidth + 20) {
+          xPos = menuRect.left - subMenuWidth;
+        }
+
+        let yPos = parentRect.top;
+        const estimatedSubMenuHeight = 300;
+        if (yPos + estimatedSubMenuHeight > viewportHeight) {
+          yPos = Math.max(20, viewportHeight - estimatedSubMenuHeight);
+        }
+
+        setSubMenuPosition({ x: xPos, y: yPos });
+      }
+    }
+  }, [activeSubMenu]);
+
   const handleAction = (action: ActionIconDefinition) => {
+    if (action.subActions && action.subActions.length > 0) {
+      return;
+    }
     action.action();
     setIsOpen(false);
+    setActiveSubMenu(null);
+  };
+
+  const handleParentClick = (action: ActionIconDefinition, event: React.MouseEvent) => {
+    if (action.subActions && action.subActions.length > 0) {
+      event.stopPropagation();
+      setActiveSubMenu(activeSubMenu === action.id ? null : action.id);
+    } else {
+      handleAction(action);
+    }
+  };
+
+  const handleParentHover = (action: ActionIconDefinition) => {
+    if (action.subActions && action.subActions.length > 0) {
+      setActiveSubMenu(action.id);
+    }
+  };
+
+  const handleSubAction = (action: ActionIconDefinition) => {
+    action.action();
+    setIsOpen(false);
+    setActiveSubMenu(null);
   };
 
   const groupedActions = groupByCategory
@@ -140,19 +198,31 @@ const DropdownMenuDisplay: React.FC<DropdownMenuDisplayProps> = ({
               {categoryActions.map((action) => {
                 if (!action || !action.icon) return null;
                 const IconComponent = action.icon;
+                const hasSubActions = action.subActions && action.subActions.length > 0;
                 return (
                   <button
                     key={action.id}
-                    onClick={() => handleAction(action)}
+                    ref={(el) => {
+                      if (el && hasSubActions) {
+                        parentItemRefs.current.set(action.id, el);
+                      }
+                    }}
+                    onClick={(e) => handleParentClick(action, e)}
+                    onMouseEnter={() => handleParentHover(action)}
                     disabled={action.disabled}
-                    className={`w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors flex items-center gap-3 ${
+                    className={`w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors flex items-center justify-between gap-3 ${
                       action.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-                    } ${action.color || 'text-gray-700'}`}
+                    } ${action.color || 'text-gray-700'} ${activeSubMenu === action.id ? 'bg-gray-100' : ''}`}
                     title={action.tooltip}
                     role="menuitem"
+                    aria-haspopup={hasSubActions ? 'true' : undefined}
+                    aria-expanded={hasSubActions ? activeSubMenu === action.id : undefined}
                   >
-                    <IconComponent className={iconSizeClass} />
-                    {showLabels && <span className="text-sm">{action.label}</span>}
+                    <div className="flex items-center gap-3">
+                      <IconComponent className={iconSizeClass} />
+                      {showLabels && <span className="text-sm">{action.label}</span>}
+                    </div>
+                    {hasSubActions && <ChevronRight className="w-4 h-4 opacity-50" />}
                   </button>
                 );
               })}
@@ -162,6 +232,46 @@ const DropdownMenuDisplay: React.FC<DropdownMenuDisplayProps> = ({
             </div>
           ))}
       </div>
+      {activeSubMenu && (() => {
+        const parentAction = actions.find(a => a.id === activeSubMenu);
+        if (!parentAction || !parentAction.subActions) return null;
+
+        return (
+          <div
+            ref={subMenuRef}
+            className={`fixed min-w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-[10000] overflow-y-auto ${
+              animationEnabled ? 'animate-fadeIn' : ''
+            }`}
+            style={{
+              left: `${subMenuPosition.x}px`,
+              top: `${subMenuPosition.y}px`,
+              maxHeight: '400px'
+            }}
+            role="menu"
+            aria-orientation="vertical"
+          >
+            {parentAction.subActions.map((subAction) => {
+              if (!subAction || !subAction.icon) return null;
+              const SubIconComponent = subAction.icon;
+              return (
+                <button
+                  key={subAction.id}
+                  onClick={() => handleSubAction(subAction)}
+                  disabled={subAction.disabled}
+                  className={`w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors flex items-center gap-3 ${
+                    subAction.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                  } ${subAction.color || 'text-gray-700'}`}
+                  title={subAction.tooltip}
+                  role="menuitem"
+                >
+                  <SubIconComponent className={iconSizeClass} />
+                  {showLabels && <span className="text-sm">{subAction.label}</span>}
+                </button>
+              );
+            })}
+          </div>
+        );
+      })()}
     </>
   );
 

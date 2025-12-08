@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Grid3x3 } from 'lucide-react';
+import { Grid3x3, ChevronDown, ChevronRight } from 'lucide-react';
 import { ActionIconDefinition, IconSize } from '../../types';
 
 interface GridDisplayProps {
@@ -22,6 +22,7 @@ const GridDisplay: React.FC<GridDisplayProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [triggerPosition, setTriggerPosition] = useState({ x: 0, y: 0, alignRight: true });
+  const [expandedAction, setExpandedAction] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -93,10 +94,21 @@ const GridDisplay: React.FC<GridDisplayProps> = ({
   }, [isOpen]);
 
   const handleAction = (action: ActionIconDefinition) => {
-    if (!action.disabled) {
+    if (action.disabled) return;
+
+    if (action.subActions && action.subActions.length > 0) {
+      setExpandedAction(expandedAction === action.id ? null : action.id);
+    } else {
       action.action();
       setIsOpen(false);
+      setExpandedAction(null);
     }
+  };
+
+  const handleSubAction = (subAction: ActionIconDefinition) => {
+    subAction.action();
+    setIsOpen(false);
+    setExpandedAction(null);
   };
 
   const groupedActions = groupByCategory
@@ -141,28 +153,70 @@ const GridDisplay: React.FC<GridDisplayProps> = ({
                 {categoryActions.map((action) => {
                   if (!action || !action.icon) return null;
                   const IconComponent = action.icon;
+                  const hasSubActions = action.subActions && action.subActions.length > 0;
+                  const isExpanded = expandedAction === action.id;
+
                   return (
-                    <button
-                      key={action.id}
-                      onClick={() => handleAction(action)}
-                      disabled={action.disabled}
-                      className={`${gridItemSizeClass} flex flex-col items-center justify-center rounded-lg border-2 transition-all ${
-                        action.disabled
-                          ? 'opacity-50 cursor-not-allowed bg-gray-100 border-gray-200'
-                          : `cursor-pointer bg-white hover:bg-gray-50 border-gray-300 hover:border-blue-500 ${
-                              animationEnabled ? 'hover:scale-105' : ''
-                            }`
-                      } ${action.color || 'text-gray-700'}`}
-                      title={action.tooltip || action.label}
-                      role="menuitem"
-                    >
-                      <IconComponent className={iconSizeClass} />
-                      {showLabels && (
-                        <span className="text-[10px] mt-1 font-medium text-center px-1">
-                          {action.label}
-                        </span>
+                    <React.Fragment key={action.id}>
+                      <button
+                        onClick={() => handleAction(action)}
+                        disabled={action.disabled}
+                        className={`${gridItemSizeClass} flex flex-col items-center justify-center rounded-lg border-2 transition-all relative ${
+                          action.disabled
+                            ? 'opacity-50 cursor-not-allowed bg-gray-100 border-gray-200'
+                            : `cursor-pointer bg-white hover:bg-gray-50 border-gray-300 hover:border-blue-500 ${
+                                animationEnabled ? 'hover:scale-105' : ''
+                              }`
+                        } ${action.color || 'text-gray-700'} ${isExpanded ? 'border-blue-500 bg-blue-50' : ''}`}
+                        title={action.tooltip || action.label}
+                        role="menuitem"
+                        aria-haspopup={hasSubActions ? 'true' : undefined}
+                        aria-expanded={hasSubActions ? isExpanded : undefined}
+                      >
+                        <IconComponent className={iconSizeClass} />
+                        {showLabels && (
+                          <span className="text-[10px] mt-1 font-medium text-center px-1">
+                            {action.label}
+                          </span>
+                        )}
+                        {hasSubActions && (
+                          <div className="absolute top-1 right-1">
+                            {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                          </div>
+                        )}
+                      </button>
+                      {isExpanded && hasSubActions && action.subActions && (
+                        <div className="col-span-3 grid grid-cols-3 gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                          {action.subActions.map((subAction) => {
+                            if (!subAction || !subAction.icon) return null;
+                            const SubIconComponent = subAction.icon;
+                            return (
+                              <button
+                                key={subAction.id}
+                                onClick={() => handleSubAction(subAction)}
+                                disabled={subAction.disabled}
+                                className={`${gridItemSizeClass} flex flex-col items-center justify-center rounded-lg border-2 transition-all ${
+                                  subAction.disabled
+                                    ? 'opacity-50 cursor-not-allowed bg-gray-100 border-gray-200'
+                                    : `cursor-pointer bg-white hover:bg-gray-50 border-gray-300 hover:border-blue-500 ${
+                                        animationEnabled ? 'hover:scale-105' : ''
+                                      }`
+                                } ${subAction.color || 'text-gray-700'}`}
+                                title={subAction.tooltip || subAction.label}
+                                role="menuitem"
+                              >
+                                <SubIconComponent className={iconSizeClass} />
+                                {showLabels && (
+                                  <span className="text-[10px] mt-1 font-medium text-center px-1">
+                                    {subAction.label}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
                       )}
-                    </button>
+                    </React.Fragment>
                   );
                 })}
               </div>

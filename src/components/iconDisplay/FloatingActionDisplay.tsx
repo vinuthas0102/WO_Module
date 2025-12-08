@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, ChevronRight } from 'lucide-react';
 import { ActionIconDefinition, IconSize } from '../../types';
 
 interface FloatingActionDisplayProps {
@@ -19,6 +19,7 @@ const FloatingActionDisplay: React.FC<FloatingActionDisplayProps> = ({
   animationEnabled
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [expandedSubMenu, setExpandedSubMenu] = useState<string | null>(null);
   const [fabPosition, setFabPosition] = useState({ x: 0, y: 0 });
   const fabRef = useRef<HTMLDivElement>(null);
 
@@ -80,10 +81,21 @@ const FloatingActionDisplay: React.FC<FloatingActionDisplayProps> = ({
   }, [isExpanded]);
 
   const handleAction = (action: ActionIconDefinition) => {
-    if (!action.disabled) {
+    if (action.disabled) return;
+
+    if (action.subActions && action.subActions.length > 0) {
+      setExpandedSubMenu(expandedSubMenu === action.id ? null : action.id);
+    } else {
       action.action();
       setIsExpanded(false);
+      setExpandedSubMenu(null);
     }
+  };
+
+  const handleSubAction = (subAction: ActionIconDefinition) => {
+    subAction.action();
+    setIsExpanded(false);
+    setExpandedSubMenu(null);
   };
 
   const calculatePosition = (index: number, total: number) => {
@@ -143,6 +155,21 @@ const FloatingActionDisplay: React.FC<FloatingActionDisplayProps> = ({
     return { horizontal: horizontalPosition, vertical: verticalAlign };
   };
 
+  const calculateSubActionPosition = (parentPosition: {x: number, y: number}, subIndex: number, subTotal: number) => {
+    const radius = 50;
+    const startAngle = 0;
+    const angleStep = 360 / subTotal;
+    const angle = (startAngle + angleStep * subIndex) * (Math.PI / 180);
+
+    const x = Math.cos(angle) * radius;
+    const y = Math.sin(angle) * radius;
+
+    return {
+      x: parentPosition.x + x,
+      y: parentPosition.y + y
+    };
+  };
+
   const expandedContent = isExpanded && (
     <>
       <div
@@ -156,6 +183,8 @@ const FloatingActionDisplay: React.FC<FloatingActionDisplayProps> = ({
           const IconComponent = action.icon;
           const position = calculatePosition(index, actions.length);
           const labelPosition = getLabelPosition(position.x, position.y, index, actions.length);
+          const hasSubActions = action.subActions && action.subActions.length > 0;
+          const isSubMenuExpanded = expandedSubMenu === action.id;
 
           const verticalAlignClass = {
             top: 'top-0',
@@ -164,43 +193,103 @@ const FloatingActionDisplay: React.FC<FloatingActionDisplayProps> = ({
           }[labelPosition.vertical];
 
           return (
-            <div
-              key={action.id}
-              className={`fixed pointer-events-auto ${animationEnabled ? 'animate-fadeIn' : ''}`}
-              style={{
-                left: `${position.x}px`,
-                top: `${position.y}px`,
-                transform: 'translate(-50%, -50%)',
-                animationDelay: animationEnabled ? `${index * 50}ms` : '0ms'
-              }}
-            >
-              <button
-                onClick={() => handleAction(action)}
-                disabled={action.disabled}
-                className={`${actionButtonSizeClass} flex items-center justify-center rounded-full shadow-lg transition-all ${
-                  action.disabled
-                    ? 'opacity-50 cursor-not-allowed bg-gray-300'
-                    : `cursor-pointer bg-white hover:bg-gray-50 ${
-                        animationEnabled ? 'hover:scale-110' : ''
-                      }`
-                } ${action.color || 'text-gray-700'}`}
-                title={action.tooltip || action.label}
-                aria-label={action.label}
+            <React.Fragment key={action.id}>
+              <div
+                className={`fixed pointer-events-auto ${animationEnabled ? 'animate-fadeIn' : ''}`}
+                style={{
+                  left: `${position.x}px`,
+                  top: `${position.y}px`,
+                  transform: 'translate(-50%, -50%)',
+                  animationDelay: animationEnabled ? `${index * 50}ms` : '0ms'
+                }}
               >
-                <IconComponent className={iconSizeClass} />
-              </button>
-              {showLabels && (
-                <div
-                  className={`absolute whitespace-nowrap ${verticalAlignClass} ${
-                    labelPosition.horizontal === 'left' ? 'left-full ml-2' : 'right-full mr-2'
-                  }`}
+                <button
+                  onClick={() => handleAction(action)}
+                  disabled={action.disabled}
+                  className={`${actionButtonSizeClass} flex items-center justify-center rounded-full shadow-lg transition-all relative ${
+                    action.disabled
+                      ? 'opacity-50 cursor-not-allowed bg-gray-300'
+                      : `cursor-pointer bg-white hover:bg-gray-50 ${
+                          animationEnabled ? 'hover:scale-110' : ''
+                        }`
+                  } ${action.color || 'text-gray-700'} ${isSubMenuExpanded ? 'ring-2 ring-blue-500' : ''}`}
+                  title={action.tooltip || action.label}
+                  aria-label={action.label}
+                  aria-haspopup={hasSubActions ? 'true' : undefined}
+                  aria-expanded={hasSubActions ? isSubMenuExpanded : undefined}
                 >
-                  <span className="px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg">
-                    {action.label}
-                  </span>
-                </div>
+                  <IconComponent className={iconSizeClass} />
+                  {hasSubActions && (
+                    <ChevronRight className="w-3 h-3 absolute bottom-0 right-0 bg-white rounded-full" />
+                  )}
+                </button>
+                {showLabels && (
+                  <div
+                    className={`absolute whitespace-nowrap ${verticalAlignClass} ${
+                      labelPosition.horizontal === 'left' ? 'left-full ml-2' : 'right-full mr-2'
+                    }`}
+                  >
+                    <span className="px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg">
+                      {action.label}
+                    </span>
+                  </div>
+                )}
+              </div>
+              {isSubMenuExpanded && hasSubActions && action.subActions && (
+                action.subActions.map((subAction, subIndex) => {
+                  if (!subAction || !subAction.icon) return null;
+                  const SubIconComponent = subAction.icon;
+                  const subPosition = calculateSubActionPosition(position, subIndex, action.subActions!.length);
+                  const subLabelPosition = getLabelPosition(subPosition.x, subPosition.y, subIndex, action.subActions!.length);
+
+                  const subVerticalAlignClass = {
+                    top: 'top-0',
+                    middle: 'top-1/2 -translate-y-1/2',
+                    bottom: 'bottom-0'
+                  }[subLabelPosition.vertical];
+
+                  return (
+                    <div
+                      key={subAction.id}
+                      className={`fixed pointer-events-auto ${animationEnabled ? 'animate-fadeIn' : ''}`}
+                      style={{
+                        left: `${subPosition.x}px`,
+                        top: `${subPosition.y}px`,
+                        transform: 'translate(-50%, -50%)',
+                        animationDelay: animationEnabled ? `${(index * 50) + (subIndex * 30)}ms` : '0ms'
+                      }}
+                    >
+                      <button
+                        onClick={() => handleSubAction(subAction)}
+                        disabled={subAction.disabled}
+                        className={`${actionButtonSizeClass} flex items-center justify-center rounded-full shadow-lg transition-all bg-blue-50 border-2 border-blue-500 ${
+                          subAction.disabled
+                            ? 'opacity-50 cursor-not-allowed'
+                            : `cursor-pointer hover:bg-blue-100 ${
+                                animationEnabled ? 'hover:scale-110' : ''
+                              }`
+                        } ${subAction.color || 'text-gray-700'}`}
+                        title={subAction.tooltip || subAction.label}
+                        aria-label={subAction.label}
+                      >
+                        <SubIconComponent className={iconSizeClass} />
+                      </button>
+                      {showLabels && (
+                        <div
+                          className={`absolute whitespace-nowrap ${subVerticalAlignClass} ${
+                            subLabelPosition.horizontal === 'left' ? 'left-full ml-2' : 'right-full mr-2'
+                          }`}
+                        >
+                          <span className="px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg">
+                            {subAction.label}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
               )}
-            </div>
+            </React.Fragment>
           );
         })}
       </div>

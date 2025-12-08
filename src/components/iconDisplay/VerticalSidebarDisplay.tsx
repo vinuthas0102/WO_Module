@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, ChevronDown, ChevronRight } from 'lucide-react';
 import { ActionIconDefinition, IconSize } from '../../types';
 
 interface VerticalSidebarDisplayProps {
@@ -20,6 +20,7 @@ const VerticalSidebarDisplay: React.FC<VerticalSidebarDisplayProps> = ({
   triggerButtonClassName
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [expandedActions, setExpandedActions] = useState<Set<string>>(new Set());
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   const iconSizeClass = {
@@ -51,10 +52,27 @@ const VerticalSidebarDisplay: React.FC<VerticalSidebarDisplayProps> = ({
   }, [isOpen]);
 
   const handleAction = (action: ActionIconDefinition) => {
-    if (!action.disabled) {
+    if (action.disabled) return;
+
+    if (action.subActions && action.subActions.length > 0) {
+      const newExpanded = new Set(expandedActions);
+      if (newExpanded.has(action.id)) {
+        newExpanded.delete(action.id);
+      } else {
+        newExpanded.add(action.id);
+      }
+      setExpandedActions(newExpanded);
+    } else {
       action.action();
       setIsOpen(false);
+      setExpandedActions(new Set());
     }
+  };
+
+  const handleSubAction = (subAction: ActionIconDefinition) => {
+    subAction.action();
+    setIsOpen(false);
+    setExpandedActions(new Set());
   };
 
   const groupedActions = groupByCategory
@@ -121,37 +139,85 @@ const VerticalSidebarDisplay: React.FC<VerticalSidebarDisplayProps> = ({
                     {categoryActions.map((action) => {
                       if (!action || !action.icon) return null;
                       const IconComponent = action.icon;
+                      const hasSubActions = action.subActions && action.subActions.length > 0;
+                      const isExpanded = expandedActions.has(action.id);
+
                       return (
-                        <button
-                          key={action.id}
-                          onClick={() => handleAction(action)}
-                          disabled={action.disabled}
-                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                            action.disabled
-                              ? 'opacity-50 cursor-not-allowed bg-gray-100'
-                              : `cursor-pointer hover:bg-gray-50 border-2 border-transparent hover:border-blue-500 ${
-                                  animationEnabled ? 'hover:translate-x-1' : ''
-                                }`
-                          } ${action.color || 'text-gray-700'}`}
-                          title={action.tooltip}
-                        >
-                          <IconComponent className={iconSizeClass} />
-                          {showLabels && (
-                            <div className="flex-1 text-left">
-                              <div className="text-sm font-medium">{action.label}</div>
-                              {action.tooltip && (
-                                <div className="text-xs text-gray-500 mt-0.5">
-                                  {action.tooltip}
-                                </div>
-                              )}
+                        <div key={action.id} className="space-y-1">
+                          <button
+                            onClick={() => handleAction(action)}
+                            disabled={action.disabled}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                              action.disabled
+                                ? 'opacity-50 cursor-not-allowed bg-gray-100'
+                                : `cursor-pointer hover:bg-gray-50 border-2 border-transparent hover:border-blue-500 ${
+                                    animationEnabled ? 'hover:translate-x-1' : ''
+                                  }`
+                            } ${action.color || 'text-gray-700'} ${isExpanded ? 'bg-blue-50 border-blue-500' : ''}`}
+                            title={action.tooltip}
+                            aria-haspopup={hasSubActions ? 'true' : undefined}
+                            aria-expanded={hasSubActions ? isExpanded : undefined}
+                          >
+                            <IconComponent className={iconSizeClass} />
+                            {showLabels && (
+                              <div className="flex-1 text-left">
+                                <div className="text-sm font-medium">{action.label}</div>
+                                {action.tooltip && !hasSubActions && (
+                                  <div className="text-xs text-gray-500 mt-0.5">
+                                    {action.tooltip}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            {hasSubActions ? (
+                              isExpanded ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />
+                            ) : action.shortcut ? (
+                              <span className="text-xs text-gray-400 font-mono">
+                                {action.shortcut}
+                              </span>
+                            ) : null}
+                          </button>
+                          {isExpanded && hasSubActions && action.subActions && (
+                            <div className="ml-4 pl-4 border-l-2 border-blue-200 space-y-1">
+                              {action.subActions.map((subAction) => {
+                                if (!subAction || !subAction.icon) return null;
+                                const SubIconComponent = subAction.icon;
+                                return (
+                                  <button
+                                    key={subAction.id}
+                                    onClick={() => handleSubAction(subAction)}
+                                    disabled={subAction.disabled}
+                                    className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-all ${
+                                      subAction.disabled
+                                        ? 'opacity-50 cursor-not-allowed bg-gray-100'
+                                        : `cursor-pointer hover:bg-gray-50 border-2 border-transparent hover:border-blue-500 ${
+                                            animationEnabled ? 'hover:translate-x-1' : ''
+                                          }`
+                                    } ${subAction.color || 'text-gray-700'}`}
+                                    title={subAction.tooltip}
+                                  >
+                                    <SubIconComponent className={iconSizeClass} />
+                                    {showLabels && (
+                                      <div className="flex-1 text-left">
+                                        <div className="text-sm font-medium">{subAction.label}</div>
+                                        {subAction.tooltip && (
+                                          <div className="text-xs text-gray-500 mt-0.5">
+                                            {subAction.tooltip}
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                    {subAction.shortcut && (
+                                      <span className="text-xs text-gray-400 font-mono">
+                                        {subAction.shortcut}
+                                      </span>
+                                    )}
+                                  </button>
+                                );
+                              })}
                             </div>
                           )}
-                          {action.shortcut && (
-                            <span className="text-xs text-gray-400 font-mono">
-                              {action.shortcut}
-                            </span>
-                          )}
-                        </button>
+                        </div>
                       );
                     })}
                   </div>

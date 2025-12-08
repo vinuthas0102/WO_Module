@@ -403,6 +403,7 @@ export interface ActionIconDefinition {
   disabled?: boolean;
   tooltip?: string;
   shortcut?: string;
+  subActions?: ActionIconDefinition[];
 }
 
 export interface IconDisplayConfig {

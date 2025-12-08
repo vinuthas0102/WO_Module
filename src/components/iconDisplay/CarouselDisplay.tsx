@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, ChevronRight, LayoutGrid } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LayoutGrid, ChevronDown } from 'lucide-react';
 import { ActionIconDefinition, IconSize } from '../../types';
 
 interface CarouselDisplayProps {
@@ -22,6 +22,7 @@ const CarouselDisplay: React.FC<CarouselDisplayProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [expandedAction, setExpandedAction] = useState<string | null>(null);
   const [triggerPosition, setTriggerPosition] = useState({ x: 0, y: 0, alignRight: true });
   const carouselRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -117,10 +118,21 @@ const CarouselDisplay: React.FC<CarouselDisplayProps> = ({
   };
 
   const handleAction = (action: ActionIconDefinition) => {
-    if (!action.disabled) {
+    if (action.disabled) return;
+
+    if (action.subActions && action.subActions.length > 0) {
+      setExpandedAction(expandedAction === action.id ? null : action.id);
+    } else {
       action.action();
       setIsOpen(false);
+      setExpandedAction(null);
     }
+  };
+
+  const handleSubAction = (subAction: ActionIconDefinition) => {
+    subAction.action();
+    setIsOpen(false);
+    setExpandedAction(null);
   };
 
   const startIndex = currentIndex * itemsPerPage;
@@ -163,6 +175,8 @@ const CarouselDisplay: React.FC<CarouselDisplayProps> = ({
                 {visibleActions.map((action, index) => {
                   if (!action || !action.icon) return null;
                   const IconComponent = action.icon;
+                  const hasSubActions = action.subActions && action.subActions.length > 0;
+                  const isExpanded = expandedAction === action.id;
 
                   return (
                     <div
@@ -177,18 +191,23 @@ const CarouselDisplay: React.FC<CarouselDisplayProps> = ({
                       <button
                         onClick={() => handleAction(action)}
                         disabled={action.disabled}
-                        className={`${buttonSizeClass} flex items-center justify-center rounded-lg transition-all ${
+                        className={`${buttonSizeClass} flex items-center justify-center rounded-lg transition-all relative ${
                           action.disabled
                             ? 'opacity-50 cursor-not-allowed bg-gray-100 border border-gray-200'
                             : `cursor-pointer bg-white hover:bg-gray-50 border border-gray-300 hover:border-blue-500 shadow-sm hover:shadow ${
                                 animationEnabled ? 'hover:scale-105' : ''
                               }`
-                        } ${action.color || 'text-gray-700'}`}
+                        } ${action.color || 'text-gray-700'} ${isExpanded ? 'border-blue-500 bg-blue-50' : ''}`}
                         title={action.tooltip || action.label}
                         aria-label={action.label}
                         role="menuitem"
+                        aria-haspopup={hasSubActions ? 'true' : undefined}
+                        aria-expanded={hasSubActions ? isExpanded : undefined}
                       >
                         <IconComponent className={iconSizeClass} />
+                        {hasSubActions && (
+                          <ChevronDown className="w-3 h-3 absolute bottom-0 right-0 opacity-50" />
+                        )}
                       </button>
                       {showLabels && (
                         <span className="text-[10px] mt-1 font-medium text-gray-600 text-center max-w-[80px] truncate">
@@ -230,6 +249,49 @@ const CarouselDisplay: React.FC<CarouselDisplayProps> = ({
                 </div>
               )}
             </div>
+            {expandedAction && (() => {
+              const parentAction = actions.find(a => a.id === expandedAction);
+              if (!parentAction || !parentAction.subActions) return null;
+
+              return (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="text-xs font-semibold text-gray-500 mb-2 text-center">
+                    {parentAction.label}
+                  </div>
+                  <div className="flex items-center justify-center gap-2">
+                    {parentAction.subActions.map((subAction) => {
+                      if (!subAction || !subAction.icon) return null;
+                      const SubIconComponent = subAction.icon;
+                      return (
+                        <div key={subAction.id} className="flex flex-col items-center">
+                          <button
+                            onClick={() => handleSubAction(subAction)}
+                            disabled={subAction.disabled}
+                            className={`${buttonSizeClass} flex items-center justify-center rounded-lg transition-all ${
+                              subAction.disabled
+                                ? 'opacity-50 cursor-not-allowed bg-gray-100 border border-gray-200'
+                                : `cursor-pointer bg-white hover:bg-gray-50 border border-gray-300 hover:border-blue-500 shadow-sm hover:shadow ${
+                                    animationEnabled ? 'hover:scale-105' : ''
+                                  }`
+                            } ${subAction.color || 'text-gray-700'}`}
+                            title={subAction.tooltip || subAction.label}
+                            aria-label={subAction.label}
+                            role="menuitem"
+                          >
+                            <SubIconComponent className={iconSizeClass} />
+                          </button>
+                          {showLabels && (
+                            <span className="text-[10px] mt-1 font-medium text-gray-600 text-center max-w-[80px] truncate">
+                              {subAction.label}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
     </>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, FileCheck } from 'lucide-react';
+import { Package } from 'lucide-react';
 import WOItemsDisplay from './WOItemsDisplay';
 import WOSpecsDisplay from './WOSpecsDisplay';
 import { WorkOrderItemService } from '../../services/workOrderItemService';
@@ -83,26 +83,12 @@ const WOTabsSection: React.FC<WOTabsSectionProps> = ({
       )}
 
       {specsCount > 0 && (
-        <div>
-          <div className="border-b border-gray-200">
-            <div className="flex items-center px-6 py-4">
-              <div className="flex items-center space-x-2 text-green-700">
-                <FileCheck className="w-5 h-5" />
-                <span className="text-sm font-semibold">Specifications</span>
-                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">
-                  {specsCount}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-6">
-            <WOSpecsDisplay
-              key={`specs-${refreshKey}`}
-              ticketId={ticketId}
-              onRefresh={onRefresh}
-            />
-          </div>
+        <div className="p-6">
+          <WOSpecsDisplay
+            key={`specs-${refreshKey}`}
+            ticketId={ticketId}
+            onRefresh={onRefresh}
+          />
         </div>
       )}
     </div>

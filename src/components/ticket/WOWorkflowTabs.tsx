@@ -77,7 +77,7 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
   onDownloadAttachment,
   onDeleteAttachment
 }) => {
-  const [activeTab, setActiveTab] = useState<TabType>('workflow');
+  const [activeTab, setActiveTab] = useState<TabType>('wo-info');
   const [woItemsCount, setWoItemsCount] = useState(0);
   const [woSpecsCount, setWoSpecsCount] = useState(0);
   const [loadingWoCounts, setLoadingWoCounts] = useState(true);
@@ -113,20 +113,13 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
   const showWODetailsTab = isWOModule && hasWOData;
 
   const workOrderData = ticket.data as any;
-  const hasWOInfo = workOrderData?.workOrderType ||
-                    workOrderData?.estimatedCost ||
-                    workOrderData?.contractorName ||
-                    workOrderData?.contractorContact;
-  const showWOInfoTab = isWOModule && hasWOInfo;
+  const showWOInfoTab = isWOModule;
 
   useEffect(() => {
     if (!loadingWoCounts && !hasWOData && activeTab === 'wo-details') {
-      setActiveTab('workflow');
+      setActiveTab('wo-info');
     }
-    if (!hasWOInfo && activeTab === 'wo-info') {
-      setActiveTab('workflow');
-    }
-  }, [hasWOData, hasWOInfo, loadingWoCounts, activeTab]);
+  }, [hasWOData, loadingWoCounts, activeTab]);
 
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">

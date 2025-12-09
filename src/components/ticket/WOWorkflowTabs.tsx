@@ -29,6 +29,19 @@ interface WOWorkflowTabsProps {
     level2: number;
     level3: number;
   };
+  createdByUser?: { id: string; name: string };
+  assignedToUser?: { id: string; name: string };
+  isOverdue: boolean;
+  userRole?: string;
+  getPriorityColor: (priority: string) => string;
+  formatDate: (date: Date) => string;
+  ticketAttachments: DocumentMetadata[];
+  loadingAttachments: boolean;
+  uploadingFile: boolean;
+  fileInputRef: React.RefObject<HTMLInputElement>;
+  onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onDownloadAttachment: (attachment: DocumentMetadata) => void;
+  onDeleteAttachment: (id: string) => void;
 }
 
 type TabType = 'wo-info' | 'wo-details' | 'workflow';
@@ -49,7 +62,20 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
   selectedModule,
   completedWorkflows,
   totalWorkflows,
-  workflowsByLevel
+  workflowsByLevel,
+  createdByUser,
+  assignedToUser,
+  isOverdue,
+  userRole,
+  getPriorityColor,
+  formatDate,
+  ticketAttachments,
+  loadingAttachments,
+  uploadingFile,
+  fileInputRef,
+  onFileUpload,
+  onDownloadAttachment,
+  onDeleteAttachment
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('workflow');
   const [woItemsCount, setWoItemsCount] = useState(0);
@@ -207,7 +233,33 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
       </div>
 
       {activeTab === 'wo-info' && showWOInfoTab && (
-        <WOInfoDisplay workOrderData={workOrderData} />
+        <WOInfoDisplay
+          workOrderData={workOrderData}
+          ticket={{
+            description: ticket.description,
+            priority: ticket.priority,
+            department: ticket.department,
+            category: ticket.category,
+            createdAt: ticket.createdAt,
+            dueDate: ticket.dueDate
+          }}
+          createdByUser={createdByUser}
+          assignedToUser={assignedToUser}
+          totalWorkflows={totalWorkflows}
+          completedWorkflows={completedWorkflows}
+          isOverdue={isOverdue}
+          userRole={userRole}
+          getPriorityColor={getPriorityColor}
+          formatDate={formatDate}
+          ticketAttachments={ticketAttachments}
+          loadingAttachments={loadingAttachments}
+          uploadingFile={uploadingFile}
+          canEdit={canEdit}
+          fileInputRef={fileInputRef}
+          onFileUpload={onFileUpload}
+          onDownloadAttachment={onDownloadAttachment}
+          onDeleteAttachment={onDeleteAttachment}
+        />
       )}
 
       {activeTab === 'wo-details' && showWODetailsTab && (

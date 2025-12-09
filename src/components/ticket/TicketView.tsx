@@ -495,201 +495,6 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
           <div className="lg:col-span-3 space-y-3">
-            <CollapsibleSection
-              title={`${terminology} Details`}
-              defaultExpanded={false}
-              headerContent={
-                <div className="flex items-center space-x-2">
-                  <span className={`px-2 py-0.5 text-xs font-medium rounded-lg border flex items-center space-x-1.5 ${getPriorityColor(ticket.priority)}`}>
-                    {ticket.priority === 'CRITICAL' || ticket.priority === 'HIGH' ? <AlertTriangle className="w-3 h-3" /> : null}
-                    <span>{ticket.priority}</span>
-                  </span>
-                  {assignedToUser && (
-                    <div className="flex items-center space-x-1 text-xs text-gray-600">
-                      <User className="w-3 h-3" />
-                      <span>{assignedToUser.name}</span>
-                    </div>
-                  )}
-                  {totalWorkflows > 0 && (
-                    <div className="flex items-center space-x-1 text-xs text-gray-600">
-                      <CheckCircle className="w-3 h-3" />
-                      <span>{completedWorkflows}/{totalWorkflows}</span>
-                    </div>
-                  )}
-                </div>
-              }
-            >
-              <div className="pt-3 space-y-3">
-                {totalWorkflows > 0 && (
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="flex justify-between text-sm text-gray-600 mb-2">
-                      <span className="font-medium">Overall Progress</span>
-                      <span>{completedWorkflows}/{totalWorkflows} workflows completed</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                      <div
-                        className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500 shadow-sm"
-                        style={{ width: totalWorkflows > 0 ? `${(completedWorkflows / totalWorkflows) * 100}%` : '0%' }}
-                      ></div>
-                    </div>
-                  </div>
-                )}
-
-                {isOverdue && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center space-x-2">
-                    <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0" />
-                    <div>
-                      <h3 className="text-red-800 font-medium text-xs">This {terminologyLower} is overdue!</h3>
-                      <p className="text-red-700 text-xs">Due date was {formatDate(ticket.dueDate!)}</p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <h3 className="text-sm font-medium text-gray-900 mb-2">Description</h3>
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{ticket.description}</p>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                  <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-                    <h3 className="text-sm font-medium text-gray-900 mb-2">{terminology} Information</h3>
-
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-0.5">Created By</label>
-                      <div className="flex items-center space-x-1.5">
-                        <User className="w-3.5 h-3.5 text-gray-400" />
-                        <span className="text-sm text-gray-900">{createdByUser?.name || 'Unknown'}</span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-0.5">Department</label>
-                      <span className="text-sm text-gray-900">{ticket.department}</span>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-0.5">Category</label>
-                      <span className="text-sm text-gray-900">{ticket.category}</span>
-                    </div>
-                  </div>
-
-                  <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-                    <h3 className="text-sm font-medium text-gray-900 mb-2">Assignment & Dates</h3>
-
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-0.5">Assigned To</label>
-                      <div className="flex items-center space-x-1.5">
-                        <Users className="w-3.5 h-3.5 text-gray-400" />
-                        <span className="text-sm text-gray-900">{assignedToUser?.name || 'Unassigned'}</span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-0.5">Created</label>
-                      <div className="flex items-center space-x-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                        <span className="text-sm text-gray-900">{formatDate(ticket.createdAt)}</span>
-                      </div>
-                    </div>
-
-                    {ticket.dueDate && user?.role !== 'DO' && (
-                      <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-0.5">Due Date</label>
-                        <div className="flex items-center space-x-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                          <span className={`text-sm ${isOverdue ? 'text-red-600 font-medium' : 'text-gray-900'}`}>
-                            {formatDate(ticket.dueDate)}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="bg-gray-50 rounded-lg p-3 mt-3">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-medium text-gray-900 flex items-center space-x-2">
-                      <Paperclip className="w-4 h-4 text-gray-600" />
-                      <span>Attachments ({ticketAttachments.length})</span>
-                    </h3>
-                    {canEdit() && (
-                      <div>
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          className="hidden"
-                          onChange={handleFileUpload}
-                          accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx"
-                          multiple
-                          disabled={uploadingFile}
-                        />
-                        <button
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={uploadingFile}
-                          className="flex items-center space-x-1 px-2 py-1 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors disabled:opacity-50"
-                        >
-                          <Upload className="w-3.5 h-3.5" />
-                          <span>{uploadingFile ? 'Uploading...' : 'Add'}</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  {ticketAttachments.length === 0 && !loadingAttachments && (
-                    <div className="text-center py-4 text-sm text-gray-500">
-                      No attachments yet
-                    </div>
-                  )}
-                  {loadingAttachments ? (
-                    <div className="text-center py-4">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                      <p className="text-xs text-gray-500">Loading...</p>
-                    </div>
-                  ) : ticketAttachments.length > 0 ? (
-                    <div className="space-y-2">
-                      {ticketAttachments.map(attachment => (
-                          <div
-                            key={attachment.id}
-                            className="flex items-center justify-between p-2 bg-white hover:bg-gray-50 rounded border border-gray-200 transition-colors group"
-                          >
-                            <div className="flex items-center space-x-2 flex-1 min-w-0">
-                              <div className="text-xl flex-shrink-0">
-                                {FileService.getFileIcon(attachment.type)}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium text-gray-900 truncate">
-                                  {attachment.name}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  {FileService.formatFileSize(attachment.size)} • {attachment.uploadedAt.toLocaleDateString()}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center space-x-1 flex-shrink-0">
-                              <button
-                                onClick={() => handleDownloadAttachment(attachment)}
-                                className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                title="Download attachment"
-                              >
-                                <Download className="w-3.5 h-3.5" />
-                              </button>
-                              {canEdit() && (
-                                <button
-                                  onClick={() => handleDeleteAttachment(attachment.id)}
-                                  className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors opacity-0 group-hover:opacity-100"
-                                  title="Delete attachment"
-                                >
-                                  <Trash className="w-3.5 h-3.5" />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            </CollapsibleSection>
-
             {ticket.requiresFinanceApproval !== false && financeApprovals.length > 0 && (
               <CollapsibleSection
                 title="Finance Approval"
@@ -770,6 +575,19 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                 completedWorkflows={completedWorkflows}
                 totalWorkflows={totalWorkflows}
                 workflowsByLevel={workflowsByLevel}
+                createdByUser={createdByUser}
+                assignedToUser={assignedToUser}
+                isOverdue={!!isOverdue}
+                userRole={user?.role}
+                getPriorityColor={getPriorityColor}
+                formatDate={formatDate}
+                ticketAttachments={ticketAttachments}
+                loadingAttachments={loadingAttachments}
+                uploadingFile={uploadingFile}
+                fileInputRef={fileInputRef}
+                onFileUpload={handleFileUpload}
+                onDownloadAttachment={handleDownloadAttachment}
+                onDeleteAttachment={handleDeleteAttachment}
               />
             )}
           </div>

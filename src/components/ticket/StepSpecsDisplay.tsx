@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { X, FileCheck, Package } from 'lucide-react';
+import { X, FileCheck, Package, TrendingUp } from 'lucide-react';
 import { WorkOrderSpecService } from '../../services/workOrderSpecService';
 import { WorkOrderSpecDetail, WorkOrderSpecAllocation } from '../../types';
+import { SpecAllocationProgressTracker } from './SpecAllocationProgressTracker';
 
 interface StepSpecsDisplayProps {
   stepId: string;
   stepTitle: string;
   ticketNumber: string;
+  ticketId: string;
   onClose: () => void;
 }
 
@@ -14,10 +16,12 @@ const StepSpecsDisplay: React.FC<StepSpecsDisplayProps> = ({
   stepId,
   stepTitle,
   ticketNumber,
+  ticketId,
   onClose,
 }) => {
   const [specs, setSpecs] = useState<Array<WorkOrderSpecDetail & { allocation: WorkOrderSpecAllocation }>>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedAllocation, setSelectedAllocation] = useState<{ allocationId: string; specDetails: { description: string; allocatedQuantity: number; unit: string } } | null>(null);
 
   useEffect(() => {
     loadSpecs();
@@ -137,9 +141,33 @@ const StepSpecsDisplay: React.FC<StepSpecsDisplayProps> = ({
                   <p className="text-xs text-gray-700">{spec.remarks}</p>
                 </div>
               )}
+
+              <button
+                onClick={() => setSelectedAllocation({
+                  allocationId: spec.allocation.id,
+                  specDetails: {
+                    description: spec.specMaster?.description || 'Unknown Spec',
+                    allocatedQuantity: spec.allocation.allocatedQuantity,
+                    unit: spec.unit
+                  }
+                })}
+                className="w-full mt-2 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 flex items-center justify-center space-x-1"
+              >
+                <TrendingUp className="w-3 h-3" />
+                <span>Track Progress</span>
+              </button>
             </div>
           ))}
         </div>
+      )}
+
+      {selectedAllocation && (
+        <SpecAllocationProgressTracker
+          allocationId={selectedAllocation.allocationId}
+          ticketId={ticketId}
+          specDetails={selectedAllocation.specDetails}
+          onClose={() => setSelectedAllocation(null)}
+        />
       )}
     </div>
   );

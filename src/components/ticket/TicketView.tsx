@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Calendar, User, AlertTriangle, Clock, CheckCircle, XCircle, FileText, Users, CreditCard as Edit, Trash2, Plus, Paperclip, Download, Trash, Upload, IndianRupee, Package, FileCheck, RefreshCw, StickyNote } from 'lucide-react';
+import { ArrowLeft, Calendar, User, AlertTriangle, Clock, CheckCircle, XCircle, FileText, Users, CreditCard as Edit, Trash2, Plus, Paperclip, Download, Trash, Upload, IndianRupee, Package, FileCheck, RefreshCw, StickyNote, BookOpen, DollarSign } from 'lucide-react';
 import { Ticket, WorkflowStep, FinanceApproval, ActionIconDefinition, UserDisplayPreferences, ClarificationThread, NotificationChannel } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { useTickets } from '../../context/TicketContext';
@@ -20,6 +20,8 @@ import WOSpecSelector from './WOSpecSelector';
 import WOWorkflowTabs from './WOWorkflowTabs';
 import { NewClarificationModal } from '../clarification/NewClarificationModal';
 import InlineSpecCreation from './InlineSpecCreation';
+import { MeasurementBookManager } from './MeasurementBookManager';
+import { BillManager } from './BillManager';
 
 interface TicketViewProps {
   ticket: Ticket;
@@ -45,6 +47,8 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [showItemSelector, setShowItemSelector] = useState(false);
   const [showSpecSelector, setShowSpecSelector] = useState(false);
+  const [showMeasurementBook, setShowMeasurementBook] = useState(false);
+  const [showBillManager, setShowBillManager] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [userPreferences, setUserPreferences] = useState<UserDisplayPreferences | null>(null);
   const [loadingPreferences, setLoadingPreferences] = useState(true);
@@ -465,6 +469,24 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                     action: () => setShowSpecSelector(true),
                     color: '#16a34a'
                   });
+
+                  actions.push({
+                    id: 'measurement-book',
+                    icon: BookOpen,
+                    label: 'Measurement Book',
+                    action: () => setShowMeasurementBook(true),
+                    color: '#2563eb'
+                  });
+
+                  if (user?.role === 'eo' || user?.role === 'dept_officer') {
+                    actions.push({
+                      id: 'bill-manager',
+                      icon: DollarSign,
+                      label: 'Bills',
+                      action: () => setShowBillManager(true),
+                      color: '#7c3aed'
+                    });
+                  }
                 }
 
                 if (canDelete()) {
@@ -663,6 +685,22 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
           userId={user.id}
           onClose={() => setShowSpecSelector(false)}
           onSpecAdded={() => setRefreshKey(prev => prev + 1)}
+        />
+      )}
+
+      {showMeasurementBook && (
+        <MeasurementBookManager
+          ticketId={ticket.id}
+          ticketNumber={ticket.ticketNumber}
+          onClose={() => setShowMeasurementBook(false)}
+        />
+      )}
+
+      {showBillManager && (
+        <BillManager
+          ticketId={ticket.id}
+          ticketNumber={ticket.ticketNumber}
+          onClose={() => setShowBillManager(false)}
         />
       )}
 

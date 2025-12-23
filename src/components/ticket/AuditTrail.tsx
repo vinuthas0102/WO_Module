@@ -267,6 +267,7 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
         stepId={viewingStepSpecs.stepId}
         stepTitle={viewingStepSpecs.stepTitle}
         ticketNumber={ticket.ticketNumber}
+        ticketId={ticket.id}
         onClose={onCloseStepSpecs}
       />
     );

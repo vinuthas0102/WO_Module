@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, FileCheck, Package, TrendingUp } from 'lucide-react';
+import { X, FileCheck, Package, TrendingUp, Maximize2 } from 'lucide-react';
 import { WorkOrderSpecService } from '../../services/workOrderSpecService';
 import { WorkOrderSpecDetail, WorkOrderSpecAllocation } from '../../types';
 import { SpecAllocationProgressTracker } from './SpecAllocationProgressTracker';
+import FullScreenModal from '../common/FullScreenModal';
 
 interface StepSpecsDisplayProps {
   stepId: string;
@@ -22,6 +23,7 @@ const StepSpecsDisplay: React.FC<StepSpecsDisplayProps> = ({
   const [specs, setSpecs] = useState<Array<WorkOrderSpecDetail & { allocation: WorkOrderSpecAllocation }>>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAllocation, setSelectedAllocation] = useState<{ allocationId: string; specDetails: { description: string; allocatedQuantity: number; unit: string } } | null>(null);
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   useEffect(() => {
     loadSpecs();
@@ -39,7 +41,7 @@ const StepSpecsDisplay: React.FC<StepSpecsDisplayProps> = ({
     }
   };
 
-  return (
+  const renderContent = () => (
     <div className="space-y-2">
       <div className="flex items-center justify-between pb-2 border-b border-gray-200">
         <div className="flex-1">
@@ -55,13 +57,24 @@ const StepSpecsDisplay: React.FC<StepSpecsDisplayProps> = ({
             </span>
           </div>
         </div>
-        <button
-          onClick={onClose}
-          className="p-1.5 text-gray-600 hover:bg-gray-100 rounded transition-colors"
-          title="Close"
-        >
-          <X className="w-4 h-4" />
-        </button>
+        <div className="flex items-center space-x-2">
+          {!isFullScreen && (
+            <button
+              onClick={() => setIsFullScreen(true)}
+              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+              title="View in full screen"
+            >
+              <Maximize2 className="w-4 h-4" />
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="p-1.5 text-gray-600 hover:bg-gray-100 rounded transition-colors"
+            title="Close"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -170,6 +183,20 @@ const StepSpecsDisplay: React.FC<StepSpecsDisplayProps> = ({
         />
       )}
     </div>
+  );
+
+  return (
+    <>
+      {renderContent()}
+
+      <FullScreenModal
+        isOpen={isFullScreen}
+        onClose={() => setIsFullScreen(false)}
+        title={`Allocated Specifications - ${stepTitle}`}
+      >
+        {renderContent()}
+      </FullScreenModal>
+    </>
   );
 };
 

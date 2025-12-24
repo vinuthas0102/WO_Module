@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Package, CheckCircle } from 'lucide-react';
+import { X, Plus, Package, CheckCircle, Maximize2 } from 'lucide-react';
 import { WorkOrderSpecDetail } from '../../types';
 import { WorkOrderSpecService } from '../../services/workOrderSpecService';
+import FullScreenModal from '../common/FullScreenModal';
 
 interface SpecAllocationDisplayProps {
   ticketId: string;
@@ -27,6 +28,7 @@ const SpecAllocationDisplay: React.FC<SpecAllocationDisplayProps> = ({
   const [selectedSpec, setSelectedSpec] = useState<WorkOrderSpecDetail | null>(null);
   const [allocationQuantity, setAllocationQuantity] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   useEffect(() => {
     loadAvailableSpecs();
@@ -83,7 +85,7 @@ const SpecAllocationDisplay: React.FC<SpecAllocationDisplayProps> = ({
     }
   };
 
-  return (
+  const renderContent = () => (
     <div className="space-y-2">
       <div className="flex items-center justify-between pb-2 border-b border-gray-200">
         <div className="flex-1">
@@ -99,13 +101,24 @@ const SpecAllocationDisplay: React.FC<SpecAllocationDisplayProps> = ({
             </span>
           </div>
         </div>
-        <button
-          onClick={onClose}
-          className="p-1.5 text-gray-600 hover:bg-gray-100 rounded transition-colors"
-          title="Close"
-        >
-          <X className="w-4 h-4" />
-        </button>
+        <div className="flex items-center space-x-2">
+          {!isFullScreen && (
+            <button
+              onClick={() => setIsFullScreen(true)}
+              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+              title="View in full screen"
+            >
+              <Maximize2 className="w-4 h-4" />
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="p-1.5 text-gray-600 hover:bg-gray-100 rounded transition-colors"
+            title="Close"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -247,6 +260,20 @@ const SpecAllocationDisplay: React.FC<SpecAllocationDisplayProps> = ({
         </>
       )}
     </div>
+  );
+
+  return (
+    <>
+      {renderContent()}
+
+      <FullScreenModal
+        isOpen={isFullScreen}
+        onClose={() => setIsFullScreen(false)}
+        title={`Allocate Specifications - ${workflowStepTitle}`}
+      >
+        {renderContent()}
+      </FullScreenModal>
+    </>
   );
 };
 

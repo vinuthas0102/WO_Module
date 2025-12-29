@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { X, FileCheck, Package, TrendingUp, Maximize2 } from 'lucide-react';
+import { X, FileCheck, Package, TrendingUp, Maximize2, Layers, Workflow } from 'lucide-react';
 import { WorkOrderSpecService } from '../../services/workOrderSpecService';
 import { WorkOrderSpecDetail, WorkOrderSpecAllocation } from '../../types';
 import { SpecAllocationProgressTracker } from './SpecAllocationProgressTracker';
-import FullScreenModal from '../common/FullScreenModal';
+import ContextualExpandedModal from '../common/ContextualExpandedModal';
 
 interface StepSpecsDisplayProps {
   stepId: string;
   stepTitle: string;
   ticketNumber: string;
+  ticketTitle: string;
   ticketId: string;
   onClose: () => void;
 }
@@ -17,6 +18,7 @@ const StepSpecsDisplay: React.FC<StepSpecsDisplayProps> = ({
   stepId,
   stepTitle,
   ticketNumber,
+  ticketTitle,
   ticketId,
   onClose,
 }) => {
@@ -189,13 +191,33 @@ const StepSpecsDisplay: React.FC<StepSpecsDisplayProps> = ({
     <>
       {renderContent()}
 
-      <FullScreenModal
+      <ContextualExpandedModal
         isOpen={isFullScreen}
         onClose={() => setIsFullScreen(false)}
-        title={`Allocated Specifications - ${stepTitle}`}
+        ticketNumber={ticketNumber}
+        ticketTitle={ticketTitle}
+        breadcrumbs={[
+          { label: 'Work Order', icon: <Package className="w-4 h-4" /> },
+          { label: 'Workflow', icon: <Workflow className="w-4 h-4" /> },
+          { label: stepTitle, icon: <Layers className="w-4 h-4" /> },
+          { label: 'Specifications', icon: <FileCheck className="w-4 h-4" /> },
+        ]}
+        contextInfo={
+          <div className="flex items-center gap-4 text-sm">
+            <span>Allocated Specs: {specs.length}</span>
+            {specs.length > 0 && (
+              <>
+                <span>•</span>
+                <span>
+                  Total Allocated: {specs.reduce((sum, s) => sum + s.allocation.allocatedQuantity, 0).toFixed(2)} units
+                </span>
+              </>
+            )}
+          </div>
+        }
       >
         {renderContent()}
-      </FullScreenModal>
+      </ContextualExpandedModal>
     </>
   );
 };

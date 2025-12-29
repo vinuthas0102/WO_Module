@@ -7,6 +7,8 @@ import { WorkOrderSpecService } from '../../services/workOrderSpecService';
 
 interface WOTabsSectionProps {
   ticketId: string;
+  ticketNumber: string;
+  ticketTitle: string;
   canEdit: boolean;
   refreshKey: number;
   onRefresh: () => void;
@@ -14,6 +16,8 @@ interface WOTabsSectionProps {
 
 const WOTabsSection: React.FC<WOTabsSectionProps> = ({
   ticketId,
+  ticketNumber,
+  ticketTitle,
   canEdit,
   refreshKey,
   onRefresh,
@@ -87,6 +91,8 @@ const WOTabsSection: React.FC<WOTabsSectionProps> = ({
           <WOSpecsDisplay
             key={`specs-${refreshKey}`}
             ticketId={ticketId}
+            ticketNumber={ticketNumber}
+            ticketTitle={ticketTitle}
             onRefresh={onRefresh}
           />
         </div>

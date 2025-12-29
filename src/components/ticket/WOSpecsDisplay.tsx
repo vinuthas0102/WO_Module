@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Edit, Trash2, FileCheck, AlertCircle, Maximize2 } from 'lucide-react';
+import { Edit, Trash2, FileCheck, AlertCircle, Maximize2, Package } from 'lucide-react';
 import { WorkOrderSpecDetail } from '../../types';
 import { WorkOrderSpecService } from '../../services/workOrderSpecService';
-import FullScreenModal from '../common/FullScreenModal';
+import ContextualExpandedModal from '../common/ContextualExpandedModal';
 
 interface WOSpecsDisplayProps {
   ticketId: string;
+  ticketNumber: string;
+  ticketTitle: string;
   onRefresh?: () => void;
 }
 
-const WOSpecsDisplay: React.FC<WOSpecsDisplayProps> = ({ ticketId, onRefresh }) => {
+const WOSpecsDisplay: React.FC<WOSpecsDisplayProps> = ({ ticketId, ticketNumber, ticketTitle, onRefresh }) => {
   const [specs, setSpecs] = useState<WorkOrderSpecDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingSpec, setEditingSpec] = useState<WorkOrderSpecDetail | null>(null);
@@ -299,13 +301,31 @@ const WOSpecsDisplay: React.FC<WOSpecsDisplayProps> = ({ ticketId, onRefresh }) 
     <>
       {renderSpecsTable()}
 
-      <FullScreenModal
+      <ContextualExpandedModal
         isOpen={isFullScreen}
         onClose={() => setIsFullScreen(false)}
-        title="Work Order Specifications"
+        ticketNumber={ticketNumber}
+        ticketTitle={ticketTitle}
+        breadcrumbs={[
+          { label: 'Work Order', icon: <Package className="w-4 h-4" /> },
+          { label: 'Specifications', icon: <FileCheck className="w-4 h-4" /> },
+        ]}
+        contextInfo={
+          <div className="flex items-center gap-4 text-sm">
+            <span>Total Specs: {totalSpecs}</span>
+            <span>•</span>
+            <span>Total Quantity: {totalQuantity.toFixed(2)} units</span>
+            {totalAllocated > 0 && (
+              <>
+                <span>•</span>
+                <span>Allocated: {totalAllocated.toFixed(2)} units</span>
+              </>
+            )}
+          </div>
+        }
       >
         {renderSpecsTable()}
-      </FullScreenModal>
+      </ContextualExpandedModal>
     </>
   );
 };

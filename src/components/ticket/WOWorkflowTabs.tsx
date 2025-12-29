@@ -258,6 +258,8 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
       {activeTab === 'wo-details' && showWODetailsTab && (
         <WOTabsSection
           ticketId={ticket.id}
+          ticketNumber={ticket.ticketNumber}
+          ticketTitle={ticket.title}
           canEdit={canEdit}
           refreshKey={refreshKey}
           onRefresh={onRefresh}

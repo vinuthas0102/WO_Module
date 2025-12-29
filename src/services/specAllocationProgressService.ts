@@ -63,6 +63,16 @@ export interface StepProgressSummary {
   specSummaries: SpecAllocationProgressSummary[];
 }
 
+export interface WorkflowStepCompletionStatus {
+  stepId: string;
+  currentStatus: string;
+  isComplete: boolean;
+  totalSpecs: number;
+  completedSpecs: number;
+  completionPercentage: number;
+  canAutoComplete: boolean;
+}
+
 export class SpecAllocationProgressService {
   static async getProgressEntries(allocationId: string): Promise<SpecAllocationProgress[]> {
     try {
@@ -449,6 +459,69 @@ export class SpecAllocationProgressService {
         totalCompletedQuantity: 0,
         overallProgressPercentage: 0,
         specSummaries: [],
+      };
+    }
+  }
+
+  static async getWorkflowStepCompletionStatus(stepId: string): Promise<WorkflowStepCompletionStatus> {
+    try {
+      const { data: step, error: stepError } = await supabase
+        .from('workflow_steps')
+        .select('status')
+        .eq('id', stepId)
+        .single();
+
+      if (stepError) throw stepError;
+
+      const { data: allocations, error: allocError } = await supabase
+        .from('work_order_spec_allocations')
+        .select('id, allocated_quantity')
+        .eq('workflow_step_id', stepId);
+
+      if (allocError) throw allocError;
+
+      const totalSpecs = allocations?.length || 0;
+      let completedSpecs = 0;
+
+      for (const allocation of allocations || []) {
+        const { data: latestProgress } = await supabase
+          .from('spec_allocation_progress_tracking')
+          .select('cumulative_quantity, status')
+          .eq('allocation_id', allocation.id)
+          .in('status', ['verified', 'approved'])
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (latestProgress &&
+            parseFloat(latestProgress.cumulative_quantity) >= parseFloat(allocation.allocated_quantity)) {
+          completedSpecs++;
+        }
+      }
+
+      const completionPercentage = totalSpecs > 0 ? (completedSpecs / totalSpecs) * 100 : 0;
+      const isComplete = totalSpecs > 0 && completedSpecs === totalSpecs;
+      const canAutoComplete = step?.status === 'WIP' && isComplete;
+
+      return {
+        stepId,
+        currentStatus: step?.status || 'NOT_STARTED',
+        isComplete,
+        totalSpecs,
+        completedSpecs,
+        completionPercentage,
+        canAutoComplete,
+      };
+    } catch (error) {
+      console.error('Error getting workflow step completion status:', error);
+      return {
+        stepId,
+        currentStatus: 'NOT_STARTED',
+        isComplete: false,
+        totalSpecs: 0,
+        completedSpecs: 0,
+        completionPercentage: 0,
+        canAutoComplete: false,
       };
     }
   }

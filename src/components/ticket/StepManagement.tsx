@@ -1295,11 +1295,20 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
                   <span className={`${hierarchyColors.badge} text-xs px-2 py-1 rounded-full opacity-75`}>
                     {hierarchyInfo.label}
                   </span>
-                  <div className="flex items-center">
+                  <div className="flex items-center space-x-1">
                     <span className={`flex items-center space-x-1 text-xs font-semibold px-2.5 py-1 rounded-full border ${statusColor}`}>
                       {getStatusIcon(step.status)}
                       <span>{step.status.replace('_', ' ')}</span>
                     </span>
+                    {(step.status === 'WIP' || step.status === 'NOT_STARTED') && (
+                      <span
+                        className="flex items-center space-x-1 text-xs px-2 py-1 rounded-full bg-green-50 text-green-700 border border-green-200"
+                        title="Status updates automatically based on spec progress"
+                      >
+                        <TrendingUp className="w-3 h-3" />
+                        <span>Auto</span>
+                      </span>
+                    )}
                   </div>
                   <span className={`flex items-center space-x-1 text-xs px-2 py-1 rounded-full ${step.is_parallel ? 'bg-blue-100 text-blue-700 border border-blue-300' : 'bg-orange-100 text-orange-700 border border-orange-300'}`} title={step.is_parallel ? 'Can run concurrently with other parallel steps' : 'Must run sequentially after previous steps'}>
                     {step.is_parallel ? <Workflow className="w-3 h-3" /> : <ArrowRight className="w-3 h-3" />}

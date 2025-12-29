@@ -362,10 +362,12 @@ const StepSpecsDisplay: React.FC<StepSpecsDisplayProps> = ({
           allocationId={selectedAllocation.allocationId}
           ticketId={ticketId}
           specDetails={selectedAllocation.specDetails}
+          workflowStepId={stepId}
           onClose={() => {
             setSelectedAllocation(null);
             refreshAfterProgressUpdate();
           }}
+          onRefresh={refreshAfterProgressUpdate}
         />
       )}
     </div>

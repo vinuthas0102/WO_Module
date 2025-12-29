@@ -15,14 +15,18 @@ interface SpecAllocationProgressTrackerProps {
     allocatedQuantity: number;
     unit: string;
   };
+  workflowStepId?: string;
   onClose: () => void;
+  onRefresh?: () => void;
 }
 
 export const SpecAllocationProgressTracker: React.FC<SpecAllocationProgressTrackerProps> = ({
   allocationId,
   ticketId,
   specDetails,
-  onClose
+  workflowStepId,
+  onClose,
+  onRefresh
 }) => {
   const { user } = useAuth();
   const [entries, setEntries] = useState<SpecAllocationProgress[]>([]);
@@ -33,6 +37,7 @@ export const SpecAllocationProgressTracker: React.FC<SpecAllocationProgressTrack
   const [comment, setComment] = useState('');
   const [measurementDate, setMeasurementDate] = useState(new Date().toISOString().split('T')[0]);
   const [submitting, setSubmitting] = useState(false);
+  const [notification, setNotification] = useState<string | null>(null);
 
   useEffect(() => {
     loadEntries();
@@ -71,6 +76,24 @@ export const SpecAllocationProgressTracker: React.FC<SpecAllocationProgressTrack
       setComment('');
       setShowForm(false);
       await loadEntries();
+
+      const newTotalCompleted = entries.reduce((sum, entry) => sum + entry.workDoneQuantity, 0) + workDoneQuantity;
+      const newProgressPercentage = (newTotalCompleted / specDetails.allocatedQuantity) * 100;
+
+      if (newProgressPercentage >= 100) {
+        setNotification('Progress saved! This spec is now 100% complete. Task may be automatically completed.');
+        setTimeout(() => setNotification(null), 5000);
+      } else if (entries.length === 0) {
+        setNotification('Progress saved! Task status updated to WIP.');
+        setTimeout(() => setNotification(null), 4000);
+      } else {
+        setNotification('Progress entry saved successfully!');
+        setTimeout(() => setNotification(null), 3000);
+      }
+
+      if (onRefresh) {
+        onRefresh();
+      }
     } catch (error: any) {
       console.error('Error creating progress entry:', error);
       alert(error.message || 'Failed to create progress entry');
@@ -97,6 +120,21 @@ export const SpecAllocationProgressTracker: React.FC<SpecAllocationProgressTrack
       if (selectedEntry && selectedEntry.id === entryId) {
         const updated = await SpecAllocationProgressService.getProgressEntryWithDetails(entryId);
         setSelectedEntry(updated);
+      }
+
+      const totalCompleted = entries.reduce((sum, entry) => sum + entry.workDoneQuantity, 0);
+      const progressPercentage = (totalCompleted / specDetails.allocatedQuantity) * 100;
+
+      if (progressPercentage >= 100 && (status === 'verified' || status === 'approved')) {
+        setNotification('Status updated! This spec is complete. Task may be automatically completed.');
+        setTimeout(() => setNotification(null), 5000);
+      } else {
+        setNotification(`Status updated to ${status}!`);
+        setTimeout(() => setNotification(null), 3000);
+      }
+
+      if (onRefresh) {
+        onRefresh();
       }
     } catch (error: any) {
       console.error('Error updating status:', error);
@@ -129,6 +167,15 @@ export const SpecAllocationProgressTracker: React.FC<SpecAllocationProgressTrack
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {notification && (
+          <div className="bg-green-50 border-b border-green-200 px-4 py-3">
+            <div className="flex items-center space-x-2">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+              <p className="text-sm font-medium text-green-800">{notification}</p>
+            </div>
+          </div>
+        )}
 
         <div className="bg-blue-50 border-b border-blue-200 p-4">
           <div className="flex items-center justify-between mb-2">

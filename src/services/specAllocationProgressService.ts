@@ -223,6 +223,31 @@ export class SpecAllocationProgressService {
     }
   }
 
+  static canEditEntry(entry: SpecAllocationProgress, userId: string, userRole: string): boolean {
+    if (entry.status !== 'draft') return false;
+
+    const roleLower = userRole.toLowerCase();
+    if (roleLower === 'dept_officer' || roleLower === 'eo') return true;
+
+    return entry.createdBy === userId;
+  }
+
+  static canSubmitEntry(entry: SpecAllocationProgress, userId: string, userRole: string): boolean {
+    if (entry.status !== 'draft') return false;
+
+    const roleLower = userRole.toLowerCase();
+    if (roleLower === 'dept_officer' || roleLower === 'eo') return true;
+
+    return entry.createdBy === userId;
+  }
+
+  static canVerifyEntry(entry: SpecAllocationProgress, userRole: string): boolean {
+    if (entry.status !== 'submitted') return false;
+
+    const roleLower = userRole.toLowerCase();
+    return roleLower === 'eo' || roleLower === 'dept_officer';
+  }
+
   static async updateProgressEntry(
     entryId: string,
     workDoneQuantity: number,
@@ -231,6 +256,10 @@ export class SpecAllocationProgressService {
   ): Promise<void> {
     try {
       const entry = await this.getProgressEntryWithDetails(entryId);
+
+      if (entry.status !== 'draft') {
+        throw new Error('Only draft entries can be edited');
+      }
 
       const allEntries = await this.getProgressEntries(entry.allocationId);
       const previousEntries = allEntries.filter(e => e.entryNumber < entry.entryNumber);
@@ -248,6 +277,22 @@ export class SpecAllocationProgressService {
         .eq('id', entryId);
 
       if (error) throw error;
+
+      const subsequentEntries = allEntries.filter(e => e.entryNumber > entry.entryNumber);
+      if (subsequentEntries.length > 0) {
+        let runningCumulative = cumulativeQuantity;
+
+        for (const subEntry of subsequentEntries) {
+          runningCumulative += subEntry.workDoneQuantity;
+
+          const { error: updateError } = await supabase
+            .from('spec_allocation_progress_tracking')
+            .update({ cumulative_quantity: runningCumulative })
+            .eq('id', subEntry.id);
+
+          if (updateError) throw updateError;
+        }
+      }
     } catch (error) {
       console.error('Error updating progress entry:', error);
       throw error;

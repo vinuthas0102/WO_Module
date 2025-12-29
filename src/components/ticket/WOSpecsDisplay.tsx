@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Edit, Trash2, FileCheck, AlertCircle, Maximize2, Package, FileText, ListChecks } from 'lucide-react';
+import { Edit, Trash2, FileCheck, AlertCircle, Maximize2, Package, FileText, ListChecks, TrendingUp, CheckCircle } from 'lucide-react';
 import { WorkOrderSpecDetail, Ticket } from '../../types';
 import { WorkOrderSpecService } from '../../services/workOrderSpecService';
+import { SpecAllocationProgressService, SpecAllocationProgressSummary } from '../../services/specAllocationProgressService';
+import { supabase } from '../../lib/supabase';
 import FullScreenNavigableView from '../common/FullScreenNavigableView';
 
 interface WOSpecsDisplayProps {
@@ -38,6 +40,7 @@ const WOSpecsDisplay: React.FC<WOSpecsDisplayProps> = ({
   const [editUnit, setEditUnit] = useState('');
   const [editRemarks, setEditRemarks] = useState('');
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [specProgress, setSpecProgress] = useState<Map<string, { completedQty: number; totalAllocatedQty: number; progressPercentage: number }>>(new Map());
 
   useEffect(() => {
     loadSpecs();
@@ -48,10 +51,65 @@ const WOSpecsDisplay: React.FC<WOSpecsDisplayProps> = ({
       setLoading(true);
       const data = await WorkOrderSpecService.getSpecDetailsByTicket(ticketId);
       setSpecs(data);
+
+      if (data.length > 0) {
+        await loadSpecProgress(data);
+      }
     } catch (error) {
       console.error('Error loading specs:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadSpecProgress = async (specsData: WorkOrderSpecDetail[]) => {
+    try {
+      const { data: allocations, error } = await supabase
+        .from('work_order_spec_allocations')
+        .select('id, spec_detail_id, allocated_quantity')
+        .in('spec_detail_id', specsData.map(s => s.id));
+
+      if (error) throw error;
+
+      const allocationsBySpec = new Map<string, Array<{ id: string; allocatedQuantity: number }>>();
+      (allocations || []).forEach((alloc: any) => {
+        if (!allocationsBySpec.has(alloc.spec_detail_id)) {
+          allocationsBySpec.set(alloc.spec_detail_id, []);
+        }
+        allocationsBySpec.get(alloc.spec_detail_id)!.push({
+          id: alloc.id,
+          allocatedQuantity: parseFloat(alloc.allocated_quantity) || 0,
+        });
+      });
+
+      const progressMap = new Map<string, { completedQty: number; totalAllocatedQty: number; progressPercentage: number }>();
+
+      for (const spec of specsData) {
+        const specAllocations = allocationsBySpec.get(spec.id) || [];
+        let totalCompleted = 0;
+        let totalAllocated = 0;
+
+        for (const alloc of specAllocations) {
+          totalAllocated += alloc.allocatedQuantity;
+          const summary = await SpecAllocationProgressService.getProgressSummaryForAllocation(
+            alloc.id,
+            alloc.allocatedQuantity
+          );
+          totalCompleted += summary.completedQuantity;
+        }
+
+        const progressPercentage = totalAllocated > 0 ? (totalCompleted / totalAllocated) * 100 : 0;
+
+        progressMap.set(spec.id, {
+          completedQty: totalCompleted,
+          totalAllocatedQty: totalAllocated,
+          progressPercentage,
+        });
+      }
+
+      setSpecProgress(progressMap);
+    } catch (error) {
+      console.error('Error loading spec progress:', error);
     }
   };
 
@@ -117,10 +175,24 @@ const WOSpecsDisplay: React.FC<WOSpecsDisplayProps> = ({
   const totalAllocated = specs.reduce((sum, spec) => sum + (spec.allocatedQuantity || 0), 0);
   const totalQuantity = specs.reduce((sum, spec) => sum + spec.quantity, 0);
 
+  const overallProgress = Array.from(specProgress.values()).reduce(
+    (acc, progress) => {
+      acc.totalCompleted += progress.completedQty;
+      acc.totalAllocated += progress.totalAllocatedQty;
+      acc.specsWithProgress += progress.totalAllocatedQty > 0 && progress.completedQty > 0 ? 1 : 0;
+      return acc;
+    },
+    { totalCompleted: 0, totalAllocated: 0, specsWithProgress: 0 }
+  );
+
+  const overallPercentage = overallProgress.totalAllocated > 0
+    ? (overallProgress.totalCompleted / overallProgress.totalAllocated) * 100
+    : 0;
+
   const renderSpecsTable = () => (
     <div className="space-y-4">
-      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-        <div className="flex items-center justify-between">
+      <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-3">
             <FileCheck className="w-5 h-5 text-green-600" />
             <div>
@@ -131,11 +203,6 @@ const WOSpecsDisplay: React.FC<WOSpecsDisplayProps> = ({
             </div>
           </div>
           <div className="flex items-center space-x-3">
-            {totalAllocated > 0 && (
-              <div className="text-sm text-green-700">
-                <span className="font-medium">Allocated:</span> {totalAllocated.toFixed(2)} units
-              </div>
-            )}
             {!isFullScreen && (
               <button
                 onClick={() => setIsFullScreen(true)}
@@ -148,6 +215,56 @@ const WOSpecsDisplay: React.FC<WOSpecsDisplayProps> = ({
             )}
           </div>
         </div>
+
+        {overallProgress.totalAllocated > 0 && (
+          <div className="mt-3 pt-3 border-t border-green-200">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center space-x-2">
+                <TrendingUp className="w-4 h-4 text-blue-600" />
+                <span className="text-sm font-medium text-gray-700">Overall Progress</span>
+              </div>
+              <span className={`text-sm font-bold ${
+                overallPercentage >= 100 ? 'text-green-600' :
+                overallPercentage >= 50 ? 'text-blue-600' :
+                overallPercentage > 0 ? 'text-yellow-600' : 'text-gray-500'
+              }`}>
+                {overallPercentage.toFixed(1)}%
+              </span>
+            </div>
+
+            <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+              <div
+                className={`h-2.5 rounded-full transition-all ${
+                  overallPercentage >= 100 ? 'bg-green-500' :
+                  overallPercentage >= 50 ? 'bg-blue-500' :
+                  overallPercentage > 0 ? 'bg-yellow-500' : 'bg-gray-200'
+                }`}
+                style={{ width: `${Math.min(overallPercentage, 100)}%` }}
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 text-xs">
+              <div className="bg-white rounded-lg p-2">
+                <p className="text-gray-500 mb-0.5">Allocated</p>
+                <p className="text-sm font-semibold text-blue-600">
+                  {overallProgress.totalAllocated.toFixed(2)} units
+                </p>
+              </div>
+              <div className="bg-white rounded-lg p-2">
+                <p className="text-gray-500 mb-0.5">Completed</p>
+                <p className="text-sm font-semibold text-green-600">
+                  {overallProgress.totalCompleted.toFixed(2)} units
+                </p>
+              </div>
+              <div className="bg-white rounded-lg p-2">
+                <p className="text-gray-500 mb-0.5">In Progress</p>
+                <p className="text-sm font-semibold text-gray-900">
+                  {overallProgress.specsWithProgress} / {totalSpecs}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="overflow-x-auto">
@@ -176,6 +293,9 @@ const WOSpecsDisplay: React.FC<WOSpecsDisplayProps> = ({
                 Remaining
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                Progress
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Remarks
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
@@ -188,7 +308,7 @@ const WOSpecsDisplay: React.FC<WOSpecsDisplayProps> = ({
               <tr key={spec.id} className="hover:bg-gray-50">
                 {editingSpec?.id === spec.id ? (
                   <>
-                    <td className="px-4 py-3 text-sm" colSpan={9}>
+                    <td className="px-4 py-3 text-sm" colSpan={10}>
                       <div className="space-y-3">
                         <div className="grid grid-cols-3 gap-3">
                           <div>
@@ -275,6 +395,38 @@ const WOSpecsDisplay: React.FC<WOSpecsDisplayProps> = ({
                       >
                         {spec.remainingQuantity?.toFixed(2) || 0} {spec.unit}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      {(() => {
+                        const progress = specProgress.get(spec.id);
+                        if (!progress || progress.totalAllocatedQty === 0) {
+                          return <span className="text-gray-400 text-xs">No progress</span>;
+                        }
+
+                        const percentage = progress.progressPercentage;
+                        const color = percentage >= 100 ? 'bg-green-500' : percentage >= 50 ? 'bg-blue-500' : percentage > 0 ? 'bg-yellow-500' : 'bg-gray-200';
+                        const textColor = percentage >= 100 ? 'text-green-600' : percentage >= 50 ? 'text-blue-600' : percentage > 0 ? 'text-yellow-600' : 'text-gray-500';
+
+                        return (
+                          <div className="min-w-[120px]">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className={`text-xs font-semibold ${textColor}`}>
+                                {percentage.toFixed(1)}%
+                              </span>
+                              {percentage >= 100 && <CheckCircle className="w-3 h-3 text-green-600" />}
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-1.5">
+                              <div
+                                className={`h-1.5 rounded-full transition-all ${color}`}
+                                style={{ width: `${Math.min(percentage, 100)}%` }}
+                              />
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {progress.completedQty.toFixed(2)} / {progress.totalAllocatedQty.toFixed(2)}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">
                       {spec.remarks || '-'}

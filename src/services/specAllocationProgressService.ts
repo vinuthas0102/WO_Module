@@ -40,6 +40,29 @@ export interface SpecAllocationProgressWithDetails extends SpecAllocationProgres
   }[];
 }
 
+export interface SpecAllocationProgressSummary {
+  allocationId: string;
+  allocatedQuantity: number;
+  completedQuantity: number;
+  progressPercentage: number;
+  entryCount: number;
+  lastUpdateDate?: Date;
+  hasProgress: boolean;
+  pendingEntries: number;
+  verifiedEntries: number;
+  unit?: string;
+}
+
+export interface StepProgressSummary {
+  stepId: string;
+  totalSpecs: number;
+  specsWithProgress: number;
+  totalAllocatedQuantity: number;
+  totalCompletedQuantity: number;
+  overallProgressPercentage: number;
+  specSummaries: SpecAllocationProgressSummary[];
+}
+
 export class SpecAllocationProgressService {
   static async getProgressEntries(allocationId: string): Promise<SpecAllocationProgress[]> {
     try {
@@ -302,5 +325,131 @@ export class SpecAllocationProgressService {
   static getDocumentUrl(filePath: string): string {
     const { data } = supabase.storage.from('step-documents').getPublicUrl(filePath);
     return data.publicUrl;
+  }
+
+  static async getProgressSummaryForAllocation(
+    allocationId: string,
+    allocatedQuantity: number,
+    unit?: string
+  ): Promise<SpecAllocationProgressSummary> {
+    try {
+      const entries = await this.getProgressEntries(allocationId);
+
+      const completedQuantity = entries.length > 0
+        ? entries[entries.length - 1].cumulativeQuantity
+        : 0;
+
+      const progressPercentage = allocatedQuantity > 0
+        ? (completedQuantity / allocatedQuantity) * 100
+        : 0;
+
+      const pendingEntries = entries.filter(e => e.status === 'draft' || e.status === 'submitted').length;
+      const verifiedEntries = entries.filter(e => e.status === 'verified' || e.status === 'approved').length;
+
+      const lastUpdateDate = entries.length > 0
+        ? entries[entries.length - 1].updatedAt
+        : undefined;
+
+      return {
+        allocationId,
+        allocatedQuantity,
+        completedQuantity,
+        progressPercentage,
+        entryCount: entries.length,
+        lastUpdateDate,
+        hasProgress: entries.length > 0,
+        pendingEntries,
+        verifiedEntries,
+        unit,
+      };
+    } catch (error) {
+      console.error('Error getting progress summary for allocation:', error);
+      return {
+        allocationId,
+        allocatedQuantity,
+        completedQuantity: 0,
+        progressPercentage: 0,
+        entryCount: 0,
+        hasProgress: false,
+        pendingEntries: 0,
+        verifiedEntries: 0,
+        unit,
+      };
+    }
+  }
+
+  static async getProgressSummariesForAllocations(
+    allocations: Array<{ id: string; allocatedQuantity: number; unit?: string }>
+  ): Promise<Map<string, SpecAllocationProgressSummary>> {
+    try {
+      const summaryPromises = allocations.map(alloc =>
+        this.getProgressSummaryForAllocation(alloc.id, alloc.allocatedQuantity, alloc.unit)
+      );
+
+      const summaries = await Promise.all(summaryPromises);
+
+      const summaryMap = new Map<string, SpecAllocationProgressSummary>();
+      summaries.forEach(summary => {
+        summaryMap.set(summary.allocationId, summary);
+      });
+
+      return summaryMap;
+    } catch (error) {
+      console.error('Error getting progress summaries for allocations:', error);
+      return new Map();
+    }
+  }
+
+  static async getProgressSummaryForStep(stepId: string): Promise<StepProgressSummary> {
+    try {
+      const { data: allocations, error } = await supabase
+        .from('work_order_spec_allocations')
+        .select(`
+          id,
+          allocated_quantity,
+          spec_detail:work_order_spec_details(unit)
+        `)
+        .eq('workflow_step_id', stepId);
+
+      if (error) throw error;
+
+      const allocationData = (allocations || []).map((alloc: any) => ({
+        id: alloc.id,
+        allocatedQuantity: parseFloat(alloc.allocated_quantity) || 0,
+        unit: alloc.spec_detail?.unit,
+      }));
+
+      const summaryMap = await this.getProgressSummariesForAllocations(allocationData);
+      const specSummaries = Array.from(summaryMap.values());
+
+      const totalSpecs = specSummaries.length;
+      const specsWithProgress = specSummaries.filter(s => s.hasProgress).length;
+      const totalAllocatedQuantity = specSummaries.reduce((sum, s) => sum + s.allocatedQuantity, 0);
+      const totalCompletedQuantity = specSummaries.reduce((sum, s) => sum + s.completedQuantity, 0);
+      const overallProgressPercentage = totalAllocatedQuantity > 0
+        ? (totalCompletedQuantity / totalAllocatedQuantity) * 100
+        : 0;
+
+      return {
+        stepId,
+        totalSpecs,
+        specsWithProgress,
+        totalAllocatedQuantity,
+        totalCompletedQuantity,
+        overallProgressPercentage,
+        specSummaries,
+      };
+    } catch (error) {
+      console.error('Error getting progress summary for step:', error);
+      return {
+        stepId,
+        totalSpecs: 0,
+        specsWithProgress: 0,
+        totalAllocatedQuantity: 0,
+        totalCompletedQuantity: 0,
+        overallProgressPercentage: 0,
+        specSummaries: [],
+      };
+    }
   }
 }

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, FileCheck, Package, TrendingUp, Maximize2, Layers, Workflow } from 'lucide-react';
+import { X, FileCheck, Package, TrendingUp, Maximize2, Layers, Workflow, FileText } from 'lucide-react';
 import { WorkOrderSpecService } from '../../services/workOrderSpecService';
-import { WorkOrderSpecDetail, WorkOrderSpecAllocation } from '../../types';
+import { WorkOrderSpecDetail, WorkOrderSpecAllocation, Ticket } from '../../types';
 import { SpecAllocationProgressTracker } from './SpecAllocationProgressTracker';
-import ContextualExpandedModal from '../common/ContextualExpandedModal';
+import FullScreenNavigableView from '../common/FullScreenNavigableView';
 
 interface StepSpecsDisplayProps {
   stepId: string;
@@ -12,6 +12,13 @@ interface StepSpecsDisplayProps {
   ticketTitle: string;
   ticketId: string;
   onClose: () => void;
+  ticket?: Ticket;
+  woInfoContent?: React.ReactNode;
+  workflowContent?: React.ReactNode;
+  woItemsCount?: number;
+  woSpecsCount?: number;
+  completedWorkflows?: number;
+  totalWorkflows?: number;
 }
 
 const StepSpecsDisplay: React.FC<StepSpecsDisplayProps> = ({
@@ -21,11 +28,19 @@ const StepSpecsDisplay: React.FC<StepSpecsDisplayProps> = ({
   ticketTitle,
   ticketId,
   onClose,
+  ticket,
+  woInfoContent,
+  workflowContent,
+  woItemsCount = 0,
+  woSpecsCount = 0,
+  completedWorkflows = 0,
+  totalWorkflows = 0,
 }) => {
   const [specs, setSpecs] = useState<Array<WorkOrderSpecDetail & { allocation: WorkOrderSpecAllocation }>>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAllocation, setSelectedAllocation] = useState<{ allocationId: string; specDetails: { description: string; allocatedQuantity: number; unit: string } } | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [activeSection, setActiveSection] = useState<'wo-info' | 'wo-details' | 'workflow'>('wo-details');
 
   useEffect(() => {
     loadSpecs();
@@ -43,7 +58,7 @@ const StepSpecsDisplay: React.FC<StepSpecsDisplayProps> = ({
     }
   };
 
-  const renderContent = () => (
+  const renderSpecsContent = () => (
     <div className="space-y-2">
       <div className="flex items-center justify-between pb-2 border-b border-gray-200">
         <div className="flex-1">
@@ -187,37 +202,88 @@ const StepSpecsDisplay: React.FC<StepSpecsDisplayProps> = ({
     </div>
   );
 
+  const navigationCards = ticket ? [
+    {
+      id: 'wo-info',
+      title: 'WO Info',
+      icon: FileText,
+      isActive: activeSection === 'wo-info',
+      onClick: () => setActiveSection('wo-info'),
+    },
+    {
+      id: 'wo-details',
+      title: 'WO Details',
+      icon: Package,
+      badge: woItemsCount + woSpecsCount > 0 ? woItemsCount + woSpecsCount : undefined,
+      isActive: activeSection === 'wo-details',
+      onClick: () => setActiveSection('wo-details'),
+    },
+    {
+      id: 'workflow',
+      title: 'Workflow',
+      icon: Workflow,
+      progress: totalWorkflows > 0 ? Math.round((completedWorkflows / totalWorkflows) * 100) : undefined,
+      badge: totalWorkflows,
+      isActive: activeSection === 'workflow',
+      onClick: () => setActiveSection('workflow'),
+    },
+  ] : undefined;
+
+  const renderSectionContent = () => {
+    if (!ticket) {
+      return renderSpecsContent();
+    }
+
+    switch (activeSection) {
+      case 'wo-info':
+        return woInfoContent || <div className="p-4 text-gray-500">No WO Info available</div>;
+      case 'wo-details':
+        return (
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+            {renderSpecsContent()}
+          </div>
+        );
+      case 'workflow':
+        return workflowContent || <div className="p-4 text-gray-500">No Workflow content available</div>;
+      default:
+        return renderSpecsContent();
+    }
+  };
+
   return (
     <>
-      {renderContent()}
+      {!isFullScreen && renderSpecsContent()}
 
-      <ContextualExpandedModal
-        isOpen={isFullScreen}
-        onClose={() => setIsFullScreen(false)}
-        ticketNumber={ticketNumber}
-        ticketTitle={ticketTitle}
-        breadcrumbs={[
-          { label: 'Work Order', icon: <Package className="w-4 h-4" /> },
-          { label: 'Workflow', icon: <Workflow className="w-4 h-4" /> },
-          { label: stepTitle, icon: <Layers className="w-4 h-4" /> },
-          { label: 'Specifications', icon: <FileCheck className="w-4 h-4" /> },
-        ]}
-        contextInfo={
-          <div className="flex items-center gap-4 text-sm">
-            <span>Allocated Specs: {specs.length}</span>
-            {specs.length > 0 && (
-              <>
-                <span>•</span>
-                <span>
-                  Total Allocated: {specs.reduce((sum, s) => sum + s.allocation.allocatedQuantity, 0).toFixed(2)} units
-                </span>
-              </>
-            )}
-          </div>
-        }
-      >
-        {renderContent()}
-      </ContextualExpandedModal>
+      {isFullScreen && (
+        <FullScreenNavigableView
+          isOpen={isFullScreen}
+          onClose={() => setIsFullScreen(false)}
+          ticketNumber={ticketNumber}
+          ticketTitle={ticketTitle}
+          breadcrumbs={[
+            { label: 'Work Order', icon: <Package className="w-4 h-4" /> },
+            { label: 'Workflow', icon: <Workflow className="w-4 h-4" /> },
+            { label: stepTitle, icon: <Layers className="w-4 h-4" /> },
+            { label: 'Specifications', icon: <FileCheck className="w-4 h-4" /> },
+          ]}
+          contextInfo={
+            <div className="flex items-center gap-4 text-sm">
+              <span>Allocated Specs: {specs.length}</span>
+              {specs.length > 0 && (
+                <>
+                  <span>•</span>
+                  <span>
+                    Total Allocated: {specs.reduce((sum, s) => sum + s.allocation.allocatedQuantity, 0).toFixed(2)} units
+                  </span>
+                </>
+              )}
+            </div>
+          }
+          navigationCards={navigationCards}
+        >
+          {renderSectionContent()}
+        </FullScreenNavigableView>
+      )}
     </>
   );
 };

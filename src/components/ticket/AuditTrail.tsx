@@ -37,9 +37,15 @@ interface AuditTrailProps {
   onSubmitNewClarification?: (data: { subject: string; message: string; attachmentFile?: File; notificationChannels: any[] }) => Promise<void>;
   activeTab?: 'activity' | 'chat' | 'notes' | 'progress';
   onTabChange?: (tab: 'activity' | 'chat' | 'notes' | 'progress') => void;
+  woInfoContent?: React.ReactNode;
+  workflowContent?: React.ReactNode;
+  woItemsCount?: number;
+  woSpecsCount?: number;
+  completedWorkflows?: number;
+  totalWorkflows?: number;
 }
 
-const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onCloseDocument, onViewProgressDocument, viewingStepSpecs, onCloseStepSpecs, allocatingSpec, onCloseSpecAllocation, onSpecAllocated, allocatingItem, onCloseItemAllocation, onItemAllocated, activeClarificationThread, onCloseClarificationThread, onRefreshClarifications, onOpenClarificationThread, creatingClarification, onCancelNewClarification, onSubmitNewClarification, activeTab: externalActiveTab, onTabChange, viewingProgress, onCloseProgress }) => {
+const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onCloseDocument, onViewProgressDocument, viewingStepSpecs, onCloseStepSpecs, allocatingSpec, onCloseSpecAllocation, onSpecAllocated, allocatingItem, onCloseItemAllocation, onItemAllocated, activeClarificationThread, onCloseClarificationThread, onRefreshClarifications, onOpenClarificationThread, creatingClarification, onCancelNewClarification, onSubmitNewClarification, activeTab: externalActiveTab, onTabChange, viewingProgress, onCloseProgress, woInfoContent, workflowContent, woItemsCount, woSpecsCount, completedWorkflows, totalWorkflows }) => {
   const { users } = useTickets();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
@@ -270,6 +276,13 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
         ticketTitle={ticket.title}
         ticketId={ticket.id}
         onClose={onCloseStepSpecs}
+        ticket={ticket}
+        woInfoContent={woInfoContent}
+        workflowContent={workflowContent}
+        woItemsCount={woItemsCount}
+        woSpecsCount={woSpecsCount}
+        completedWorkflows={completedWorkflows}
+        totalWorkflows={totalWorkflows}
       />
     );
   }

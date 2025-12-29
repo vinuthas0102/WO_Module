@@ -22,6 +22,9 @@ import { NewClarificationModal } from '../clarification/NewClarificationModal';
 import InlineSpecCreation from './InlineSpecCreation';
 import { MeasurementBookManager } from './MeasurementBookManager';
 import { BillManager } from './BillManager';
+import WOInfoDisplay from './WOInfoDisplay';
+import { WorkOrderItemService } from '../../services/workOrderItemService';
+import { WorkOrderSpecService } from '../../services/workOrderSpecService';
 
 interface TicketViewProps {
   ticket: Ticket;
@@ -58,9 +61,13 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
   const [creatingInlineClarification, setCreatingInlineClarification] = useState<{ stepId: string; stepTitle: string; assignedUserId: string } | null>(null);
   const [creatingInlineSpec, setCreatingInlineSpec] = useState<{ ticketId: string; stepId: string; stepTitle: string; userId: string } | null>(null);
   const [activeRightPanelTab, setActiveRightPanelTab] = useState<'activity' | 'chat' | 'notes'>('activity');
+  const [woItemsCount, setWoItemsCount] = useState(0);
+  const [woSpecsCount, setWoSpecsCount] = useState(0);
+  const [loadingWoCounts, setLoadingWoCounts] = useState(true);
 
   const createdByUser = users.find(u => u.id === ticket.createdBy);
   const assignedToUser = ticket.assignedTo ? users.find(u => u.id === ticket.assignedTo) : undefined;
+  const isWOModule = selectedModule?.id === '550e8400-e29b-41d4-a716-446655440106';
 
   useEffect(() => {
     const fetchUserPreferences = async () => {
@@ -114,6 +121,31 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
 
     fetchFinanceApprovals();
   }, [ticket.id, ticket.requiresFinanceApproval]);
+
+  useEffect(() => {
+    const loadWOCounts = async () => {
+      if (!isWOModule) {
+        setLoadingWoCounts(false);
+        return;
+      }
+
+      try {
+        setLoadingWoCounts(true);
+        const [items, specs] = await Promise.all([
+          WorkOrderItemService.getItemDetailsByTicket(ticket.id),
+          WorkOrderSpecService.getSpecDetailsByTicket(ticket.id),
+        ]);
+        setWoItemsCount(items.length);
+        setWoSpecsCount(specs.length);
+      } catch (error) {
+        console.error('Error loading WO counts:', error);
+      } finally {
+        setLoadingWoCounts(false);
+      }
+    };
+
+    loadWOCounts();
+  }, [ticket.id, refreshKey, isWOModule]);
 
   const refreshFinanceData = async () => {
     try {
@@ -656,6 +688,59 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                 onSubmitNewClarification={handleSubmitInlineClarification}
                 activeTab={activeRightPanelTab}
                 onTabChange={setActiveRightPanelTab}
+                woInfoContent={isWOModule ? (
+                  <WOInfoDisplay
+                    ticket={ticket}
+                    createdByUser={createdByUser}
+                    assignedToUser={assignedToUser}
+                    isOverdue={!!isOverdue}
+                    userRole={user?.role}
+                    getPriorityColor={getPriorityColor}
+                    formatDate={formatDate}
+                    ticketAttachments={ticketAttachments}
+                    loadingAttachments={loadingAttachments}
+                    uploadingFile={uploadingFile}
+                    fileInputRef={fileInputRef}
+                    onFileUpload={handleFileUpload}
+                    onDownloadAttachment={handleDownloadAttachment}
+                    onDeleteAttachment={handleDeleteAttachment}
+                  />
+                ) : undefined}
+                workflowContent={user && user.role !== 'EMPLOYEE' ? (
+                  <WorkflowManagement
+                    ticket={ticket}
+                    canManage={canEdit()}
+                    onViewDocument={(doc, step) => {
+                      setViewingDocument({ document: doc, workflowTitle: step.title });
+                    }}
+                    onViewStepSpecs={(stepId, stepTitle) => {
+                      setViewingStepSpecs({ stepId, stepTitle });
+                    }}
+                    onAllocateSpec={(stepId, stepTitle) => {
+                      if (user) {
+                        setAllocatingSpec({ ticketId: ticket.id, stepId, stepTitle, userId: user.id });
+                      }
+                    }}
+                    onCreateSpec={(stepId, stepTitle) => {
+                      if (user) {
+                        setCreatingInlineSpec({ ticketId: ticket.id, stepId, stepTitle, userId: user.id });
+                      }
+                    }}
+                    onAllocateItem={(stepId, stepTitle) => {
+                      if (user) {
+                        setAllocatingItem({ ticketId: ticket.id, stepId, stepTitle, userId: user.id });
+                      }
+                    }}
+                    onOpenClarification={handleOpenClarification}
+                    onViewProgress={(stepId, stepTitle) => {
+                      setViewingProgress({ stepId, stepTitle });
+                    }}
+                  />
+                ) : undefined}
+                woItemsCount={woItemsCount}
+                woSpecsCount={woSpecsCount}
+                completedWorkflows={completedWorkflows}
+                totalWorkflows={totalWorkflows}
               />
               )}
             </div>

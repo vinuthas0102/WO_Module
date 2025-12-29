@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Minimize2, FileText, Package, ListChecks, ChevronRight } from 'lucide-react';
 
 interface NavigationCard {
@@ -88,7 +89,7 @@ const FullScreenNavigableView: React.FC<FullScreenNavigableViewProps> = ({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[9999] bg-white flex flex-col">
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 shadow-lg">
         <div className="flex items-start justify-between mb-3">
@@ -185,7 +186,8 @@ const FullScreenNavigableView: React.FC<FullScreenNavigableViewProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

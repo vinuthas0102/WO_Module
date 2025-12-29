@@ -40,7 +40,6 @@ const StepSpecsDisplay: React.FC<StepSpecsDisplayProps> = ({
   const [loading, setLoading] = useState(true);
   const [selectedAllocation, setSelectedAllocation] = useState<{ allocationId: string; specDetails: { description: string; allocatedQuantity: number; unit: string } } | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [activeSection, setActiveSection] = useState<'wo-info' | 'wo-details' | 'workflow'>('wo-details');
 
   useEffect(() => {
     loadSpecs();
@@ -205,36 +204,38 @@ const StepSpecsDisplay: React.FC<StepSpecsDisplayProps> = ({
   const navigationCards = ticket ? [
     {
       id: 'wo-info',
-      title: 'WO Info',
-      icon: FileText,
-      isActive: activeSection === 'wo-info',
-      onClick: () => setActiveSection('wo-info'),
+      label: 'WO Info',
+      icon: <FileText className="w-5 h-5" />,
+      colorClass: 'bg-orange-100',
+      activeColorClass: 'bg-orange-600 border-orange-600 text-white',
+      enabled: true,
     },
     {
       id: 'wo-details',
-      title: 'WO Details',
-      icon: Package,
-      badge: woItemsCount + woSpecsCount > 0 ? woItemsCount + woSpecsCount : undefined,
-      isActive: activeSection === 'wo-details',
-      onClick: () => setActiveSection('wo-details'),
+      label: 'WO Details',
+      icon: <Package className="w-5 h-5" />,
+      badge: woItemsCount + woSpecsCount > 0 ? `${woItemsCount + woSpecsCount} items` : undefined,
+      colorClass: 'bg-blue-100',
+      activeColorClass: 'bg-blue-600 border-blue-600 text-white',
+      enabled: true,
     },
     {
       id: 'workflow',
-      title: 'Workflow',
-      icon: Workflow,
-      progress: totalWorkflows > 0 ? Math.round((completedWorkflows / totalWorkflows) * 100) : undefined,
-      badge: totalWorkflows,
-      isActive: activeSection === 'workflow',
-      onClick: () => setActiveSection('workflow'),
+      label: 'Workflow',
+      icon: <Workflow className="w-5 h-5" />,
+      badge: totalWorkflows > 0 ? `${completedWorkflows}/${totalWorkflows} completed` : undefined,
+      colorClass: 'bg-green-100',
+      activeColorClass: 'bg-green-600 border-green-600 text-white',
+      enabled: true,
     },
-  ] : undefined;
+  ] : [];
 
-  const renderSectionContent = () => {
+  const renderSectionContent = (activeSectionId: string) => {
     if (!ticket) {
       return renderSpecsContent();
     }
 
-    switch (activeSection) {
+    switch (activeSectionId) {
       case 'wo-info':
         return woInfoContent || <div className="p-4 text-gray-500">No WO Info available</div>;
       case 'wo-details':
@@ -279,9 +280,10 @@ const StepSpecsDisplay: React.FC<StepSpecsDisplayProps> = ({
               )}
             </div>
           }
+          initialSection="wo-details"
           navigationCards={navigationCards}
         >
-          {renderSectionContent()}
+          {(activeSectionId) => renderSectionContent(activeSectionId)}
         </FullScreenNavigableView>
       )}
     </>

@@ -10,6 +10,8 @@ export interface SpecAllocationProgress {
   comment?: string;
   measurementDate: string;
   measuredBy: string;
+  submittedBy?: string;
+  submittedAt?: string;
   verifiedBy?: string;
   verificationDate?: string;
   status: 'draft' | 'submitted' | 'verified' | 'approved';
@@ -20,6 +22,11 @@ export interface SpecAllocationProgress {
 
 export interface SpecAllocationProgressWithDetails extends SpecAllocationProgress {
   measuredByUser?: {
+    id: string;
+    full_name: string;
+    email: string;
+  };
+  submittedByUser?: {
     id: string;
     full_name: string;
     email: string;
@@ -94,6 +101,8 @@ export class SpecAllocationProgressService {
         comment: entry.comment,
         measurementDate: entry.measurement_date,
         measuredBy: entry.measured_by,
+        submittedBy: entry.submitted_by,
+        submittedAt: entry.submitted_at,
         verifiedBy: entry.verified_by,
         verificationDate: entry.verification_date,
         status: entry.status,
@@ -114,6 +123,7 @@ export class SpecAllocationProgressService {
         .select(`
           *,
           measuredByUser:users!spec_allocation_progress_tracking_measured_by_fkey(id, full_name, email),
+          submittedByUser:users!spec_allocation_progress_tracking_submitted_by_fkey(id, full_name, email),
           verifiedByUser:users!spec_allocation_progress_tracking_verified_by_fkey(id, full_name, email)
         `)
         .eq('id', entryId)
@@ -137,6 +147,8 @@ export class SpecAllocationProgressService {
         comment: data.comment,
         measurementDate: data.measurement_date,
         measuredBy: data.measured_by,
+        submittedBy: data.submitted_by,
+        submittedAt: data.submitted_at,
         verifiedBy: data.verified_by,
         verificationDate: data.verification_date,
         status: data.status,
@@ -144,6 +156,7 @@ export class SpecAllocationProgressService {
         createdAt: new Date(data.created_at),
         updatedAt: new Date(data.updated_at),
         measuredByUser: data.measuredByUser,
+        submittedByUser: data.submittedByUser,
         verifiedByUser: data.verifiedByUser,
         documents: (docs || []).map(doc => ({
           id: doc.id,
@@ -248,6 +261,11 @@ export class SpecAllocationProgressService {
   ): Promise<void> {
     try {
       const updateData: any = { status };
+
+      if (status === 'submitted') {
+        updateData.submitted_by = userId;
+        updateData.submitted_at = new Date().toISOString();
+      }
 
       if (status === 'verified') {
         updateData.verified_by = userId;

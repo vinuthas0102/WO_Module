@@ -407,6 +407,19 @@ export const SpecAllocationProgressTracker: React.FC<SpecAllocationProgressTrack
                     </p>
                   </div>
 
+                  {selectedEntry.submittedBy && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-700 mb-2">Submitted By</p>
+                      <p className="text-sm text-gray-900">
+                        {selectedEntry.submittedByUser?.full_name || 'Unknown'}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {selectedEntry.submittedAt &&
+                          `Submitted on ${new Date(selectedEntry.submittedAt).toLocaleDateString()}`}
+                      </p>
+                    </div>
+                  )}
+
                   {selectedEntry.verifiedBy && (
                     <div>
                       <p className="text-xs font-medium text-gray-700 mb-2">Verified By</p>
@@ -420,7 +433,11 @@ export const SpecAllocationProgressTracker: React.FC<SpecAllocationProgressTrack
                     </div>
                   )}
 
-                  {selectedEntry.status === 'draft' && user?.id === selectedEntry.createdBy && (
+                  {selectedEntry.status === 'draft' && (
+                    user?.id === selectedEntry.createdBy ||
+                    user?.role === 'dept_officer' ||
+                    user?.role === 'eo'
+                  ) && (
                     <button
                       onClick={() => handleUpdateStatus(selectedEntry.id, 'submitted')}
                       className="w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"

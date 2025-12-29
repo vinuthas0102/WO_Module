@@ -208,7 +208,7 @@ const StepSpecsDisplay: React.FC<StepSpecsDisplayProps> = ({
       icon: <FileText className="w-5 h-5" />,
       colorClass: 'bg-orange-100',
       activeColorClass: 'bg-orange-600 border-orange-600 text-white',
-      enabled: true,
+      enabled: !!woInfoContent,
     },
     {
       id: 'wo-details',
@@ -226,7 +226,7 @@ const StepSpecsDisplay: React.FC<StepSpecsDisplayProps> = ({
       badge: totalWorkflows > 0 ? `${completedWorkflows}/${totalWorkflows} completed` : undefined,
       colorClass: 'bg-green-100',
       activeColorClass: 'bg-green-600 border-green-600 text-white',
-      enabled: true,
+      enabled: !!workflowContent,
     },
   ] : [];
 

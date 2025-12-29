@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { X, Minimize2, FileText, Package, ListChecks, ChevronRight } from 'lucide-react';
 
 interface NavigationCard {
@@ -41,15 +41,25 @@ const FullScreenNavigableView: React.FC<FullScreenNavigableViewProps> = ({
   onSectionChange,
   children,
 }) => {
-  const enabledCards = navigationCards.filter(card => card.enabled);
-  const defaultSection = initialSection || enabledCards[0]?.id || 'wo-info';
+  const enabledCards = useMemo(() =>
+    navigationCards.filter(card => card.enabled),
+    [navigationCards]
+  );
+
+  const defaultSection = useMemo(() => {
+    if (initialSection && enabledCards.some(card => card.id === initialSection)) {
+      return initialSection;
+    }
+    return enabledCards[0]?.id || 'wo-info';
+  }, [initialSection, enabledCards]);
+
   const [activeSection, setActiveSection] = useState<string>(defaultSection);
 
   useEffect(() => {
-    if (initialSection && enabledCards.some(card => card.id === initialSection)) {
-      setActiveSection(initialSection);
+    if (defaultSection && activeSection !== defaultSection) {
+      setActiveSection(defaultSection);
     }
-  }, [initialSection, enabledCards]);
+  }, [defaultSection]);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {

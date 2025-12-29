@@ -237,15 +237,23 @@ const StepSpecsDisplay: React.FC<StepSpecsDisplayProps> = ({
 
     switch (activeSectionId) {
       case 'wo-info':
-        return woInfoContent || <div className="p-4 text-gray-500">No WO Info available</div>;
-      case 'wo-details':
-        return (
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
-            {renderSpecsContent()}
+        return woInfoContent ? (
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+            {woInfoContent}
           </div>
+        ) : (
+          <div className="p-4 text-gray-500">No WO Info available</div>
         );
+      case 'wo-details':
+        return renderSpecsContent();
       case 'workflow':
-        return workflowContent || <div className="p-4 text-gray-500">No Workflow content available</div>;
+        return workflowContent ? (
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+            {workflowContent}
+          </div>
+        ) : (
+          <div className="p-4 text-gray-500">No Workflow content available</div>
+        );
       default:
         return renderSpecsContent();
     }

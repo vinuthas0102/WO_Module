@@ -263,6 +263,66 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
           canEdit={canEdit}
           refreshKey={refreshKey}
           onRefresh={onRefresh}
+          ticket={ticket}
+          woInfoContent={
+            <WOInfoDisplay
+              workOrderData={workOrderData}
+              ticket={{
+                description: ticket.description,
+                priority: ticket.priority,
+                department: ticket.department,
+                category: ticket.category,
+                createdAt: ticket.createdAt,
+                dueDate: ticket.dueDate
+              }}
+              createdByUser={createdByUser}
+              assignedToUser={assignedToUser}
+              totalWorkflows={totalWorkflows}
+              completedWorkflows={completedWorkflows}
+              isOverdue={isOverdue}
+              userRole={userRole}
+              getPriorityColor={getPriorityColor}
+              formatDate={formatDate}
+              ticketAttachments={ticketAttachments}
+              loadingAttachments={loadingAttachments}
+              uploadingFile={uploadingFile}
+              canEdit={canEdit}
+              fileInputRef={fileInputRef}
+              onFileUpload={onFileUpload}
+              onDownloadAttachment={onDownloadAttachment}
+              onDeleteAttachment={onDeleteAttachment}
+            />
+          }
+          workflowContent={
+            <div className="bg-white rounded-lg shadow-sm">
+              <div className="border-b border-gray-200 px-6 py-4">
+                <div className="flex items-center space-x-2 text-green-700">
+                  <ListChecks className="w-5 h-5" />
+                  <span className="text-sm font-semibold">Workflow Tasks</span>
+                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                    {completedWorkflows}/{totalWorkflows}
+                  </span>
+                </div>
+              </div>
+              <div className="p-6">
+                <WorkflowManagement
+                  ticket={ticket}
+                  canManage={canManage}
+                  onViewDocument={(doc, step) => {
+                    onViewDocument(doc, step.title);
+                  }}
+                  onViewStepSpecs={onViewStepSpecs}
+                  onAllocateSpec={onAllocateSpec}
+                  onCreateSpec={onCreateSpec}
+                  onAllocateItem={onAllocateItem}
+                  onOpenClarification={onOpenClarification}
+                  onViewProgress={onViewProgress}
+                />
+              </div>
+            </div>
+          }
+          completedWorkflows={completedWorkflows}
+          totalWorkflows={totalWorkflows}
         />
       )}
 

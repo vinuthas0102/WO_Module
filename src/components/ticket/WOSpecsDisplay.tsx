@@ -1,17 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { Edit, Trash2, FileCheck, AlertCircle, Maximize2, Package } from 'lucide-react';
-import { WorkOrderSpecDetail } from '../../types';
+import { Edit, Trash2, FileCheck, AlertCircle, Maximize2, Package, FileText, ListChecks } from 'lucide-react';
+import { WorkOrderSpecDetail, Ticket } from '../../types';
 import { WorkOrderSpecService } from '../../services/workOrderSpecService';
-import ContextualExpandedModal from '../common/ContextualExpandedModal';
+import FullScreenNavigableView from '../common/FullScreenNavigableView';
 
 interface WOSpecsDisplayProps {
   ticketId: string;
   ticketNumber: string;
   ticketTitle: string;
   onRefresh?: () => void;
+  ticket?: Ticket;
+  woInfoContent?: React.ReactNode;
+  workflowContent?: React.ReactNode;
+  woItemsCount?: number;
+  woSpecsCount?: number;
+  completedWorkflows?: number;
+  totalWorkflows?: number;
 }
 
-const WOSpecsDisplay: React.FC<WOSpecsDisplayProps> = ({ ticketId, ticketNumber, ticketTitle, onRefresh }) => {
+const WOSpecsDisplay: React.FC<WOSpecsDisplayProps> = ({
+  ticketId,
+  ticketNumber,
+  ticketTitle,
+  onRefresh,
+  ticket,
+  woInfoContent,
+  workflowContent,
+  woItemsCount = 0,
+  woSpecsCount = 0,
+  completedWorkflows = 0,
+  totalWorkflows = 0,
+}) => {
   const [specs, setSpecs] = useState<WorkOrderSpecDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingSpec, setEditingSpec] = useState<WorkOrderSpecDetail | null>(null);
@@ -297,35 +316,129 @@ const WOSpecsDisplay: React.FC<WOSpecsDisplayProps> = ({ ticketId, ticketNumber,
     </div>
   );
 
+  const hasNavigationData = ticket && woInfoContent && workflowContent;
+
+  const navigationCards = hasNavigationData ? [
+    {
+      id: 'wo-info',
+      label: 'WO Info',
+      icon: <FileText className="w-5 h-5" />,
+      badge: ticket ? `${completedWorkflows}/${totalWorkflows} workflows` : undefined,
+      colorClass: 'bg-orange-100 text-orange-600',
+      activeColorClass: 'bg-orange-600 border-orange-600 text-white',
+      enabled: true,
+    },
+    {
+      id: 'wo-details',
+      label: 'WO Details',
+      icon: <Package className="w-5 h-5" />,
+      badge: `${woItemsCount + woSpecsCount} items`,
+      colorClass: 'bg-blue-100 text-blue-600',
+      activeColorClass: 'bg-blue-600 border-blue-600 text-white',
+      enabled: true,
+    },
+    {
+      id: 'workflow',
+      label: 'Workflow',
+      icon: <ListChecks className="w-5 h-5" />,
+      badge: `${completedWorkflows}/${totalWorkflows} completed`,
+      colorClass: 'bg-green-100 text-green-600',
+      activeColorClass: 'bg-green-600 border-green-600 text-white',
+      enabled: true,
+    },
+  ] : [];
+
   return (
     <>
       {renderSpecsTable()}
 
-      <ContextualExpandedModal
-        isOpen={isFullScreen}
-        onClose={() => setIsFullScreen(false)}
-        ticketNumber={ticketNumber}
-        ticketTitle={ticketTitle}
-        breadcrumbs={[
-          { label: 'Work Order', icon: <Package className="w-4 h-4" /> },
-          { label: 'Specifications', icon: <FileCheck className="w-4 h-4" /> },
-        ]}
-        contextInfo={
-          <div className="flex items-center gap-4 text-sm">
-            <span>Total Specs: {totalSpecs}</span>
-            <span>•</span>
-            <span>Total Quantity: {totalQuantity.toFixed(2)} units</span>
-            {totalAllocated > 0 && (
-              <>
-                <span>•</span>
-                <span>Allocated: {totalAllocated.toFixed(2)} units</span>
-              </>
-            )}
-          </div>
-        }
-      >
-        {renderSpecsTable()}
-      </ContextualExpandedModal>
+      {hasNavigationData ? (
+        <FullScreenNavigableView
+          isOpen={isFullScreen}
+          onClose={() => setIsFullScreen(false)}
+          ticketNumber={ticketNumber}
+          ticketTitle={ticketTitle}
+          breadcrumbs={[
+            { label: 'Work Order', icon: <Package className="w-4 h-4" /> },
+            { label: 'Specifications', icon: <FileCheck className="w-4 h-4" /> },
+          ]}
+          contextInfo={
+            <div className="flex items-center gap-4 text-sm">
+              <span>Allocated Specs: {specs.length}</span>
+              <span>•</span>
+              <span>Total Allocated: {totalAllocated.toFixed(2)} units</span>
+            </div>
+          }
+          initialSection="wo-details"
+          navigationCards={navigationCards}
+        >
+          {(activeSectionId) => {
+            if (activeSectionId === 'wo-info') {
+              return woInfoContent;
+            } else if (activeSectionId === 'wo-details') {
+              return (
+                <div className="bg-white rounded-lg shadow-sm">
+                  <div className="border-b border-gray-200 px-6 py-4">
+                    <div className="flex items-center space-x-2 text-blue-700">
+                      <FileCheck className="w-5 h-5" />
+                      <span className="text-sm font-semibold">Work Order Specifications</span>
+                      <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                        {totalSpecs}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-6">
+                    {renderSpecsTable()}
+                  </div>
+                </div>
+              );
+            } else if (activeSectionId === 'workflow') {
+              return workflowContent;
+            }
+            return null;
+          }}
+        </FullScreenNavigableView>
+      ) : (
+        <FullScreenNavigableView
+          isOpen={isFullScreen}
+          onClose={() => setIsFullScreen(false)}
+          ticketNumber={ticketNumber}
+          ticketTitle={ticketTitle}
+          breadcrumbs={[
+            { label: 'Work Order', icon: <Package className="w-4 h-4" /> },
+            { label: 'Specifications', icon: <FileCheck className="w-4 h-4" /> },
+          ]}
+          contextInfo={
+            <div className="flex items-center gap-4 text-sm">
+              <span>Total Specs: {totalSpecs}</span>
+              <span>•</span>
+              <span>Total Quantity: {totalQuantity.toFixed(2)} units</span>
+              {totalAllocated > 0 && (
+                <>
+                  <span>•</span>
+                  <span>Allocated: {totalAllocated.toFixed(2)} units</span>
+                </>
+              )}
+            </div>
+          }
+          initialSection="specs"
+          navigationCards={[{
+            id: 'specs',
+            label: 'Specifications',
+            icon: <FileCheck className="w-5 h-5" />,
+            badge: `${totalSpecs} specs`,
+            colorClass: 'bg-green-100 text-green-600',
+            activeColorClass: 'bg-green-600 border-green-600 text-white',
+            enabled: true,
+          }]}
+        >
+          {() => (
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              {renderSpecsTable()}
+            </div>
+          )}
+        </FullScreenNavigableView>
+      )}
     </>
   );
 };

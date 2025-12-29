@@ -4,6 +4,7 @@ import WOItemsDisplay from './WOItemsDisplay';
 import WOSpecsDisplay from './WOSpecsDisplay';
 import { WorkOrderItemService } from '../../services/workOrderItemService';
 import { WorkOrderSpecService } from '../../services/workOrderSpecService';
+import { Ticket } from '../../types';
 
 interface WOTabsSectionProps {
   ticketId: string;
@@ -12,6 +13,11 @@ interface WOTabsSectionProps {
   canEdit: boolean;
   refreshKey: number;
   onRefresh: () => void;
+  ticket?: Ticket;
+  woInfoContent?: React.ReactNode;
+  workflowContent?: React.ReactNode;
+  completedWorkflows?: number;
+  totalWorkflows?: number;
 }
 
 const WOTabsSection: React.FC<WOTabsSectionProps> = ({
@@ -21,6 +27,11 @@ const WOTabsSection: React.FC<WOTabsSectionProps> = ({
   canEdit,
   refreshKey,
   onRefresh,
+  ticket,
+  woInfoContent,
+  workflowContent,
+  completedWorkflows = 0,
+  totalWorkflows = 0,
 }) => {
   const [itemsCount, setItemsCount] = useState(0);
   const [specsCount, setSpecsCount] = useState(0);
@@ -94,6 +105,13 @@ const WOTabsSection: React.FC<WOTabsSectionProps> = ({
             ticketNumber={ticketNumber}
             ticketTitle={ticketTitle}
             onRefresh={onRefresh}
+            ticket={ticket}
+            woInfoContent={woInfoContent}
+            workflowContent={workflowContent}
+            woItemsCount={itemsCount}
+            woSpecsCount={specsCount}
+            completedWorkflows={completedWorkflows}
+            totalWorkflows={totalWorkflows}
           />
         </div>
       )}

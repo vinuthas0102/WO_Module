@@ -63,13 +63,13 @@ export class MeasurementBookService {
         .from('measurement_book_entries')
         .select(`
           *,
-          createdByUser:users!measurement_book_entries_created_by_fkey(id, full_name, email),
-          verifiedByUser:users!measurement_book_entries_verified_by_fkey(id, full_name, email),
-          approvedByUser:users!measurement_book_entries_approved_by_fkey(id, full_name, email),
+          createdByUser:users!created_by(id, full_name, email),
+          verifiedByUser:users!verified_by(id, full_name, email),
+          approvedByUser:users!approved_by(id, full_name, email),
           specAllocation:work_order_spec_allocations(
             id,
             allocated_quantity,
-            specDetail:work_order_spec_details!work_order_spec_allocations_spec_detail_id_fkey(
+            specDetail:work_order_spec_details(
               spec_master:work_order_specs_master(description, spec_code, unit)
             )
           ),
@@ -93,13 +93,13 @@ export class MeasurementBookService {
         .from('measurement_book_entries')
         .select(`
           *,
-          createdByUser:users!measurement_book_entries_created_by_fkey(id, full_name, email),
-          verifiedByUser:users!measurement_book_entries_verified_by_fkey(id, full_name, email),
-          approvedByUser:users!measurement_book_entries_approved_by_fkey(id, full_name, email),
+          createdByUser:users!created_by(id, full_name, email),
+          verifiedByUser:users!verified_by(id, full_name, email),
+          approvedByUser:users!approved_by(id, full_name, email),
           specAllocation:work_order_spec_allocations(
             id,
             allocated_quantity,
-            specDetail:work_order_spec_details!work_order_spec_allocations_spec_detail_id_fkey(
+            specDetail:work_order_spec_details(
               spec_master:work_order_specs_master(description, spec_code, unit)
             )
           ),
@@ -124,13 +124,13 @@ export class MeasurementBookService {
         .from('measurement_book_entries')
         .select(`
           *,
-          createdByUser:users!measurement_book_entries_created_by_fkey(id, full_name, email),
-          verifiedByUser:users!measurement_book_entries_verified_by_fkey(id, full_name, email),
-          approvedByUser:users!measurement_book_entries_approved_by_fkey(id, full_name, email),
+          createdByUser:users!created_by(id, full_name, email),
+          verifiedByUser:users!verified_by(id, full_name, email),
+          approvedByUser:users!approved_by(id, full_name, email),
           specAllocation:work_order_spec_allocations(
             id,
             allocated_quantity,
-            specDetail:work_order_spec_details!work_order_spec_allocations_spec_detail_id_fkey(
+            specDetail:work_order_spec_details(
               spec_master:work_order_specs_master(description, spec_code, unit)
             )
           ),
@@ -202,6 +202,52 @@ export class MeasurementBookService {
       console.error('Error creating mbook entry:', error);
       throw error;
     }
+  }
+
+  static async createBatchMbookEntries(
+    ticketId: string,
+    entries: Array<{
+      specAllocationId: string;
+      description: string;
+      quantityMeasured: number;
+      unit: string;
+      rate: number;
+    }>,
+    workType: 'work' | 'procurement',
+    entryDate: string,
+    remarks: string | undefined,
+    userId: string
+  ): Promise<{ success: string[]; failed: Array<{ allocationId: string; error: string }> }> {
+    const results = {
+      success: [] as string[],
+      failed: [] as Array<{ allocationId: string; error: string }>,
+    };
+
+    for (const entry of entries) {
+      try {
+        const entryId = await this.createMbookEntry(
+          ticketId,
+          entry.specAllocationId,
+          undefined,
+          entry.description,
+          entry.quantityMeasured,
+          entry.unit,
+          entry.rate,
+          workType,
+          entryDate,
+          remarks,
+          userId
+        );
+        results.success.push(entryId);
+      } catch (error: any) {
+        results.failed.push({
+          allocationId: entry.specAllocationId,
+          error: error.message || 'Unknown error',
+        });
+      }
+    }
+
+    return results;
   }
 
   static async updateMbookEntry(

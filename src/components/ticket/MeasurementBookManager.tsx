@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Plus, CheckCircle, AlertCircle, Calendar, DollarSign, Package, Filter, X, Edit, Trash2 } from 'lucide-react';
+import { BookOpen, Plus, CheckCircle, AlertCircle, Calendar, DollarSign, Package, Filter, X, Edit, Trash2, Check } from 'lucide-react';
 import {
   MeasurementBookService,
   MeasurementBookEntryWithDetails
@@ -11,6 +11,20 @@ interface MeasurementBookManagerProps {
   ticketId: string;
   ticketNumber: string;
   onClose: () => void;
+}
+
+interface AllocationWithDetails {
+  id: string;
+  allocated_quantity: number;
+  workflow_step?: { id: string; title: string };
+  specDetail: any;
+}
+
+interface BatchEntryData {
+  allocationId: string;
+  description: string;
+  quantityMeasured: number;
+  rate: number;
 }
 
 export const MeasurementBookManager: React.FC<MeasurementBookManagerProps> = ({
@@ -36,8 +50,17 @@ export const MeasurementBookManager: React.FC<MeasurementBookManagerProps> = ({
     entryDate: new Date().toISOString().split('T')[0],
     remarks: '',
   });
-  const [allocations, setAllocations] = useState<any[]>([]);
+  const [allocations, setAllocations] = useState<AllocationWithDetails[]>([]);
   const [submitting, setSubmitting] = useState(false);
+
+  const [multiSelectMode, setMultiSelectMode] = useState(false);
+  const [selectedAllocations, setSelectedAllocations] = useState<Set<string>>(new Set());
+  const [batchEntries, setBatchEntries] = useState<Record<string, BatchEntryData>>({});
+  const [commonData, setCommonData] = useState({
+    workType: 'work' as 'work' | 'procurement',
+    entryDate: new Date().toISOString().split('T')[0],
+    remarks: '',
+  });
 
   useEffect(() => {
     loadEntries();
@@ -140,6 +163,61 @@ export const MeasurementBookManager: React.FC<MeasurementBookManagerProps> = ({
     }
   };
 
+  const handleBatchSubmit = async () => {
+    if (!user || selectedAllocations.size === 0) {
+      alert('Please select at least one spec allocation');
+      return;
+    }
+
+    const invalidEntries = Array.from(selectedAllocations).filter(
+      allocId => !batchEntries[allocId] || batchEntries[allocId].quantityMeasured <= 0
+    );
+
+    if (invalidEntries.length > 0) {
+      alert('Please enter valid quantity for all selected specs');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      const entries = Array.from(selectedAllocations).map(allocId => {
+        const entry = batchEntries[allocId];
+        const allocation = allocations.find(a => a.id === allocId);
+        return {
+          specAllocationId: allocId,
+          description: entry.description,
+          quantityMeasured: entry.quantityMeasured,
+          unit: allocation?.specDetail.unit || '',
+          rate: entry.rate,
+        };
+      });
+
+      const results = await MeasurementBookService.createBatchMbookEntries(
+        ticketId,
+        entries,
+        commonData.workType,
+        commonData.entryDate,
+        commonData.remarks,
+        user.id
+      );
+
+      if (results.failed.length > 0) {
+        alert(`Created ${results.success.length} entries. ${results.failed.length} failed.`);
+      } else {
+        alert(`Successfully created ${results.success.length} entries`);
+      }
+
+      resetBatchForm();
+      await loadEntries();
+    } catch (error: any) {
+      console.error('Error creating batch entries:', error);
+      alert(error.message || 'Failed to create entries');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleEdit = (entry: MeasurementBookEntryWithDetails) => {
     setEditingEntry(entry);
     setFormData({
@@ -153,6 +231,7 @@ export const MeasurementBookManager: React.FC<MeasurementBookManagerProps> = ({
       remarks: entry.remarks || '',
     });
     setShowForm(true);
+    setMultiSelectMode(false);
   };
 
   const handleDelete = async (entryId: string) => {
@@ -196,6 +275,78 @@ export const MeasurementBookManager: React.FC<MeasurementBookManagerProps> = ({
     });
     setEditingEntry(null);
     setShowForm(false);
+    setMultiSelectMode(false);
+  };
+
+  const resetBatchForm = () => {
+    setSelectedAllocations(new Set());
+    setBatchEntries({});
+    setCommonData({
+      workType: 'work',
+      entryDate: new Date().toISOString().split('T')[0],
+      remarks: '',
+    });
+    setMultiSelectMode(false);
+    setShowForm(false);
+  };
+
+  const toggleAllocationSelection = (allocationId: string) => {
+    const newSelected = new Set(selectedAllocations);
+    if (newSelected.has(allocationId)) {
+      newSelected.delete(allocationId);
+      const newEntries = { ...batchEntries };
+      delete newEntries[allocationId];
+      setBatchEntries(newEntries);
+    } else {
+      newSelected.add(allocationId);
+      const allocation = allocations.find(a => a.id === allocationId);
+      if (allocation && !batchEntries[allocationId]) {
+        setBatchEntries({
+          ...batchEntries,
+          [allocationId]: {
+            allocationId,
+            description: '',
+            quantityMeasured: 0,
+            rate: 0,
+          },
+        });
+      }
+    }
+    setSelectedAllocations(newSelected);
+  };
+
+  const updateBatchEntry = (allocationId: string, field: keyof BatchEntryData, value: any) => {
+    setBatchEntries({
+      ...batchEntries,
+      [allocationId]: {
+        ...batchEntries[allocationId],
+        [field]: value,
+      },
+    });
+  };
+
+  const selectAllAllocations = () => {
+    const allIds = new Set(allocations.map(a => a.id));
+    setSelectedAllocations(allIds);
+    const newEntries: Record<string, BatchEntryData> = {};
+    allocations.forEach(alloc => {
+      if (!batchEntries[alloc.id]) {
+        newEntries[alloc.id] = {
+          allocationId: alloc.id,
+          description: '',
+          quantityMeasured: 0,
+          rate: 0,
+        };
+      } else {
+        newEntries[alloc.id] = batchEntries[alloc.id];
+      }
+    });
+    setBatchEntries(newEntries);
+  };
+
+  const deselectAllAllocations = () => {
+    setSelectedAllocations(new Set());
+    setBatchEntries({});
   };
 
   const getStatusColor = (status: string) => {
@@ -203,7 +354,7 @@ export const MeasurementBookManager: React.FC<MeasurementBookManagerProps> = ({
       case 'draft': return 'bg-gray-100 text-gray-700';
       case 'submitted': return 'bg-blue-100 text-blue-700';
       case 'verified': return 'bg-green-100 text-green-700';
-      case 'approved': return 'bg-purple-100 text-purple-700';
+      case 'approved': return 'bg-orange-100 text-orange-700';
       default: return 'bg-gray-100 text-gray-700';
     }
   };
@@ -213,6 +364,10 @@ export const MeasurementBookManager: React.FC<MeasurementBookManagerProps> = ({
     : entries.filter(e => e.status === filterStatus);
 
   const totalAmount = filteredEntries.reduce((sum, e) => sum + e.amount, 0);
+  const batchTotalAmount = Array.from(selectedAllocations).reduce((sum, allocId) => {
+    const entry = batchEntries[allocId];
+    return sum + (entry ? entry.quantityMeasured * entry.rate : 0);
+  }, 0);
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-50 flex items-center justify-center">
@@ -265,17 +420,26 @@ export const MeasurementBookManager: React.FC<MeasurementBookManagerProps> = ({
         </div>
 
         <div className="flex-1 overflow-y-auto p-4">
-          {!showForm && (
-            <button
-              onClick={() => setShowForm(true)}
-              className="w-full mb-4 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center space-x-2"
-            >
-              <Plus className="w-5 h-5" />
-              <span>Add Measurement Entry</span>
-            </button>
+          {!showForm && !multiSelectMode && (
+            <div className="flex space-x-2 mb-4">
+              <button
+                onClick={() => { setShowForm(true); setMultiSelectMode(false); }}
+                className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center space-x-2"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Add Single Entry</span>
+              </button>
+              <button
+                onClick={() => { setMultiSelectMode(true); setShowForm(true); }}
+                className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center space-x-2"
+              >
+                <CheckCircle className="w-5 h-5" />
+                <span>Add Multiple Entries</span>
+              </button>
+            </div>
           )}
 
-          {showForm && (
+          {showForm && !multiSelectMode && (
             <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-4">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">
                 {editingEntry ? 'Edit' : 'New'} Measurement Entry
@@ -410,6 +574,191 @@ export const MeasurementBookManager: React.FC<MeasurementBookManagerProps> = ({
             </div>
           )}
 
+          {showForm && multiSelectMode && (
+            <div className="mb-4 space-y-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-gray-900">
+                    Create Multiple Entries ({selectedAllocations.size} selected)
+                  </h3>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={selectAllAllocations}
+                      className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                    >
+                      Select All
+                    </button>
+                    <button
+                      onClick={deselectAllAllocations}
+                      className="px-3 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700"
+                    >
+                      Deselect All
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Work Type (applies to all)
+                    </label>
+                    <select
+                      value={commonData.workType}
+                      onChange={(e) => setCommonData(prev => ({ ...prev, workType: e.target.value as 'work' | 'procurement' }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                      <option value="work">Work</option>
+                      <option value="procurement">Procurement</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Entry Date (applies to all)
+                    </label>
+                    <input
+                      type="date"
+                      value={commonData.entryDate}
+                      onChange={(e) => setCommonData(prev => ({ ...prev, entryDate: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Total Amount
+                    </label>
+                    <div className="w-full px-3 py-2 text-sm bg-blue-50 border border-blue-300 rounded-md font-semibold text-blue-900">
+                      ₹{batchTotalAmount.toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mb-3">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Remarks (applies to all)
+                  </label>
+                  <textarea
+                    value={commonData.remarks}
+                    onChange={(e) => setCommonData(prev => ({ ...prev, remarks: e.target.value }))}
+                    rows={2}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                    placeholder="Additional remarks..."
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {allocations.map((alloc) => {
+                  const isSelected = selectedAllocations.has(alloc.id);
+                  const entry = batchEntries[alloc.id];
+                  const amount = entry ? entry.quantityMeasured * entry.rate : 0;
+
+                  return (
+                    <div
+                      key={alloc.id}
+                      className={`border rounded-lg p-3 transition-colors ${
+                        isSelected ? 'bg-blue-50 border-blue-300' : 'bg-white border-gray-200'
+                      }`}
+                    >
+                      <div className="flex items-start space-x-3">
+                        <div className="pt-1">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleAllocationSelection(alloc.id)}
+                            className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+
+                        <div className="flex-1">
+                          <div className="mb-2">
+                            <p className="text-sm font-medium text-gray-900">
+                              {alloc.specDetail.specMaster?.description}
+                            </p>
+                            <p className="text-xs text-gray-600">
+                              {alloc.workflow_step?.title} | Allocated: {alloc.allocated_quantity} {alloc.specDetail.unit}
+                            </p>
+                          </div>
+
+                          {isSelected && (
+                            <div className="grid grid-cols-4 gap-2">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Quantity ({alloc.specDetail.unit})
+                                </label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={entry?.quantityMeasured || 0}
+                                  onChange={(e) => updateBatchEntry(alloc.id, 'quantityMeasured', parseFloat(e.target.value) || 0)}
+                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  placeholder="0.00"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Rate (₹)
+                                </label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={entry?.rate || 0}
+                                  onChange={(e) => updateBatchEntry(alloc.id, 'rate', parseFloat(e.target.value) || 0)}
+                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  placeholder="0.00"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Amount
+                                </label>
+                                <div className="w-full px-2 py-1 text-sm bg-gray-100 border border-gray-300 rounded font-medium">
+                                  ₹{amount.toFixed(2)}
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Description
+                                </label>
+                                <input
+                                  type="text"
+                                  value={entry?.description || ''}
+                                  onChange={(e) => updateBatchEntry(alloc.id, 'description', e.target.value)}
+                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  placeholder="Description..."
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex space-x-2">
+                <button
+                  onClick={handleBatchSubmit}
+                  disabled={submitting || selectedAllocations.size === 0}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submitting ? 'Creating...' : `Create ${selectedAllocations.size} Entries`}
+                </button>
+                <button
+                  onClick={resetBatchForm}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-gray-500 text-sm">Loading entries...</div>
@@ -523,7 +872,7 @@ export const MeasurementBookManager: React.FC<MeasurementBookManagerProps> = ({
                       {entry.status === 'verified' && (user?.role === 'eo' || user?.role === 'dept_officer') && (
                         <button
                           onClick={() => handleUpdateStatus(entry.id, 'approved')}
-                          className="px-3 py-1 bg-purple-600 text-white text-xs font-medium rounded hover:bg-purple-700"
+                          className="px-3 py-1 bg-orange-600 text-white text-xs font-medium rounded hover:bg-orange-700"
                         >
                           Approve
                         </button>

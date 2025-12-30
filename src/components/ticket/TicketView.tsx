@@ -20,8 +20,6 @@ import WOSpecSelector from './WOSpecSelector';
 import WOWorkflowTabs from './WOWorkflowTabs';
 import { NewClarificationModal } from '../clarification/NewClarificationModal';
 import InlineSpecCreation from './InlineSpecCreation';
-import { MeasurementBookManager } from './MeasurementBookManager';
-import { BillManager } from './BillManager';
 import WOInfoDisplay from './WOInfoDisplay';
 import { WorkOrderItemService } from '../../services/workOrderItemService';
 import { WorkOrderSpecService } from '../../services/workOrderSpecService';
@@ -50,8 +48,6 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [showItemSelector, setShowItemSelector] = useState(false);
   const [showSpecSelector, setShowSpecSelector] = useState(false);
-  const [showMeasurementBook, setShowMeasurementBook] = useState(false);
-  const [showBillManager, setShowBillManager] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [userPreferences, setUserPreferences] = useState<UserDisplayPreferences | null>(null);
   const [loadingPreferences, setLoadingPreferences] = useState(true);
@@ -770,22 +766,6 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
           userId={user.id}
           onClose={() => setShowSpecSelector(false)}
           onSpecAdded={() => setRefreshKey(prev => prev + 1)}
-        />
-      )}
-
-      {showMeasurementBook && (
-        <MeasurementBookManager
-          ticketId={ticket.id}
-          ticketNumber={ticket.ticketNumber}
-          onClose={() => setShowMeasurementBook(false)}
-        />
-      )}
-
-      {showBillManager && (
-        <BillManager
-          ticketId={ticket.id}
-          ticketNumber={ticket.ticketNumber}
-          onClose={() => setShowBillManager(false)}
         />
       )}
 

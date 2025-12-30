@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { UserDisplayPreferences, IconDisplayType, IconSize } from '../types';
+import { UserDisplayPreferences, IconDisplayType, IconSize, DisplayMode } from '../types';
 
 interface PreferencesCache {
   data: UserDisplayPreferences | null;
@@ -50,16 +50,22 @@ export class UserPreferencesService {
       const existing = await this.getUserPreferences(userId);
 
       if (existing) {
+        const updateData: any = {
+          updated_at: new Date().toISOString()
+        };
+
+        if (preferences.iconDisplayType !== undefined) updateData.icon_display_type = preferences.iconDisplayType;
+        if (preferences.iconSize !== undefined) updateData.icon_size = preferences.iconSize;
+        if (preferences.showLabels !== undefined) updateData.show_labels = preferences.showLabels;
+        if (preferences.groupByCategory !== undefined) updateData.group_by_category = preferences.groupByCategory;
+        if (preferences.animationEnabled !== undefined) updateData.animation_enabled = preferences.animationEnabled;
+        if (preferences.woDetailsDisplayType !== undefined) updateData.wo_details_display_type = preferences.woDetailsDisplayType;
+        if (preferences.mbookDisplayType !== undefined) updateData.mbook_display_type = preferences.mbookDisplayType;
+        if (preferences.billsDisplayType !== undefined) updateData.bills_display_type = preferences.billsDisplayType;
+
         const { data, error } = await supabase
           .from('user_display_preferences')
-          .update({
-            icon_display_type: preferences.iconDisplayType,
-            icon_size: preferences.iconSize,
-            show_labels: preferences.showLabels,
-            group_by_category: preferences.groupByCategory,
-            animation_enabled: preferences.animationEnabled,
-            updated_at: new Date().toISOString()
-          })
+          .update(updateData)
           .eq('user_id', userId)
           .select()
           .single();
@@ -82,7 +88,10 @@ export class UserPreferencesService {
             icon_size: preferences.iconSize || 'medium',
             show_labels: preferences.showLabels !== undefined ? preferences.showLabels : true,
             group_by_category: preferences.groupByCategory || false,
-            animation_enabled: preferences.animationEnabled !== undefined ? preferences.animationEnabled : true
+            animation_enabled: preferences.animationEnabled !== undefined ? preferences.animationEnabled : true,
+            wo_details_display_type: preferences.woDetailsDisplayType || 'card',
+            mbook_display_type: preferences.mbookDisplayType || 'card',
+            bills_display_type: preferences.billsDisplayType || 'card'
           })
           .select()
           .single();
@@ -154,6 +163,9 @@ export class UserPreferencesService {
       showLabels: data.show_labels,
       groupByCategory: data.group_by_category,
       animationEnabled: data.animation_enabled,
+      woDetailsDisplayType: data.wo_details_display_type as DisplayMode | undefined,
+      mbookDisplayType: data.mbook_display_type as DisplayMode | undefined,
+      billsDisplayType: data.bills_display_type as DisplayMode | undefined,
       createdAt: new Date(data.created_at),
       updatedAt: new Date(data.updated_at)
     };
@@ -168,6 +180,9 @@ export class UserPreferencesService {
       showLabels: true,
       groupByCategory: false,
       animationEnabled: true,
+      woDetailsDisplayType: 'card',
+      mbookDisplayType: 'card',
+      billsDisplayType: 'card',
       createdAt: new Date(),
       updatedAt: new Date()
     };

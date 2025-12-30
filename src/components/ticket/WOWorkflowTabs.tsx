@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, ListChecks, FileText } from 'lucide-react';
+import { Package, ListChecks, FileText, BookOpen, DollarSign } from 'lucide-react';
 import WOTabsSection from './WOTabsSection';
 import WorkflowManagement from './StepManagement';
 import WOInfoDisplay from './WOInfoDisplay';
@@ -7,6 +7,10 @@ import { Ticket } from '../../types';
 import { DocumentMetadata } from '../../services/fileService';
 import { WorkOrderItemService } from '../../services/workOrderItemService';
 import { WorkOrderSpecService } from '../../services/workOrderSpecService';
+import { MeasurementBookService } from '../../services/measurementBookService';
+import { BillingService } from '../../services/billingService';
+import { MBookTabContent } from './MBookTabContent';
+import { BillManager } from './BillManager';
 
 interface WOWorkflowTabsProps {
   ticket: Ticket;
@@ -44,7 +48,7 @@ interface WOWorkflowTabsProps {
   onDeleteAttachment: (id: string) => void;
 }
 
-type TabType = 'wo-info' | 'wo-details' | 'workflow';
+type TabType = 'wo-info' | 'wo-details' | 'measurement-book' | 'bills' | 'workflow';
 
 const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
   ticket,
@@ -80,7 +84,11 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
   const [activeTab, setActiveTab] = useState<TabType>('wo-info');
   const [woItemsCount, setWoItemsCount] = useState(0);
   const [woSpecsCount, setWoSpecsCount] = useState(0);
+  const [mbookCount, setMbookCount] = useState(0);
+  const [billsCount, setBillsCount] = useState(0);
   const [loadingWoCounts, setLoadingWoCounts] = useState(true);
+  const [loadingMbookCount, setLoadingMbookCount] = useState(true);
+  const [loadingBillsCount, setLoadingBillsCount] = useState(true);
 
   const isWOModule = selectedModule?.id === '550e8400-e29b-41d4-a716-446655440106';
 
@@ -109,8 +117,52 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
     loadWOCounts();
   }, [ticket.id, refreshKey, isWOModule]);
 
+  useEffect(() => {
+    const loadMbookCount = async () => {
+      if (!isWOModule) {
+        setLoadingMbookCount(false);
+        return;
+      }
+
+      try {
+        setLoadingMbookCount(true);
+        const entries = await MeasurementBookService.getMbookEntriesByTicket(ticket.id);
+        setMbookCount(entries.length);
+      } catch (error) {
+        console.error('Error loading mbook count:', error);
+      } finally {
+        setLoadingMbookCount(false);
+      }
+    };
+
+    loadMbookCount();
+  }, [ticket.id, refreshKey, isWOModule]);
+
+  useEffect(() => {
+    const loadBillsCount = async () => {
+      if (!isWOModule) {
+        setLoadingBillsCount(false);
+        return;
+      }
+
+      try {
+        setLoadingBillsCount(true);
+        const bills = await BillingService.getBillsByTicket(ticket.id);
+        setBillsCount(bills.length);
+      } catch (error) {
+        console.error('Error loading bills count:', error);
+      } finally {
+        setLoadingBillsCount(false);
+      }
+    };
+
+    loadBillsCount();
+  }, [ticket.id, refreshKey, isWOModule]);
+
   const hasWOData = woItemsCount > 0 || woSpecsCount > 0;
   const showWODetailsTab = isWOModule && hasWOData;
+  const showMBookTab = isWOModule && mbookCount > 0;
+  const showBillsTab = isWOModule && billsCount > 0;
 
   const workOrderData = ticket.data as any;
   const showWOInfoTab = isWOModule;
@@ -165,11 +217,61 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
               </button>
             )}
 
+            {showMBookTab && (
+              <button
+                onClick={() => setActiveTab('measurement-book')}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'measurement-book'
+                    ? 'bg-emerald-50 text-emerald-700 border-b-2 border-emerald-600'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <BookOpen className="w-4 h-4" />
+                <span>Measurement Book</span>
+                {mbookCount > 0 && (
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                      activeTab === 'measurement-book'
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-gray-200 text-gray-600'
+                    }`}
+                  >
+                    {mbookCount}
+                  </span>
+                )}
+              </button>
+            )}
+
+            {showBillsTab && (
+              <button
+                onClick={() => setActiveTab('bills')}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'bills'
+                    ? 'bg-purple-50 text-purple-700 border-b-2 border-purple-600'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <DollarSign className="w-4 h-4" />
+                <span>Bills</span>
+                {billsCount > 0 && (
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                      activeTab === 'bills'
+                        ? 'bg-purple-100 text-purple-700'
+                        : 'bg-gray-200 text-gray-600'
+                    }`}
+                  >
+                    {billsCount}
+                  </span>
+                )}
+              </button>
+            )}
+
             <button
               onClick={() => setActiveTab('workflow')}
               className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                 activeTab === 'workflow'
-                  ? 'bg-green-50 text-green-700 border-b-2 border-green-600'
+                  ? 'bg-teal-50 text-teal-700 border-b-2 border-teal-600'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
@@ -179,7 +281,7 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
                 <span
                   className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
                     activeTab === 'workflow'
-                      ? 'bg-green-100 text-green-700'
+                      ? 'bg-teal-100 text-teal-700'
                       : 'bg-gray-200 text-gray-600'
                   }`}
                 >
@@ -324,6 +426,26 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
           completedWorkflows={completedWorkflows}
           totalWorkflows={totalWorkflows}
         />
+      )}
+
+      {activeTab === 'measurement-book' && showMBookTab && (
+        <MBookTabContent
+          ticketId={ticket.id}
+          ticketNumber={ticket.ticketNumber}
+          onRefresh={onRefresh}
+        />
+      )}
+
+      {activeTab === 'bills' && showBillsTab && (
+        <div className="relative">
+          <div className="absolute top-0 right-0 z-10 p-4">
+          </div>
+          <BillManager
+            ticketId={ticket.id}
+            ticketNumber={ticket.ticketNumber}
+            onClose={() => {}}
+          />
+        </div>
       )}
 
       {activeTab === 'workflow' && (

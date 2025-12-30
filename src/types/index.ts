@@ -375,6 +375,8 @@ export type IconDisplayType = 'dropdown_menu' | 'carousel' | 'grid' | 'horizonta
 
 export type IconSize = 'small' | 'medium' | 'large';
 
+export type DisplayMode = 'card' | 'table' | 'list';
+
 export interface UserDisplayPreferences {
   id: string;
   userId: string;
@@ -383,6 +385,9 @@ export interface UserDisplayPreferences {
   showLabels: boolean;
   groupByCategory: boolean;
   animationEnabled: boolean;
+  woDetailsDisplayType?: DisplayMode;
+  mbookDisplayType?: DisplayMode;
+  billsDisplayType?: DisplayMode;
   createdAt: Date;
   updatedAt: Date;
 }

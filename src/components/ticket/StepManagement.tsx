@@ -19,6 +19,7 @@ import { TicketService } from '../../services/ticketService';
 import { DependencyService } from '../../services/dependencyService';
 import { SpecAllocationProgressService } from '../../services/specAllocationProgressService';
 import { getHierarchyColors, getStatusBadgeColor, getHierarchyLevel, getHierarchyLevelInfo, getHierarchyIcon, getHierarchyBorderStyle, hierarchyColorLegend } from '../../lib/hierarchyColors';
+import { WorkOrderSpecService } from '../../services/workOrderSpecService';
 
 interface WorkflowManagementProps {
   ticket: Ticket;
@@ -31,6 +32,77 @@ interface WorkflowManagementProps {
   onOpenClarification?: (stepId: string, stepTitle: string, assignedUserId: string | undefined) => void;
   onViewProgress?: (stepId: string, stepTitle: string) => void;
 }
+
+const SpecProgressIndicator: React.FC<{ stepId: string; ticketId: string }> = ({ stepId, ticketId }) => {
+  const [specs, setSpecs] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [progressSummaries, setProgressSummaries] = React.useState<Map<string, any>>(new Map());
+
+  React.useEffect(() => {
+    const loadSpecs = async () => {
+      try {
+        const data = await WorkOrderSpecService.getSpecDetailsForStep(stepId);
+        setSpecs(data);
+
+        if (data.length > 0) {
+          const allocations = data.map((spec: any) => ({
+            id: spec.allocation.id,
+            allocatedQuantity: spec.allocation.allocatedQuantity,
+            unit: spec.unit,
+          }));
+          const summaries = await SpecAllocationProgressService.getProgressSummariesForAllocations(allocations);
+          setProgressSummaries(summaries);
+        }
+      } catch (error) {
+        console.error('Failed to load specs:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadSpecs();
+  }, [stepId]);
+
+  if (loading || specs.length === 0) return null;
+
+  const getProgressColor = (percentage: number) => {
+    if (percentage === 0) return 'bg-gray-400';
+    if (percentage < 50) return 'bg-yellow-500';
+    if (percentage < 100) return 'bg-blue-500';
+    return 'bg-green-500';
+  };
+
+  return (
+    <div className="mt-2 space-y-1">
+      <div className="text-xs font-medium text-gray-700 flex items-center space-x-1">
+        <Package className="w-3 h-3" />
+        <span>Allocated Specs ({specs.length})</span>
+      </div>
+      {specs.slice(0, 3).map((spec: any) => {
+        const summary = progressSummaries.get(spec.allocation.id);
+        const percentage = summary?.progressPercentage || 0;
+        return (
+          <div key={spec.allocation.id} className="flex items-center space-x-2 text-xs">
+            <div className="flex-1 min-w-0">
+              <div className="truncate text-gray-700 font-medium">{spec.specMaster?.description || 'Spec'}</div>
+              <div className="flex items-center space-x-2 mt-0.5">
+                <div className="flex-1 bg-gray-200 rounded-full h-1.5">
+                  <div
+                    className={`${getProgressColor(percentage)} h-1.5 rounded-full transition-all duration-300`}
+                    style={{ width: `${percentage}%` }}
+                  ></div>
+                </div>
+                <span className="text-gray-600 text-[10px] w-10 text-right">{percentage.toFixed(0)}%</span>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+      {specs.length > 3 && (
+        <div className="text-[10px] text-gray-500 italic">+{specs.length - 3} more</div>
+      )}
+    </div>
+  );
+};
 
 const FileReferenceInfoDisplay: React.FC<{ stepId: string; ticketId: string; showFullInterface?: boolean; onViewDocument?: (document: DocumentMetadata) => void }> = ({ stepId, ticketId, showFullInterface = false, onViewDocument }) => {
   const { user } = useAuth();
@@ -1444,6 +1516,7 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
                 </div>
 
                 <DependencyBadge step={step} allSteps={ticket.workflow} />
+                <SpecProgressIndicator stepId={step.id} ticketId={ticket.id} />
               </div>
 
               <div className="flex items-center ml-4" onClick={(e) => e.stopPropagation()}>

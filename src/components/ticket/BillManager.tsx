@@ -172,22 +172,17 @@ export const BillManager: React.FC<BillManagerProps> = ({
     .reduce((sum, e) => sum + e.amount, 0);
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col m-4">
-        <div className="flex items-center justify-between p-4 border-b">
-          <div>
-            <h2 className="text-lg font-bold text-gray-900 flex items-center space-x-2">
-              <FileText className="w-5 h-5" />
-              <span>Bills Management</span>
-            </h2>
-            <p className="text-sm text-gray-600">{ticketNumber}</p>
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-5 h-5" />
-          </button>
+    <div className="bg-white">
+      <div className="p-6">
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-gray-900 flex items-center space-x-2">
+            <FileText className="w-6 h-6" />
+            <span>Bills Management</span>
+          </h2>
+          <p className="text-sm text-gray-600 mt-1">{ticketNumber}</p>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="space-y-4">
           {!showCreateForm && (
             <div className="mb-4 flex justify-end">
               <IconDisplayWrapper

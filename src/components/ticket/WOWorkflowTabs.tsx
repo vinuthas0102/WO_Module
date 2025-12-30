@@ -261,6 +261,29 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
               </button>
             )}
 
+            <button
+              onClick={() => setActiveTab('workflow')}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                activeTab === 'workflow'
+                  ? 'bg-teal-50 text-teal-700 border-b-2 border-teal-600'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <ListChecks className="w-4 h-4" />
+              <span>Workflow</span>
+              {totalWorkflows > 0 && (
+                <span
+                  className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                    activeTab === 'workflow'
+                      ? 'bg-teal-100 text-teal-700'
+                      : 'bg-gray-200 text-gray-600'
+                  }`}
+                >
+                  {completedWorkflows}/{totalWorkflows}
+                </span>
+              )}
+            </button>
+
             {showMBookTab && (
               <button
                 onClick={() => setActiveTab('measurement-book')}
@@ -291,7 +314,7 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
                 onClick={() => setActiveTab('bills')}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                   activeTab === 'bills'
-                    ? 'bg-purple-50 text-purple-700 border-b-2 border-purple-600'
+                    ? 'bg-green-50 text-green-700 border-b-2 border-green-600'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
               >
@@ -301,7 +324,7 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
                   <span
                     className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
                       activeTab === 'bills'
-                        ? 'bg-purple-100 text-purple-700'
+                        ? 'bg-green-100 text-green-700'
                         : 'bg-gray-200 text-gray-600'
                     }`}
                   >
@@ -310,29 +333,6 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
                 )}
               </button>
             )}
-
-            <button
-              onClick={() => setActiveTab('workflow')}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                activeTab === 'workflow'
-                  ? 'bg-teal-50 text-teal-700 border-b-2 border-teal-600'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              <ListChecks className="w-4 h-4" />
-              <span>Workflow</span>
-              {totalWorkflows > 0 && (
-                <span
-                  className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                    activeTab === 'workflow'
-                      ? 'bg-teal-100 text-teal-700'
-                      : 'bg-gray-200 text-gray-600'
-                  }`}
-                >
-                  {completedWorkflows}/{totalWorkflows}
-                </span>
-              )}
-            </button>
           </div>
           <button
             onClick={() => navigateTab('next')}
@@ -493,15 +493,11 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
       )}
 
       {activeTab === 'bills' && showBillsTab && (
-        <div className="relative">
-          <div className="absolute top-0 right-0 z-10 p-4">
-          </div>
-          <BillManager
-            ticketId={ticket.id}
-            ticketNumber={ticket.ticketNumber}
-            onClose={() => {}}
-          />
-        </div>
+        <BillManager
+          ticketId={ticket.id}
+          ticketNumber={ticket.ticketNumber}
+          onClose={() => {}}
+        />
       )}
 
       {activeTab === 'workflow' && (

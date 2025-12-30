@@ -588,50 +588,62 @@ export const MBookTabContent: React.FC<MBookTabContentProps> = ({
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        {entry.status === 'draft' && (
-                          <>
-                            <button
-                              onClick={() => handleEdit(entry)}
-                              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
-                              title="Edit"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(entry.id)}
-                              className="p-1.5 text-red-600 hover:bg-red-50 rounded"
-                              title="Delete"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleUpdateStatus(entry.id, 'submitted')}
-                              className="p-1.5 text-green-600 hover:bg-green-50 rounded"
-                              title="Submit"
-                            >
-                              <Send className="w-4 h-4" />
-                            </button>
-                          </>
-                        )}
-                        {entry.status === 'submitted' && user?.role === 'EO' && (
-                          <button
-                            onClick={() => handleUpdateStatus(entry.id, 'verified')}
-                            className="p-1.5 text-yellow-600 hover:bg-yellow-50 rounded"
-                            title="Verify"
-                          >
-                            <Check className="w-4 h-4" />
-                          </button>
-                        )}
-                        {entry.status === 'verified' && user?.role === 'DO' && (
-                          <button
-                            onClick={() => handleUpdateStatus(entry.id, 'approved')}
-                            className="p-1.5 text-green-600 hover:bg-green-50 rounded"
-                            title="Approve"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                          </button>
-                        )}
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <IconDisplayWrapper
+                          actions={(() => {
+                            const actions: ActionIconDefinition[] = [];
+
+                            if (entry.status === 'draft') {
+                              actions.push({
+                                id: `edit-entry-${entry.id}`,
+                                icon: Edit,
+                                label: 'Edit Entry',
+                                action: () => handleEdit(entry),
+                                color: '#2563eb'
+                              });
+
+                              actions.push({
+                                id: `delete-entry-${entry.id}`,
+                                icon: Trash2,
+                                label: 'Delete Entry',
+                                action: () => handleDelete(entry.id),
+                                color: '#dc2626'
+                              });
+
+                              actions.push({
+                                id: `submit-entry-${entry.id}`,
+                                icon: Send,
+                                label: 'Submit Entry',
+                                action: () => handleUpdateStatus(entry.id, 'submitted'),
+                                color: '#16a34a'
+                              });
+                            }
+
+                            if (entry.status === 'submitted' && user?.role === 'EO') {
+                              actions.push({
+                                id: `verify-entry-${entry.id}`,
+                                icon: Check,
+                                label: 'Verify Entry',
+                                action: () => handleUpdateStatus(entry.id, 'verified'),
+                                color: '#ca8a04'
+                              });
+                            }
+
+                            if (entry.status === 'verified' && user?.role === 'DO') {
+                              actions.push({
+                                id: `approve-entry-${entry.id}`,
+                                icon: CheckCircle,
+                                label: 'Approve Entry',
+                                action: () => handleUpdateStatus(entry.id, 'approved'),
+                                color: '#16a34a'
+                              });
+                            }
+
+                            return actions;
+                          })()}
+                          preferences={userPreferences || undefined}
+                          loading={loadingPreferences}
+                        />
                       </div>
                     </div>
                   </div>

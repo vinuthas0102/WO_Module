@@ -1898,22 +1898,27 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Assigned To</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Progress</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Dependencies</th>
+                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-700">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {getSortedWorkflows(filteredRootSteps).map(step => (
-                  <tr key={step.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => toggleExpanded(step.id)}>
-                    <td className="px-4 py-2 text-sm text-gray-900">{getHierarchicalWorkflowNumber(step)}</td>
-                    <td className="px-4 py-2 text-sm text-gray-900">{step.title}</td>
-                    <td className="px-4 py-2 text-sm">
+                  <tr key={step.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-2 text-sm text-gray-900 cursor-pointer" onClick={() => toggleExpanded(step.id)}>
+                      {getHierarchicalWorkflowNumber(step)}
+                    </td>
+                    <td className="px-4 py-2 text-sm text-gray-900 cursor-pointer" onClick={() => toggleExpanded(step.id)}>
+                      {step.title}
+                    </td>
+                    <td className="px-4 py-2 text-sm cursor-pointer" onClick={() => toggleExpanded(step.id)}>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(step.status)}`}>
                         {step.status}
                       </span>
                     </td>
-                    <td className="px-4 py-2 text-sm text-gray-700">
+                    <td className="px-4 py-2 text-sm text-gray-700 cursor-pointer" onClick={() => toggleExpanded(step.id)}>
                       {users.find(u => u.id === step.assignedTo)?.name || 'Unassigned'}
                     </td>
-                    <td className="px-4 py-2 text-sm">
+                    <td className="px-4 py-2 text-sm cursor-pointer" onClick={() => toggleExpanded(step.id)}>
                       <div className="flex items-center space-x-2">
                         <div className="flex-1 bg-gray-200 rounded-full h-2">
                           <div
@@ -1924,10 +1929,19 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
                         <span className="text-xs text-gray-600 w-10">{step.progress || 0}%</span>
                       </div>
                     </td>
-                    <td className="px-4 py-2 text-sm">
+                    <td className="px-4 py-2 text-sm cursor-pointer" onClick={() => toggleExpanded(step.id)}>
                       {step.dependsOn && step.dependsOn.length > 0 && (
                         <span className="text-xs text-gray-600">{step.dependsOn.length} deps</span>
                       )}
+                    </td>
+                    <td className="px-4 py-2 text-center" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex justify-center">
+                        <IconDisplayWrapper
+                          actions={getStepActions(step)}
+                          preferences={displayPreferences ?? undefined}
+                          loading={!displayPreferences && !!user}
+                        />
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -1939,10 +1953,9 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
             {getSortedWorkflows(filteredRootSteps).map(step => (
               <div
                 key={step.id}
-                className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
-                onClick={() => toggleExpanded(step.id)}
+                className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
               >
-                <div className="flex items-center space-x-3 flex-1">
+                <div className="flex items-center space-x-3 flex-1 cursor-pointer" onClick={() => toggleExpanded(step.id)}>
                   <span className="text-sm font-medium text-gray-700 w-16">
                     {getHierarchicalWorkflowNumber(step)}
                   </span>
@@ -1962,6 +1975,13 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
                     </div>
                     <span className="text-xs text-gray-600">{step.progress || 0}%</span>
                   </div>
+                </div>
+                <div onClick={(e) => e.stopPropagation()} className="ml-3">
+                  <IconDisplayWrapper
+                    actions={getStepActions(step)}
+                    preferences={displayPreferences ?? undefined}
+                    loading={!displayPreferences && !!user}
+                  />
                 </div>
               </div>
             ))}

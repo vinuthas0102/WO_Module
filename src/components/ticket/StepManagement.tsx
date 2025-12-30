@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Plus, CheckCircle, Clock, Users, Trash2, Edit, X, ChevronDown, ChevronRight, FileText, Upload, Layers, Search, Filter, XCircle, Workflow, ArrowRight, History, ExternalLink, AlertCircle, Package, FileCheck, MessageCircle, PlusCircle, TrendingUp, Calculator, RefreshCw } from 'lucide-react';
-import { Ticket, WorkflowStep, WorkflowStepStatus, ActionIconDefinition, FileReferenceTemplate } from '../../types';
+import { Ticket, WorkflowStep, WorkflowStepStatus, ActionIconDefinition, FileReferenceTemplate, DisplayMode } from '../../types';
 import { FileReferenceService } from '../../services/fileReferenceService';
 import FileReferenceUpload from './FileReferenceUpload';
 import FileReferenceSelector, { SelectedFileReference } from './FileReferenceSelector';
@@ -14,10 +14,12 @@ import DependencySelector from './DependencySelector';
 import DependencyBadge from './DependencyBadge';
 import ProgressDocuments from './ProgressDocuments';
 import ProgressHistoryView from './ProgressHistoryView';
+import ViewTypeToggle from '../common/ViewTypeToggle';
 import { DocumentMetadata, FileService } from '../../services/fileService';
 import { TicketService } from '../../services/ticketService';
 import { DependencyService } from '../../services/dependencyService';
 import { SpecAllocationProgressService } from '../../services/specAllocationProgressService';
+import { UserPreferencesService } from '../../services/userPreferencesService';
 import { getHierarchyColors, getStatusBadgeColor, getHierarchyLevel, getHierarchyLevelInfo, getHierarchyIcon, getHierarchyBorderStyle, hierarchyColorLegend } from '../../lib/hierarchyColors';
 import { WorkOrderSpecService } from '../../services/workOrderSpecService';
 
@@ -37,6 +39,7 @@ const SpecProgressIndicator: React.FC<{ stepId: string; ticketId: string }> = ({
   const [specs, setSpecs] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [progressSummaries, setProgressSummaries] = React.useState<Map<string, any>>(new Map());
+  const [showDetails, setShowDetails] = React.useState(false);
 
   React.useEffect(() => {
     const loadSpecs = async () => {
@@ -71,34 +74,96 @@ const SpecProgressIndicator: React.FC<{ stepId: string; ticketId: string }> = ({
     return 'bg-green-500';
   };
 
+  const calculateOverallProgress = () => {
+    let totalWeightedProgress = 0;
+    let totalWeight = 0;
+    let completedCount = 0;
+    let inProgressCount = 0;
+
+    specs.forEach((spec: any) => {
+      const summary = progressSummaries.get(spec.allocation.id);
+      const percentage = summary?.progressPercentage || 0;
+      const weight = spec.allocation.allocatedQuantity || 1;
+
+      totalWeightedProgress += percentage * weight;
+      totalWeight += weight;
+
+      if (percentage === 100) {
+        completedCount++;
+      } else if (percentage > 0) {
+        inProgressCount++;
+      }
+    });
+
+    const overallPercentage = totalWeight > 0 ? totalWeightedProgress / totalWeight : 0;
+
+    return {
+      percentage: overallPercentage,
+      completed: completedCount,
+      inProgress: inProgressCount,
+      notStarted: specs.length - completedCount - inProgressCount,
+      total: specs.length
+    };
+  };
+
+  const progress = calculateOverallProgress();
+
   return (
-    <div className="mt-2 space-y-1">
-      <div className="text-xs font-medium text-gray-700 flex items-center space-x-1">
-        <Package className="w-3 h-3" />
-        <span>Allocated Specs ({specs.length})</span>
-      </div>
-      {specs.slice(0, 3).map((spec: any) => {
-        const summary = progressSummaries.get(spec.allocation.id);
-        const percentage = summary?.progressPercentage || 0;
-        return (
-          <div key={spec.allocation.id} className="flex items-center space-x-2 text-xs">
-            <div className="flex-1 min-w-0">
-              <div className="truncate text-gray-700 font-medium">{spec.specMaster?.description || 'Spec'}</div>
-              <div className="flex items-center space-x-2 mt-0.5">
-                <div className="flex-1 bg-gray-200 rounded-full h-1.5">
+    <div className="mt-2">
+      <button
+        onClick={() => setShowDetails(!showDetails)}
+        className="w-full text-left hover:bg-gray-50 rounded p-1 transition-colors"
+      >
+        <div className="flex items-center justify-between mb-1">
+          <div className="text-xs font-medium text-gray-700 flex items-center space-x-1">
+            <Package className="w-3 h-3" />
+            <span>Specs Progress ({progress.total})</span>
+          </div>
+          <div className="text-xs text-gray-600">
+            {progress.completed}/{progress.total} completed
+          </div>
+        </div>
+        <div className="flex items-center space-x-2">
+          <div className="flex-1 bg-gray-200 rounded-full h-2">
+            <div
+              className={`${getProgressColor(progress.percentage)} h-2 rounded-full transition-all duration-300`}
+              style={{ width: `${progress.percentage}%` }}
+            ></div>
+          </div>
+          <span className="text-xs text-gray-700 font-semibold w-12 text-right">
+            {progress.percentage.toFixed(0)}%
+          </span>
+        </div>
+        {progress.inProgress > 0 && (
+          <div className="text-[10px] text-gray-500 mt-0.5">
+            {progress.inProgress} in progress, {progress.notStarted} not started
+          </div>
+        )}
+      </button>
+
+      {showDetails && (
+        <div className="mt-2 pl-2 space-y-1 border-l-2 border-gray-200">
+          {specs.map((spec: any) => {
+            const summary = progressSummaries.get(spec.allocation.id);
+            const percentage = summary?.progressPercentage || 0;
+            return (
+              <div key={spec.allocation.id} className="text-xs">
+                <div className="flex items-center justify-between">
+                  <div className="truncate text-gray-700 font-medium flex-1">
+                    {spec.specMaster?.description || 'Spec'}
+                  </div>
+                  <span className="text-gray-600 text-[10px] ml-2">{percentage.toFixed(0)}%</span>
+                </div>
+                <div className="bg-gray-200 rounded-full h-1 mt-0.5">
                   <div
-                    className={`${getProgressColor(percentage)} h-1.5 rounded-full transition-all duration-300`}
+                    className={`${getProgressColor(percentage)} h-1 rounded-full transition-all duration-300`}
                     style={{ width: `${percentage}%` }}
                   ></div>
                 </div>
-                <span className="text-gray-600 text-[10px] w-10 text-right">{percentage.toFixed(0)}%</span>
               </div>
-            </div>
-          </div>
-        );
-      })}
-      {specs.length > 3 && (
-        <div className="text-[10px] text-gray-500 italic">+{specs.length - 3} more</div>
+            );
+          })}
+        </div>
       )}
     </div>
   );
@@ -391,7 +456,23 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
   const [filterAssignedTo, setFilterAssignedTo] = useState('');
   const [filterHierarchyLevel, setFilterHierarchyLevel] = useState<'1' | '2' | '3' | ''>('');
   const [showFilters, setShowFilters] = useState(false);
+  const [displayMode, setDisplayMode] = useState<DisplayMode>('card');
   const { addStep, updateStep, deleteStep, users } = useTickets();
+
+  useEffect(() => {
+    if (displayPreferences?.workflowDisplayType) {
+      setDisplayMode(displayPreferences.workflowDisplayType);
+    }
+  }, [displayPreferences]);
+
+  const handleDisplayModeChange = async (mode: DisplayMode) => {
+    setDisplayMode(mode);
+    if (user?.id) {
+      await UserPreferencesService.saveUserPreferences(user.id, {
+        workflowDisplayType: mode
+      });
+    }
+  };
 
   const canManageWorkflows = user?.role === 'EO';
 
@@ -1673,11 +1754,14 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
 
   return (
     <div className="space-y-2">
-      {canManageWorkflows && (
-        <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center">
+        {canManageWorkflows && (
           <h3 className="text-base font-medium text-gray-900">Workflow</h3>
-          {!showAddForm && !editingStep && (
-            <div className="flex items-center space-x-2">
+        )}
+        <div className="flex items-center space-x-2 ml-auto">
+          <ViewTypeToggle value={displayMode} onChange={handleDisplayModeChange} />
+          {canManageWorkflows && !showAddForm && !editingStep && (
+            <>
               <button
                 onClick={() => {
                   setParentStepForNewStep(null);
@@ -1696,10 +1780,10 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
               >
                 <Layers className="w-4 h-4" />
               </button>
-            </div>
+            </>
           )}
         </div>
-      )}
+      </div>
 
       {ticket.workflow.length > 0 && (
         <>
@@ -1801,8 +1885,87 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
               Clear filters to see all workflows
             </button>
           </div>
-        ) : (
+        ) : displayMode === 'card' ? (
           getSortedWorkflows(filteredRootSteps).map(step => renderStep(step, 0))
+        ) : displayMode === 'table' ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full bg-white border border-gray-200 rounded-lg">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">#</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Title</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Status</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Assigned To</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Progress</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Dependencies</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {getSortedWorkflows(filteredRootSteps).map(step => (
+                  <tr key={step.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => toggleExpanded(step.id)}>
+                    <td className="px-4 py-2 text-sm text-gray-900">{getHierarchicalWorkflowNumber(step)}</td>
+                    <td className="px-4 py-2 text-sm text-gray-900">{step.title}</td>
+                    <td className="px-4 py-2 text-sm">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(step.status)}`}>
+                        {step.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2 text-sm text-gray-700">
+                      {users.find(u => u.id === step.assignedTo)?.name || 'Unassigned'}
+                    </td>
+                    <td className="px-4 py-2 text-sm">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex-1 bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-blue-600 h-2 rounded-full"
+                            style={{ width: `${step.progress || 0}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-xs text-gray-600 w-10">{step.progress || 0}%</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-2 text-sm">
+                      {step.dependsOn && step.dependsOn.length > 0 && (
+                        <span className="text-xs text-gray-600">{step.dependsOn.length} deps</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {getSortedWorkflows(filteredRootSteps).map(step => (
+              <div
+                key={step.id}
+                className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
+                onClick={() => toggleExpanded(step.id)}
+              >
+                <div className="flex items-center space-x-3 flex-1">
+                  <span className="text-sm font-medium text-gray-700 w-16">
+                    {getHierarchicalWorkflowNumber(step)}
+                  </span>
+                  <span className="text-sm text-gray-900 flex-1">{step.title}</span>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(step.status)}`}>
+                    {step.status}
+                  </span>
+                  <span className="text-xs text-gray-600">
+                    {users.find(u => u.id === step.assignedTo)?.name || 'Unassigned'}
+                  </span>
+                  <div className="flex items-center space-x-2 w-32">
+                    <div className="flex-1 bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full"
+                        style={{ width: `${step.progress || 0}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-xs text-gray-600">{step.progress || 0}%</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 

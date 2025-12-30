@@ -388,6 +388,7 @@ export interface UserDisplayPreferences {
   woDetailsDisplayType?: DisplayMode;
   mbookDisplayType?: DisplayMode;
   billsDisplayType?: DisplayMode;
+  workflowDisplayType?: DisplayMode;
   createdAt: Date;
   updatedAt: Date;
 }

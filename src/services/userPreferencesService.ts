@@ -62,6 +62,7 @@ export class UserPreferencesService {
         if (preferences.woDetailsDisplayType !== undefined) updateData.wo_details_display_type = preferences.woDetailsDisplayType;
         if (preferences.mbookDisplayType !== undefined) updateData.mbook_display_type = preferences.mbookDisplayType;
         if (preferences.billsDisplayType !== undefined) updateData.bills_display_type = preferences.billsDisplayType;
+        if (preferences.workflowDisplayType !== undefined) updateData.workflow_display_type = preferences.workflowDisplayType;
 
         const { data, error } = await supabase
           .from('user_display_preferences')
@@ -91,7 +92,8 @@ export class UserPreferencesService {
             animation_enabled: preferences.animationEnabled !== undefined ? preferences.animationEnabled : true,
             wo_details_display_type: preferences.woDetailsDisplayType || 'card',
             mbook_display_type: preferences.mbookDisplayType || 'card',
-            bills_display_type: preferences.billsDisplayType || 'card'
+            bills_display_type: preferences.billsDisplayType || 'card',
+            workflow_display_type: preferences.workflowDisplayType || 'card'
           })
           .select()
           .single();
@@ -166,6 +168,7 @@ export class UserPreferencesService {
       woDetailsDisplayType: data.wo_details_display_type as DisplayMode | undefined,
       mbookDisplayType: data.mbook_display_type as DisplayMode | undefined,
       billsDisplayType: data.bills_display_type as DisplayMode | undefined,
+      workflowDisplayType: data.workflow_display_type as DisplayMode | undefined,
       createdAt: new Date(data.created_at),
       updatedAt: new Date(data.updated_at)
     };
@@ -183,6 +186,7 @@ export class UserPreferencesService {
       woDetailsDisplayType: 'card',
       mbookDisplayType: 'card',
       billsDisplayType: 'card',
+      workflowDisplayType: 'card',
       createdAt: new Date(),
       updatedAt: new Date()
     };

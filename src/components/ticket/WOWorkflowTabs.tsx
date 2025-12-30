@@ -89,6 +89,7 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
   const [loadingWoCounts, setLoadingWoCounts] = useState(true);
   const [loadingMbookCount, setLoadingMbookCount] = useState(true);
   const [loadingBillsCount, setLoadingBillsCount] = useState(true);
+  const [visibleStartIndex, setVisibleStartIndex] = useState(0);
 
   const isWOModule = selectedModule?.id === '550e8400-e29b-41d4-a716-446655440106';
 
@@ -183,169 +184,178 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
     return tabs;
   };
 
-  const navigateTab = (direction: 'prev' | 'next') => {
-    const visibleTabs = getVisibleTabs();
-    const currentIndex = visibleTabs.indexOf(activeTab);
+  const MAX_VISIBLE_TABS = 3;
 
-    if (direction === 'prev' && currentIndex > 0) {
-      setActiveTab(visibleTabs[currentIndex - 1]);
-    } else if (direction === 'next' && currentIndex < visibleTabs.length - 1) {
-      setActiveTab(visibleTabs[currentIndex + 1]);
+  const getVisibleTabsWindow = (): TabType[] => {
+    const allTabs = getVisibleTabs();
+    if (allTabs.length <= MAX_VISIBLE_TABS) {
+      return allTabs;
+    }
+    return allTabs.slice(visibleStartIndex, visibleStartIndex + MAX_VISIBLE_TABS);
+  };
+
+  const navigateTab = (direction: 'prev' | 'next') => {
+    const allTabs = getVisibleTabs();
+
+    if (direction === 'prev' && visibleStartIndex > 0) {
+      setVisibleStartIndex(visibleStartIndex - 1);
+    } else if (direction === 'next' && visibleStartIndex + MAX_VISIBLE_TABS < allTabs.length) {
+      setVisibleStartIndex(visibleStartIndex + 1);
     }
   };
 
   const canNavigatePrev = () => {
-    const visibleTabs = getVisibleTabs();
-    return visibleTabs.indexOf(activeTab) > 0;
+    return visibleStartIndex > 0;
   };
 
   const canNavigateNext = () => {
-    const visibleTabs = getVisibleTabs();
-    const currentIndex = visibleTabs.indexOf(activeTab);
-    return currentIndex < visibleTabs.length - 1;
+    const allTabs = getVisibleTabs();
+    return visibleStartIndex + MAX_VISIBLE_TABS < allTabs.length;
+  };
+
+  useEffect(() => {
+    const allTabs = getVisibleTabs();
+    const activeIndex = allTabs.indexOf(activeTab);
+
+    if (activeIndex >= 0) {
+      if (activeIndex < visibleStartIndex) {
+        setVisibleStartIndex(activeIndex);
+      } else if (activeIndex >= visibleStartIndex + MAX_VISIBLE_TABS) {
+        setVisibleStartIndex(Math.max(0, activeIndex - MAX_VISIBLE_TABS + 1));
+      }
+    }
+  }, [activeTab, showWOInfoTab, showWODetailsTab, showMBookTab, showBillsTab]);
+
+  const renderTab = (tab: TabType) => {
+    const isActive = activeTab === tab;
+
+    const getTabStyles = (tab: TabType, isActive: boolean) => {
+      const baseClasses = 'flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200';
+      const inactiveClasses = 'text-gray-600 hover:text-gray-900 hover:bg-gray-50';
+
+      const activeStyles: Record<TabType, string> = {
+        'wo-info': 'bg-orange-50 text-orange-700 border-b-2 border-orange-600',
+        'wo-details': 'bg-blue-50 text-blue-700 border-b-2 border-blue-600',
+        'workflow': 'bg-teal-50 text-teal-700 border-b-2 border-teal-600',
+        'measurement-book': 'bg-emerald-50 text-emerald-700 border-b-2 border-emerald-600',
+        'bills': 'bg-green-50 text-green-700 border-b-2 border-green-600'
+      };
+
+      return `${baseClasses} ${isActive ? activeStyles[tab] : inactiveClasses}`;
+    };
+
+    const getBadgeStyles = (tab: TabType, isActive: boolean) => {
+      const baseClasses = 'px-2 py-0.5 rounded-full text-xs font-semibold';
+      const inactiveClasses = 'bg-gray-200 text-gray-600';
+
+      const activeStyles: Record<TabType, string> = {
+        'wo-info': 'bg-orange-100 text-orange-700',
+        'wo-details': 'bg-blue-100 text-blue-700',
+        'workflow': 'bg-teal-100 text-teal-700',
+        'measurement-book': 'bg-emerald-100 text-emerald-700',
+        'bills': 'bg-green-100 text-green-700'
+      };
+
+      return `${baseClasses} ${isActive ? activeStyles[tab] : inactiveClasses}`;
+    };
+
+    switch (tab) {
+      case 'wo-info':
+        return (
+          <button key={tab} onClick={() => setActiveTab(tab)} className={getTabStyles(tab, isActive)}>
+            <FileText className="w-4 h-4" />
+            <span>WO Info</span>
+          </button>
+        );
+      case 'wo-details':
+        return (
+          <button key={tab} onClick={() => setActiveTab(tab)} className={getTabStyles(tab, isActive)}>
+            <Package className="w-4 h-4" />
+            <span>WO Details</span>
+            {(woItemsCount + woSpecsCount) > 0 && (
+              <span className={getBadgeStyles(tab, isActive)}>
+                {woItemsCount + woSpecsCount}
+              </span>
+            )}
+          </button>
+        );
+      case 'workflow':
+        return (
+          <button key={tab} onClick={() => setActiveTab(tab)} className={getTabStyles(tab, isActive)}>
+            <ListChecks className="w-4 h-4" />
+            <span>Workflow</span>
+            {totalWorkflows > 0 && (
+              <span className={getBadgeStyles(tab, isActive)}>
+                {completedWorkflows}/{totalWorkflows}
+              </span>
+            )}
+          </button>
+        );
+      case 'measurement-book':
+        return (
+          <button key={tab} onClick={() => setActiveTab(tab)} className={getTabStyles(tab, isActive)}>
+            <BookOpen className="w-4 h-4" />
+            <span>Measurement Book</span>
+            {mbookCount > 0 && (
+              <span className={getBadgeStyles(tab, isActive)}>
+                {mbookCount}
+              </span>
+            )}
+          </button>
+        );
+      case 'bills':
+        return (
+          <button key={tab} onClick={() => setActiveTab(tab)} className={getTabStyles(tab, isActive)}>
+            <DollarSign className="w-4 h-4" />
+            <span>Bills</span>
+            {billsCount > 0 && (
+              <span className={getBadgeStyles(tab, isActive)}>
+                {billsCount}
+              </span>
+            )}
+          </button>
+        );
+    }
   };
 
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
       <div className="border-b border-gray-200">
-        <div className="flex items-center px-6 py-4">
-          <button
-            onClick={() => navigateTab('prev')}
-            disabled={!canNavigatePrev()}
-            className={`mr-3 p-2 rounded-lg transition-all duration-200 ${
-              canNavigatePrev()
-                ? 'text-gray-700 hover:bg-gray-100 active:bg-gray-200'
-                : 'text-gray-300 cursor-not-allowed'
-            }`}
-            title="Previous tab"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <div className="flex space-x-1">
-            {showWOInfoTab && (
-              <button
-                onClick={() => setActiveTab('wo-info')}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  activeTab === 'wo-info'
-                    ? 'bg-orange-50 text-orange-700 border-b-2 border-orange-600'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                <FileText className="w-4 h-4" />
-                <span>WO Info</span>
-              </button>
-            )}
-
-            {showWODetailsTab && (
-              <button
-                onClick={() => setActiveTab('wo-details')}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  activeTab === 'wo-details'
-                    ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                <Package className="w-4 h-4" />
-                <span>WO Details</span>
-                {(woItemsCount + woSpecsCount) > 0 && (
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                      activeTab === 'wo-details'
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-gray-200 text-gray-600'
-                    }`}
-                  >
-                    {woItemsCount + woSpecsCount}
-                  </span>
-                )}
-              </button>
-            )}
-
+        <div className="flex items-center justify-between px-6 py-4">
+          <div className="flex items-center flex-1">
             <button
-              onClick={() => setActiveTab('workflow')}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                activeTab === 'workflow'
-                  ? 'bg-teal-50 text-teal-700 border-b-2 border-teal-600'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              onClick={() => navigateTab('prev')}
+              disabled={!canNavigatePrev()}
+              className={`mr-3 p-2 rounded-lg transition-all duration-200 ${
+                canNavigatePrev()
+                  ? 'text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                  : 'text-gray-300 cursor-not-allowed'
               }`}
+              title="Previous tab"
             >
-              <ListChecks className="w-4 h-4" />
-              <span>Workflow</span>
-              {totalWorkflows > 0 && (
-                <span
-                  className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                    activeTab === 'workflow'
-                      ? 'bg-teal-100 text-teal-700'
-                      : 'bg-gray-200 text-gray-600'
-                  }`}
-                >
-                  {completedWorkflows}/{totalWorkflows}
-                </span>
-              )}
+              <ChevronLeft className="w-5 h-5" />
             </button>
-
-            {showMBookTab && (
-              <button
-                onClick={() => setActiveTab('measurement-book')}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  activeTab === 'measurement-book'
-                    ? 'bg-emerald-50 text-emerald-700 border-b-2 border-emerald-600'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                <BookOpen className="w-4 h-4" />
-                <span>Measurement Book</span>
-                {mbookCount > 0 && (
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                      activeTab === 'measurement-book'
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : 'bg-gray-200 text-gray-600'
-                    }`}
-                  >
-                    {mbookCount}
-                  </span>
-                )}
-              </button>
-            )}
-
-            {showBillsTab && (
-              <button
-                onClick={() => setActiveTab('bills')}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  activeTab === 'bills'
-                    ? 'bg-green-50 text-green-700 border-b-2 border-green-600'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                <DollarSign className="w-4 h-4" />
-                <span>Bills</span>
-                {billsCount > 0 && (
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                      activeTab === 'bills'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-gray-200 text-gray-600'
-                    }`}
-                  >
-                    {billsCount}
-                  </span>
-                )}
-              </button>
-            )}
+            <div className="flex space-x-1 flex-1">
+              {getVisibleTabsWindow().map(tab => renderTab(tab))}
+            </div>
+            <button
+              onClick={() => navigateTab('next')}
+              disabled={!canNavigateNext()}
+              className={`ml-3 p-2 rounded-lg transition-all duration-200 ${
+                canNavigateNext()
+                  ? 'text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                  : 'text-gray-300 cursor-not-allowed'
+              }`}
+              title="Next tab"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
           </div>
-          <button
-            onClick={() => navigateTab('next')}
-            disabled={!canNavigateNext()}
-            className={`ml-3 p-2 rounded-lg transition-all duration-200 ${
-              canNavigateNext()
-                ? 'text-gray-700 hover:bg-gray-100 active:bg-gray-200'
-                : 'text-gray-300 cursor-not-allowed'
-            }`}
-            title="Next tab"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
+          {getVisibleTabs().length > MAX_VISIBLE_TABS && (
+            <div className="ml-4 text-xs text-gray-500 font-medium">
+              {visibleStartIndex + 1}-{Math.min(visibleStartIndex + MAX_VISIBLE_TABS, getVisibleTabs().length)} of {getVisibleTabs().length}
+            </div>
+          )}
 
           {activeTab === 'workflow' && totalWorkflows > 0 && (
             <div className="ml-auto flex items-center space-x-3 text-xs">

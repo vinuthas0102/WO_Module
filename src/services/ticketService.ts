@@ -172,6 +172,8 @@ export class TicketService {
               parentStepId: step.parent_step_id,
               is_parallel: step.is_parallel !== false,
               progress: step.progress || 0,
+              progressAutoCalculated: step.progress_auto_calculated || false,
+              lastProgressCalculation: step.last_progress_calculation ? new Date(step.last_progress_calculation) : undefined,
               dependencies: step.dependencies || [],
               dependency_mode: step.dependency_mode || 'all',
               is_dependency_locked: step.is_dependency_locked || false,

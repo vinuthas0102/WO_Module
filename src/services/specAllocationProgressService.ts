@@ -80,6 +80,15 @@ export interface WorkflowStepCompletionStatus {
   canAutoComplete: boolean;
 }
 
+export interface WorkflowStepProgressInfo {
+  stepId: string;
+  progress: number;
+  progressAutoCalculated: boolean;
+  lastProgressCalculation?: Date;
+  totalAllocatedQuantity: number;
+  totalCompletedQuantity: number;
+}
+
 export class SpecAllocationProgressService {
   static async getProgressEntries(allocationId: string): Promise<SpecAllocationProgress[]> {
     try {
@@ -585,6 +594,101 @@ export class SpecAllocationProgressService {
         completedSpecs: 0,
         completionPercentage: 0,
         canAutoComplete: false,
+      };
+    }
+  }
+
+  static async toggleAutoCalculatedProgress(stepId: string, enable: boolean): Promise<void> {
+    try {
+      const updateData: any = {
+        progress_auto_calculated: enable,
+      };
+
+      if (enable) {
+        const calculatedProgress = await this.calculateStepProgress(stepId);
+        updateData.progress = calculatedProgress;
+        updateData.last_progress_calculation = new Date().toISOString();
+      }
+
+      const { error } = await supabase
+        .from('workflow_steps')
+        .update(updateData)
+        .eq('id', stepId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error toggling auto-calculated progress:', error);
+      throw error;
+    }
+  }
+
+  static async calculateStepProgress(stepId: string): Promise<number> {
+    try {
+      const { data, error } = await supabase.rpc('calculate_workflow_step_progress', {
+        p_step_id: stepId,
+      });
+
+      if (error) throw error;
+
+      return data || 0;
+    } catch (error) {
+      console.error('Error calculating step progress:', error);
+      return 0;
+    }
+  }
+
+  static async recalculateStepProgress(stepId: string): Promise<number> {
+    try {
+      const calculatedProgress = await this.calculateStepProgress(stepId);
+
+      const { error } = await supabase
+        .from('workflow_steps')
+        .update({
+          progress: calculatedProgress,
+          last_progress_calculation: new Date().toISOString(),
+        })
+        .eq('id', stepId)
+        .eq('progress_auto_calculated', true);
+
+      if (error) throw error;
+
+      return calculatedProgress;
+    } catch (error) {
+      console.error('Error recalculating step progress:', error);
+      throw error;
+    }
+  }
+
+  static async getWorkflowStepProgressInfo(stepId: string): Promise<WorkflowStepProgressInfo> {
+    try {
+      const { data: step, error: stepError } = await supabase
+        .from('workflow_steps')
+        .select('progress, progress_auto_calculated, last_progress_calculation')
+        .eq('id', stepId)
+        .single();
+
+      if (stepError) throw stepError;
+
+      const progressSummary = await this.getProgressSummaryForStep(stepId);
+
+      return {
+        stepId,
+        progress: step?.progress || 0,
+        progressAutoCalculated: step?.progress_auto_calculated || false,
+        lastProgressCalculation: step?.last_progress_calculation
+          ? new Date(step.last_progress_calculation)
+          : undefined,
+        totalAllocatedQuantity: progressSummary.totalAllocatedQuantity,
+        totalCompletedQuantity: progressSummary.totalCompletedQuantity,
+      };
+    } catch (error) {
+      console.error('Error getting workflow step progress info:', error);
+      return {
+        stepId,
+        progress: 0,
+        progressAutoCalculated: false,
+        totalAllocatedQuantity: 0,
+        totalCompletedQuantity: 0,
       };
     }
   }

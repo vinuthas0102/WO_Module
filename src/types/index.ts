@@ -78,6 +78,8 @@ export interface WorkflowStep {
   level_3?: number;
   is_parallel?: boolean;
   progress?: number;
+  progressAutoCalculated?: boolean;
+  lastProgressCalculation?: Date;
   dependencies?: string[];
   dependency_mode?: 'all' | 'any_one';
   is_dependency_locked?: boolean;

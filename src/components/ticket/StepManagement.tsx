@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, CheckCircle, Clock, Users, Trash2, Edit, X, ChevronDown, ChevronRight, FileText, Upload, Layers, Search, Filter, XCircle, Workflow, ArrowRight, History, ExternalLink, AlertCircle, Package, FileCheck, MessageCircle, PlusCircle, TrendingUp } from 'lucide-react';
+import { Plus, CheckCircle, Clock, Users, Trash2, Edit, X, ChevronDown, ChevronRight, FileText, Upload, Layers, Search, Filter, XCircle, Workflow, ArrowRight, History, ExternalLink, AlertCircle, Package, FileCheck, MessageCircle, PlusCircle, TrendingUp, Calculator, RefreshCw } from 'lucide-react';
 import { Ticket, WorkflowStep, WorkflowStepStatus, ActionIconDefinition, FileReferenceTemplate } from '../../types';
 import { FileReferenceService } from '../../services/fileReferenceService';
 import FileReferenceUpload from './FileReferenceUpload';
@@ -17,6 +17,7 @@ import ProgressHistoryView from './ProgressHistoryView';
 import { DocumentMetadata, FileService } from '../../services/fileService';
 import { TicketService } from '../../services/ticketService';
 import { DependencyService } from '../../services/dependencyService';
+import { SpecAllocationProgressService } from '../../services/specAllocationProgressService';
 import { getHierarchyColors, getStatusBadgeColor, getHierarchyLevel, getHierarchyLevelInfo, getHierarchyIcon, getHierarchyBorderStyle, hierarchyColorLegend } from '../../lib/hierarchyColors';
 
 interface WorkflowManagementProps {
@@ -736,17 +737,77 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
 
         {formData.status === 'WIP' && (
           <div className="space-y-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            {step && step.allocatedSpecs && step.allocatedSpecs.length > 0 && (
+              <div className="bg-white border border-blue-300 rounded-lg p-3 mb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Calculator className="w-4 h-4 text-blue-600" />
+                    <label className="text-sm font-medium text-gray-700">
+                      Auto-Calculate Progress from Specs
+                    </label>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!step.id) return;
+                      try {
+                        const newValue = !step.progressAutoCalculated;
+                        await SpecAllocationProgressService.toggleAutoCalculatedProgress(step.id, newValue);
+
+                        const updatedProgress = newValue
+                          ? await SpecAllocationProgressService.calculateStepProgress(step.id)
+                          : formData.progress;
+
+                        setFormData({
+                          ...formData,
+                          progress: updatedProgress
+                        });
+
+                        alert(`Auto-calculation ${newValue ? 'enabled' : 'disabled'}`);
+                        window.location.reload();
+                      } catch (error) {
+                        alert('Failed to toggle auto-calculation');
+                      }
+                    }}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      step.progressAutoCalculated ? 'bg-blue-600' : 'bg-gray-300'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        step.progressAutoCalculated ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+                <p className="text-xs text-gray-600 mt-1 ml-6">
+                  When enabled, progress is automatically calculated based on verified/approved spec quantities
+                </p>
+              </div>
+            )}
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Progress: {formData.progress}%
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-gray-700">
+                  Progress: {formData.progress}%
+                </label>
+                {step?.progressAutoCalculated && (
+                  <span className="flex items-center space-x-1 text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                    <Calculator className="w-3 h-3" />
+                    <span>Auto-calculated</span>
+                  </span>
+                )}
+              </div>
               <input
                 type="range"
                 min="0"
                 max="100"
                 value={formData.progress}
                 onChange={(e) => setFormData({ ...formData, progress: parseInt(e.target.value) })}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                disabled={step?.progressAutoCalculated}
+                className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600 ${
+                  step?.progressAutoCalculated ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
               />
               <div className="flex justify-between text-xs text-gray-500 mt-1">
                 <span>0%</span>
@@ -755,6 +816,11 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
                 <span>75%</span>
                 <span>100%</span>
               </div>
+              {step?.progressAutoCalculated && (
+                <p className="text-xs text-gray-600 mt-1">
+                  Progress is auto-calculated from spec allocations. Disable auto-calculation to set manually.
+                </p>
+              )}
             </div>
 
             <div>
@@ -1343,7 +1409,14 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
                     <div className="mt-2">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-xs font-medium text-gray-700">Progress</span>
-                        <span className="text-xs font-semibold text-blue-600">{step.progress}%</span>
+                        <div className="flex items-center space-x-1">
+                          {step.progressAutoCalculated && (
+                            <span className="flex items-center space-x-0.5 text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded" title="Auto-calculated from spec allocations">
+                              <Calculator className="w-3 h-3" />
+                            </span>
+                          )}
+                          <span className="text-xs font-semibold text-blue-600">{step.progress}%</span>
+                        </div>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div

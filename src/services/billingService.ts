@@ -33,12 +33,12 @@ export interface BillWithDetails extends Bill {
   }[];
   createdByUser?: {
     id: string;
-    full_name: string;
+    name: string;
     email: string;
   };
   approvedByUser?: {
     id: string;
-    full_name: string;
+    name: string;
     email: string;
   };
 }
@@ -50,8 +50,8 @@ export class BillingService {
         .from('bills')
         .select(`
           *,
-          createdByUser:users!bills_created_by_fkey(id, full_name, email),
-          approvedByUser:users!bills_approved_by_fkey(id, full_name, email)
+          createdByUser:users!bills_created_by_fkey(id, name, email),
+          approvedByUser:users!bills_approved_by_fkey(id, name, email)
         `)
         .eq('ticket_id', ticketId)
         .order('bill_date', { ascending: false });
@@ -78,8 +78,8 @@ export class BillingService {
         .from('bills')
         .select(`
           *,
-          createdByUser:users!bills_created_by_fkey(id, full_name, email),
-          approvedByUser:users!bills_approved_by_fkey(id, full_name, email)
+          createdByUser:users!bills_created_by_fkey(id, name, email),
+          approvedByUser:users!bills_approved_by_fkey(id, name, email)
         `)
         .eq('id', billId)
         .single();

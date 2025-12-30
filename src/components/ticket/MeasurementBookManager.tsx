@@ -444,7 +444,7 @@ export const MeasurementBookManager: React.FC<MeasurementBookManagerProps> = ({
 
         <div className="flex-1 overflow-y-auto p-4">
           {!showForm && !multiSelectMode && (
-            <div className="mb-4 flex justify-center">
+            <div className="mb-4 flex justify-end">
               <IconDisplayWrapper
                 actions={[
                   {

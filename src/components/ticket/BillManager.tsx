@@ -189,7 +189,7 @@ export const BillManager: React.FC<BillManagerProps> = ({
 
         <div className="flex-1 overflow-y-auto p-4">
           {!showCreateForm && (
-            <div className="mb-4 flex justify-center">
+            <div className="mb-4 flex justify-end">
               <IconDisplayWrapper
                 actions={[
                   {
@@ -368,7 +368,7 @@ export const BillManager: React.FC<BillManagerProps> = ({
 
                   <div className="flex items-center justify-between border-t border-gray-100 pt-2">
                     <p className="text-xs text-gray-500">
-                      Created by {bill.createdByUser?.full_name || 'Unknown'}
+                      Created by {bill.createdByUser?.name || 'Unknown'}
                     </p>
                     <div onClick={(e) => e.stopPropagation()}>
                       <IconDisplayWrapper

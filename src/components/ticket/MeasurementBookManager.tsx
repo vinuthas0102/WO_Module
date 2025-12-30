@@ -794,7 +794,7 @@ export const MeasurementBookManager: React.FC<MeasurementBookManagerProps> = ({
                       <p className="text-sm text-gray-700">{entry.description}</p>
                     </div>
                     <div className="flex items-center space-x-1">
-                      {entry.status === 'draft' && (
+                      {entry.status === 'draft' && (user?.role === 'EO' || user?.role === 'DO') && (
                         <>
                           <button
                             onClick={() => handleEdit(entry)}
@@ -861,7 +861,7 @@ export const MeasurementBookManager: React.FC<MeasurementBookManagerProps> = ({
                           Submit
                         </button>
                       )}
-                      {entry.status === 'submitted' && user?.role === 'eo' && (
+                      {entry.status === 'submitted' && user?.role === 'EO' && (
                         <button
                           onClick={() => handleUpdateStatus(entry.id, 'verified')}
                           className="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700"
@@ -869,7 +869,7 @@ export const MeasurementBookManager: React.FC<MeasurementBookManagerProps> = ({
                           Verify
                         </button>
                       )}
-                      {entry.status === 'verified' && (user?.role === 'eo' || user?.role === 'dept_officer') && (
+                      {entry.status === 'verified' && user?.role === 'EO' && (
                         <button
                           onClick={() => handleUpdateStatus(entry.id, 'approved')}
                           className="px-3 py-1 bg-orange-600 text-white text-xs font-medium rounded hover:bg-orange-700"

@@ -510,7 +510,7 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                     color: '#2563eb'
                   });
 
-                  if (user?.role === 'eo' || user?.role === 'dept_officer') {
+                  if (user?.role === 'eo' || user?.role === 'dept_officer' || user?.role === 'finance') {
                     actions.push({
                       id: 'bill-manager',
                       icon: DollarSign,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, ListChecks, FileText, BookOpen, DollarSign } from 'lucide-react';
+import { Package, ListChecks, FileText, BookOpen, DollarSign, ChevronLeft, ChevronRight } from 'lucide-react';
 import WOTabsSection from './WOTabsSection';
 import WorkflowManagement from './StepManagement';
 import WOInfoDisplay from './WOInfoDisplay';
@@ -173,10 +173,54 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
     }
   }, [hasWOData, loadingWoCounts, activeTab]);
 
+  const getVisibleTabs = (): TabType[] => {
+    const tabs: TabType[] = [];
+    if (showWOInfoTab) tabs.push('wo-info');
+    if (showWODetailsTab) tabs.push('wo-details');
+    tabs.push('workflow');
+    if (showMBookTab) tabs.push('measurement-book');
+    if (showBillsTab) tabs.push('bills');
+    return tabs;
+  };
+
+  const navigateTab = (direction: 'prev' | 'next') => {
+    const visibleTabs = getVisibleTabs();
+    const currentIndex = visibleTabs.indexOf(activeTab);
+
+    if (direction === 'prev' && currentIndex > 0) {
+      setActiveTab(visibleTabs[currentIndex - 1]);
+    } else if (direction === 'next' && currentIndex < visibleTabs.length - 1) {
+      setActiveTab(visibleTabs[currentIndex + 1]);
+    }
+  };
+
+  const canNavigatePrev = () => {
+    const visibleTabs = getVisibleTabs();
+    return visibleTabs.indexOf(activeTab) > 0;
+  };
+
+  const canNavigateNext = () => {
+    const visibleTabs = getVisibleTabs();
+    const currentIndex = visibleTabs.indexOf(activeTab);
+    return currentIndex < visibleTabs.length - 1;
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
       <div className="border-b border-gray-200">
         <div className="flex items-center px-6 py-4">
+          <button
+            onClick={() => navigateTab('prev')}
+            disabled={!canNavigatePrev()}
+            className={`mr-3 p-2 rounded-lg transition-all duration-200 ${
+              canNavigatePrev()
+                ? 'text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                : 'text-gray-300 cursor-not-allowed'
+            }`}
+            title="Previous tab"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
           <div className="flex space-x-1">
             {showWOInfoTab && (
               <button
@@ -290,6 +334,18 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
               )}
             </button>
           </div>
+          <button
+            onClick={() => navigateTab('next')}
+            disabled={!canNavigateNext()}
+            className={`ml-3 p-2 rounded-lg transition-all duration-200 ${
+              canNavigateNext()
+                ? 'text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                : 'text-gray-300 cursor-not-allowed'
+            }`}
+            title="Next tab"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
 
           {activeTab === 'workflow' && totalWorkflows > 0 && (
             <div className="ml-auto flex items-center space-x-3 text-xs">

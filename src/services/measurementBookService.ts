@@ -37,7 +37,10 @@ export interface MeasurementBookEntryWithDetails extends MeasurementBookEntry {
   workflowStep?: {
     id: string;
     title: string;
-    hierarchyLevel: number;
+    hierarchyLevel?: number;
+    level1?: number;
+    level2?: number;
+    level3?: number;
   };
   createdByUser?: {
     id: string;
@@ -73,7 +76,7 @@ export class MeasurementBookService {
               spec_master:work_order_specs_master(description, spec_code, unit)
             )
           ),
-          workflowStep:workflow_steps(id, title, hierarchy_level)
+          workflowStep:workflow_steps(id, title, level_1, level_2, level_3)
         `)
         .eq('ticket_id', ticketId)
         .order('entry_date', { ascending: false });
@@ -103,7 +106,7 @@ export class MeasurementBookService {
               spec_master:work_order_specs_master(description, spec_code, unit)
             )
           ),
-          workflowStep:workflow_steps(id, title, hierarchy_level)
+          workflowStep:workflow_steps(id, title, level_1, level_2, level_3)
         `)
         .eq('id', entryId)
         .single();
@@ -134,7 +137,7 @@ export class MeasurementBookService {
               spec_master:work_order_specs_master(description, spec_code, unit)
             )
           ),
-          workflowStep:workflow_steps(id, title, hierarchy_level)
+          workflowStep:workflow_steps(id, title, level_1, level_2, level_3)
         `)
         .eq('ticket_id', ticketId)
         .eq('status', status)
@@ -374,7 +377,10 @@ export class MeasurementBookService {
       workflowStep: data.workflowStep ? {
         id: data.workflowStep.id,
         title: data.workflowStep.title,
-        hierarchyLevel: data.workflowStep.hierarchy_level,
+        level1: data.workflowStep.level_1,
+        level2: data.workflowStep.level_2,
+        level3: data.workflowStep.level_3,
+        hierarchyLevel: data.workflowStep.level_3 ? 3 : data.workflowStep.level_2 ? 2 : data.workflowStep.level_1 ? 1 : 0,
       } : undefined,
       createdByUser: data.createdByUser,
       verifiedByUser: data.verifiedByUser,

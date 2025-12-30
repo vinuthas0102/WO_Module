@@ -41,17 +41,17 @@ export interface MeasurementBookEntryWithDetails extends MeasurementBookEntry {
   };
   createdByUser?: {
     id: string;
-    full_name: string;
+    name: string;
     email: string;
   };
   verifiedByUser?: {
     id: string;
-    full_name: string;
+    name: string;
     email: string;
   };
   approvedByUser?: {
     id: string;
-    full_name: string;
+    name: string;
     email: string;
   };
 }
@@ -63,9 +63,9 @@ export class MeasurementBookService {
         .from('measurement_book_entries')
         .select(`
           *,
-          createdByUser:users!created_by(id, full_name, email),
-          verifiedByUser:users!verified_by(id, full_name, email),
-          approvedByUser:users!approved_by(id, full_name, email),
+          createdByUser:users!created_by(id, name, email),
+          verifiedByUser:users!verified_by(id, name, email),
+          approvedByUser:users!approved_by(id, name, email),
           specAllocation:work_order_spec_allocations(
             id,
             allocated_quantity,
@@ -93,9 +93,9 @@ export class MeasurementBookService {
         .from('measurement_book_entries')
         .select(`
           *,
-          createdByUser:users!created_by(id, full_name, email),
-          verifiedByUser:users!verified_by(id, full_name, email),
-          approvedByUser:users!approved_by(id, full_name, email),
+          createdByUser:users!created_by(id, name, email),
+          verifiedByUser:users!verified_by(id, name, email),
+          approvedByUser:users!approved_by(id, name, email),
           specAllocation:work_order_spec_allocations(
             id,
             allocated_quantity,
@@ -124,9 +124,9 @@ export class MeasurementBookService {
         .from('measurement_book_entries')
         .select(`
           *,
-          createdByUser:users!created_by(id, full_name, email),
-          verifiedByUser:users!verified_by(id, full_name, email),
-          approvedByUser:users!approved_by(id, full_name, email),
+          createdByUser:users!created_by(id, name, email),
+          verifiedByUser:users!verified_by(id, name, email),
+          approvedByUser:users!approved_by(id, name, email),
           specAllocation:work_order_spec_allocations(
             id,
             allocated_quantity,

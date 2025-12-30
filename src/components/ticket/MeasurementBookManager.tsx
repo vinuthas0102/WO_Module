@@ -850,7 +850,7 @@ export const MeasurementBookManager: React.FC<MeasurementBookManagerProps> = ({
 
                   <div className="flex items-center justify-between border-t border-gray-100 pt-2 mt-2">
                     <p className="text-xs text-gray-500">
-                      Created by {entry.createdByUser?.full_name || 'Unknown'}
+                      Created by {entry.createdByUser?.name || 'Unknown'}
                     </p>
                     <div className="flex space-x-2">
                       {entry.status === 'draft' && user?.id === entry.createdBy && (

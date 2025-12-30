@@ -501,7 +501,9 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                     action: () => setShowSpecSelector(true),
                     color: '#16a34a'
                   });
+                }
 
+                if (selectedModule?.id === '550e8400-e29b-41d4-a716-446655440106' && (user?.role === 'EO' || user?.role === 'DO' || user?.role === 'FINANCE')) {
                   actions.push({
                     id: 'measurement-book',
                     icon: BookOpen,
@@ -510,15 +512,13 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                     color: '#2563eb'
                   });
 
-                  if (user?.role === 'eo' || user?.role === 'dept_officer' || user?.role === 'finance') {
-                    actions.push({
-                      id: 'bill-manager',
-                      icon: DollarSign,
-                      label: 'Bills',
-                      action: () => setShowBillManager(true),
-                      color: '#7c3aed'
-                    });
-                  }
+                  actions.push({
+                    id: 'bill-manager',
+                    icon: DollarSign,
+                    label: 'Bills',
+                    action: () => setShowBillManager(true),
+                    color: '#7c3aed'
+                  });
                 }
 
                 if (canDelete()) {

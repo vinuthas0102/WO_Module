@@ -339,7 +339,7 @@ export const BillManager: React.FC<BillManagerProps> = ({
                       Created by {bill.createdByUser?.full_name || 'Unknown'}
                     </p>
                     <div className="flex space-x-2">
-                      {bill.status === 'draft' && (user?.role === 'eo' || user?.role === 'dept_officer' || user?.role === 'finance') && (
+                      {bill.status === 'draft' && (user?.role === 'EO' || user?.role === 'DO' || user?.role === 'FINANCE') && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -350,7 +350,7 @@ export const BillManager: React.FC<BillManagerProps> = ({
                           Submit
                         </button>
                       )}
-                      {bill.status === 'submitted' && user?.role === 'eo' && (
+                      {bill.status === 'submitted' && user?.role === 'EO' && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -361,7 +361,7 @@ export const BillManager: React.FC<BillManagerProps> = ({
                           Approve
                         </button>
                       )}
-                      {bill.status === 'approved' && (user?.role === 'eo' || user?.role === 'dept_officer' || user?.role === 'finance') && (
+                      {bill.status === 'approved' && (user?.role === 'EO' || user?.role === 'DO' || user?.role === 'FINANCE') && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();

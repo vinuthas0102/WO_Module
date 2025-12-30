@@ -223,10 +223,44 @@ export class AuthService {
 
         if (insertError && insertError.code !== '23505') { // Ignore duplicate key errors
           console.error('Failed to create user in database:', insertError);
+          throw new Error(`Failed to create user ${mockUser.name}: ${insertError.message}`);
         }
+
+        // Verify user was created successfully
+        const { data: verifyUser, error: verifyError } = await supabase
+          ?.from('users')
+          .select('id')
+          .eq('id', mockUser.id)
+          .maybeSingle();
+
+        if (verifyError || !verifyUser) {
+          throw new Error(`User ${mockUser.name} was not created successfully`);
+        }
+
+        console.log('User created successfully:', mockUser.name);
       }
     } catch (error) {
       console.error('Error ensuring user exists in database:', error);
+      throw error;
+    }
+  }
+
+  static async validateUserExists(userId: string): Promise<boolean> {
+    if (!isSupabaseAvailable()) {
+      return true;
+    }
+
+    try {
+      const { data, error } = await supabase
+        ?.from('users')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle();
+
+      return !error && !!data;
+    } catch (error) {
+      console.error('Error validating user exists:', error);
+      return false;
     }
   }
 

@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { AuthService } from './authService';
 
 export interface MeasurementBookEntry {
   id: string;
@@ -166,6 +167,12 @@ export class MeasurementBookService {
     userId: string
   ): Promise<string> {
     try {
+      // Validate that the user exists before creating the measurement book entry
+      const userExists = await AuthService.validateUserExists(userId);
+      if (!userExists) {
+        throw new Error(`User with ID ${userId} does not exist in the database. Please ensure you are logged in correctly.`);
+      }
+
       const { data: mbookNumberData, error: mbookNumberError } = await supabase
         .rpc('get_next_mbook_number', { p_ticket_id: ticketId });
 
@@ -289,6 +296,12 @@ export class MeasurementBookService {
     userId: string
   ): Promise<void> {
     try {
+      // Validate that the user exists before updating status
+      const userExists = await AuthService.validateUserExists(userId);
+      if (!userExists) {
+        throw new Error(`User with ID ${userId} does not exist in the database. Please ensure you are logged in correctly.`);
+      }
+
       const updateData: any = { status };
 
       if (status === 'verified') {

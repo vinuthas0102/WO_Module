@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { AuthService } from './authService';
 
 export interface Bill {
   id: string;
@@ -107,6 +108,12 @@ export class BillingService {
         throw new Error('At least one measurement book entry is required');
       }
 
+      // Validate that the user exists before creating the bill
+      const userExists = await AuthService.validateUserExists(userId);
+      if (!userExists) {
+        throw new Error(`User with ID ${userId} does not exist in the database. Please ensure you are logged in correctly.`);
+      }
+
       const { data: billNumberData, error: billNumberError } = await supabase
         .rpc('get_next_bill_number');
 
@@ -206,6 +213,12 @@ export class BillingService {
     paymentReference?: string
   ): Promise<void> {
     try {
+      // Validate that the user exists before updating the bill
+      const userExists = await AuthService.validateUserExists(userId);
+      if (!userExists) {
+        throw new Error(`User with ID ${userId} does not exist in the database. Please ensure you are logged in correctly.`);
+      }
+
       const updateData: any = { status };
 
       if (status === 'approved') {

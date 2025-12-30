@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Plus, CheckCircle, DollarSign, Calendar, X, CreditCard } from 'lucide-react';
+import { FileText, Plus, CheckCircle, DollarSign, Calendar, X, CreditCard, Send } from 'lucide-react';
 import {
   BillingService,
   BillWithDetails
@@ -9,6 +9,9 @@ import {
   MeasurementBookEntryWithDetails
 } from '../../services/measurementBookService';
 import { useAuth } from '../../context/AuthContext';
+import { ActionIconDefinition } from '../../types';
+import IconDisplayWrapper from '../iconDisplay/IconDisplayWrapper';
+import { UserPreferencesService } from '../../services/userPreferencesService';
 
 interface BillManagerProps {
   ticketId: string;
@@ -32,11 +35,31 @@ export const BillManager: React.FC<BillManagerProps> = ({
   const [description, setDescription] = useState('');
   const [remarks, setRemarks] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [userPreferences, setUserPreferences] = useState<any>(null);
+  const [loadingPreferences, setLoadingPreferences] = useState(true);
 
   useEffect(() => {
     loadBills();
     loadApprovedEntries();
   }, [ticketId]);
+
+  useEffect(() => {
+    const loadPreferences = async () => {
+      if (user) {
+        try {
+          const prefs = await UserPreferencesService.getUserPreferences(user.id);
+          setUserPreferences(prefs);
+        } catch (error) {
+          console.error('Failed to load user preferences:', error);
+        } finally {
+          setLoadingPreferences(false);
+        }
+      } else {
+        setLoadingPreferences(false);
+      }
+    };
+    loadPreferences();
+  }, [user]);
 
   const loadBills = async () => {
     try {
@@ -166,14 +189,23 @@ export const BillManager: React.FC<BillManagerProps> = ({
 
         <div className="flex-1 overflow-y-auto p-4">
           {!showCreateForm && (
-            <button
-              onClick={() => setShowCreateForm(true)}
-              disabled={approvedEntries.length === 0}
-              className="w-full mb-4 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-            >
-              <Plus className="w-5 h-5" />
-              <span>Create New Bill</span>
-            </button>
+            <div className="mb-4 flex justify-center">
+              <IconDisplayWrapper
+                actions={[
+                  {
+                    id: 'create-new-bill',
+                    icon: Plus,
+                    label: 'Create New Bill',
+                    action: () => setShowCreateForm(true),
+                    color: '#2563eb',
+                    disabled: approvedEntries.length === 0,
+                    tooltip: approvedEntries.length === 0 ? 'No approved entries available' : undefined
+                  }
+                ]}
+                preferences={userPreferences || undefined}
+                loading={loadingPreferences}
+              />
+            </div>
           )}
 
           {showCreateForm && (
@@ -338,44 +370,52 @@ export const BillManager: React.FC<BillManagerProps> = ({
                     <p className="text-xs text-gray-500">
                       Created by {bill.createdByUser?.full_name || 'Unknown'}
                     </p>
-                    <div className="flex space-x-2">
-                      {bill.status === 'draft' && (user?.role === 'EO' || user?.role === 'DO' || user?.role === 'FINANCE') && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleUpdateBillStatus(bill.id, 'submitted');
-                          }}
-                          className="px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700"
-                        >
-                          Submit
-                        </button>
-                      )}
-                      {bill.status === 'submitted' && user?.role === 'EO' && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleUpdateBillStatus(bill.id, 'approved');
-                          }}
-                          className="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700"
-                        >
-                          Approve
-                        </button>
-                      )}
-                      {bill.status === 'approved' && (user?.role === 'EO' || user?.role === 'DO' || user?.role === 'FINANCE') && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const paymentDate = prompt('Enter payment date (YYYY-MM-DD):');
-                            const paymentRef = prompt('Enter payment reference:');
-                            if (paymentDate && paymentRef) {
-                              handleUpdateBillStatus(bill.id, 'paid', paymentDate, paymentRef);
-                            }
-                          }}
-                          className="px-3 py-1 bg-purple-600 text-white text-xs font-medium rounded hover:bg-purple-700"
-                        >
-                          Mark as Paid
-                        </button>
-                      )}
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <IconDisplayWrapper
+                        actions={(() => {
+                          const actions: ActionIconDefinition[] = [];
+
+                          if (bill.status === 'draft' && (user?.role === 'EO' || user?.role === 'DO' || user?.role === 'FINANCE')) {
+                            actions.push({
+                              id: `submit-bill-${bill.id}`,
+                              icon: Send,
+                              label: 'Submit Bill',
+                              action: () => handleUpdateBillStatus(bill.id, 'submitted'),
+                              color: '#2563eb'
+                            });
+                          }
+
+                          if (bill.status === 'submitted' && user?.role === 'EO') {
+                            actions.push({
+                              id: `approve-bill-${bill.id}`,
+                              icon: CheckCircle,
+                              label: 'Approve Bill',
+                              action: () => handleUpdateBillStatus(bill.id, 'approved'),
+                              color: '#16a34a'
+                            });
+                          }
+
+                          if (bill.status === 'approved' && (user?.role === 'EO' || user?.role === 'DO' || user?.role === 'FINANCE')) {
+                            actions.push({
+                              id: `mark-paid-${bill.id}`,
+                              icon: CreditCard,
+                              label: 'Mark as Paid',
+                              action: () => {
+                                const paymentDate = prompt('Enter payment date (YYYY-MM-DD):');
+                                const paymentRef = prompt('Enter payment reference:');
+                                if (paymentDate && paymentRef) {
+                                  handleUpdateBillStatus(bill.id, 'paid', paymentDate, paymentRef);
+                                }
+                              },
+                              color: '#9333ea'
+                            });
+                          }
+
+                          return actions;
+                        })()}
+                        preferences={userPreferences || undefined}
+                        loading={loadingPreferences}
+                      />
                     </div>
                   </div>
                 </div>

@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Plus, CheckCircle, AlertCircle, Calendar, DollarSign, Package, Filter, X, Edit, Trash2, Check } from 'lucide-react';
+import { BookOpen, Plus, CheckCircle, AlertCircle, Calendar, DollarSign, Package, Filter, X, Edit, Trash2, Check, Send } from 'lucide-react';
 import {
   MeasurementBookService,
   MeasurementBookEntryWithDetails
 } from '../../services/measurementBookService';
 import { WorkOrderSpecService } from '../../services/workOrderSpecService';
 import { useAuth } from '../../context/AuthContext';
+import { ActionIconDefinition } from '../../types';
+import IconDisplayWrapper from '../iconDisplay/IconDisplayWrapper';
+import { UserPreferencesService } from '../../services/userPreferencesService';
 
 interface MeasurementBookManagerProps {
   ticketId: string;
@@ -39,6 +42,8 @@ export const MeasurementBookManager: React.FC<MeasurementBookManagerProps> = ({
   const [editingEntry, setEditingEntry] = useState<MeasurementBookEntryWithDetails | null>(null);
   const [selectedEntry, setSelectedEntry] = useState<MeasurementBookEntryWithDetails | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [userPreferences, setUserPreferences] = useState<any>(null);
+  const [loadingPreferences, setLoadingPreferences] = useState(true);
 
   const [formData, setFormData] = useState({
     specAllocationId: '',
@@ -66,6 +71,24 @@ export const MeasurementBookManager: React.FC<MeasurementBookManagerProps> = ({
     loadEntries();
     loadSpecAllocations();
   }, [ticketId]);
+
+  useEffect(() => {
+    const loadPreferences = async () => {
+      if (user) {
+        try {
+          const prefs = await UserPreferencesService.getUserPreferences(user.id);
+          setUserPreferences(prefs);
+        } catch (error) {
+          console.error('Failed to load user preferences:', error);
+        } finally {
+          setLoadingPreferences(false);
+        }
+      } else {
+        setLoadingPreferences(false);
+      }
+    };
+    loadPreferences();
+  }, [user]);
 
   const loadEntries = async () => {
     try {
@@ -421,21 +444,27 @@ export const MeasurementBookManager: React.FC<MeasurementBookManagerProps> = ({
 
         <div className="flex-1 overflow-y-auto p-4">
           {!showForm && !multiSelectMode && (
-            <div className="flex space-x-2 mb-4">
-              <button
-                onClick={() => { setShowForm(true); setMultiSelectMode(false); }}
-                className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center space-x-2"
-              >
-                <Plus className="w-5 h-5" />
-                <span>Add Single Entry</span>
-              </button>
-              <button
-                onClick={() => { setMultiSelectMode(true); setShowForm(true); }}
-                className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center space-x-2"
-              >
-                <CheckCircle className="w-5 h-5" />
-                <span>Add Multiple Entries</span>
-              </button>
+            <div className="mb-4 flex justify-center">
+              <IconDisplayWrapper
+                actions={[
+                  {
+                    id: 'add-single-entry',
+                    icon: Plus,
+                    label: 'Add Single Entry',
+                    action: () => { setShowForm(true); setMultiSelectMode(false); },
+                    color: '#2563eb'
+                  },
+                  {
+                    id: 'add-multiple-entries',
+                    icon: CheckCircle,
+                    label: 'Add Multiple Entries',
+                    action: () => { setMultiSelectMode(true); setShowForm(true); },
+                    color: '#16a34a'
+                  }
+                ]}
+                preferences={userPreferences || undefined}
+                loading={loadingPreferences}
+              />
             </div>
           )}
 
@@ -852,31 +881,46 @@ export const MeasurementBookManager: React.FC<MeasurementBookManagerProps> = ({
                     <p className="text-xs text-gray-500">
                       Created by {entry.createdByUser?.name || 'Unknown'}
                     </p>
-                    <div className="flex space-x-2">
-                      {entry.status === 'draft' && user?.id === entry.createdBy && (
-                        <button
-                          onClick={() => handleUpdateStatus(entry.id, 'submitted')}
-                          className="px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700"
-                        >
-                          Submit
-                        </button>
-                      )}
-                      {entry.status === 'submitted' && user?.role === 'EO' && (
-                        <button
-                          onClick={() => handleUpdateStatus(entry.id, 'verified')}
-                          className="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700"
-                        >
-                          Verify
-                        </button>
-                      )}
-                      {entry.status === 'verified' && user?.role === 'EO' && (
-                        <button
-                          onClick={() => handleUpdateStatus(entry.id, 'approved')}
-                          className="px-3 py-1 bg-orange-600 text-white text-xs font-medium rounded hover:bg-orange-700"
-                        >
-                          Approve
-                        </button>
-                      )}
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <IconDisplayWrapper
+                        actions={(() => {
+                          const actions: ActionIconDefinition[] = [];
+
+                          if (entry.status === 'draft' && user?.id === entry.createdBy) {
+                            actions.push({
+                              id: `submit-${entry.id}`,
+                              icon: Send,
+                              label: 'Submit',
+                              action: () => handleUpdateStatus(entry.id, 'submitted'),
+                              color: '#2563eb'
+                            });
+                          }
+
+                          if (entry.status === 'submitted' && user?.role === 'EO') {
+                            actions.push({
+                              id: `verify-${entry.id}`,
+                              icon: Check,
+                              label: 'Verify',
+                              action: () => handleUpdateStatus(entry.id, 'verified'),
+                              color: '#16a34a'
+                            });
+                          }
+
+                          if (entry.status === 'verified' && user?.role === 'EO') {
+                            actions.push({
+                              id: `approve-${entry.id}`,
+                              icon: CheckCircle,
+                              label: 'Approve',
+                              action: () => handleUpdateStatus(entry.id, 'approved'),
+                              color: '#ea580c'
+                            });
+                          }
+
+                          return actions;
+                        })()}
+                        preferences={userPreferences || undefined}
+                        loading={loadingPreferences}
+                      />
                     </div>
                   </div>
                 </div>

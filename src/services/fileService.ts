@@ -166,6 +166,27 @@ export class FileService {
         throw new Error(`Failed to save document metadata: ${insertError.message}`);
       }
 
+      const documentType = isCompletionCertificate ? 'completion certificate' : (isMandatory ? 'mandatory document' : 'document');
+      const contextDescription = stepId ? 'to workflow step' : 'to ticket';
+      const description = `Uploaded ${documentType} "${file.name}" (${this.formatFileSize(file.size)}) ${contextDescription}`;
+
+      await supabase!.from('audit_logs').insert({
+        ticket_id: ticketId,
+        step_id: stepId || null,
+        action: 'DOCUMENT_UPLOADED',
+        action_category: 'document_action',
+        description: description,
+        performed_by: userId,
+        metadata: {
+          documentId: insertData.id,
+          fileName: file.name,
+          fileSize: file.size,
+          fileType: file.type,
+          isMandatory: isMandatory,
+          isCompletionCertificate: isCompletionCertificate,
+        },
+      });
+
       return {
         id: insertData.id,
         name: insertData.name,
@@ -267,7 +288,7 @@ export class FileService {
     try {
       const { data: document, error: fetchError } = await supabase!
         .from('documents')
-        .select('storage_path, uploaded_by')
+        .select('storage_path, uploaded_by, name, size, type, ticket_id, step_id, is_mandatory, is_completion_certificate')
         .eq('id', documentId)
         .single();
 
@@ -308,6 +329,27 @@ export class FileService {
       if (deleteError) {
         throw new Error(`Failed to delete document record: ${deleteError.message}`);
       }
+
+      const documentType = document.is_completion_certificate ? 'completion certificate' : (document.is_mandatory ? 'mandatory document' : 'document');
+      const contextDescription = document.step_id ? 'from workflow step' : 'from ticket';
+      const description = `Deleted ${documentType} "${document.name}" (${this.formatFileSize(document.size)}) ${contextDescription}`;
+
+      await supabase!.from('audit_logs').insert({
+        ticket_id: document.ticket_id,
+        step_id: document.step_id || null,
+        action: 'DOCUMENT_DELETED',
+        action_category: 'document_action',
+        description: description,
+        performed_by: userId,
+        metadata: {
+          documentId: documentId,
+          fileName: document.name,
+          fileSize: document.size,
+          fileType: document.type,
+          isMandatory: document.is_mandatory,
+          isCompletionCertificate: document.is_completion_certificate,
+        },
+      });
     } catch (error) {
       console.error('Delete document failed:', error);
       throw error;
@@ -492,7 +534,7 @@ export class FileService {
             continue;
           }
 
-          const { error: insertError } = await supabase!
+          const { data: insertedDoc, error: insertError } = await supabase!
             .from('documents')
             .insert({
               ticket_id: targetTicketId,
@@ -504,7 +546,9 @@ export class FileService {
               uploaded_by: userId,
               is_mandatory: sourceDoc.is_mandatory || false,
               is_completion_certificate: false,
-            });
+            })
+            .select('id')
+            .single();
 
           if (insertError) {
             await supabase!.storage.from('step-documents').remove([newStoragePath]);
@@ -512,6 +556,25 @@ export class FileService {
             result.errors.push(`Failed to create document record for ${sourceDoc.name}: ${insertError.message}`);
             continue;
           }
+
+          const description = `Copied document "${sourceDoc.name}" (${this.formatFileSize(sourceDoc.size)}) to ticket`;
+          await supabase!.from('audit_logs').insert({
+            ticket_id: targetTicketId,
+            step_id: null,
+            action: 'DOCUMENT_UPLOADED',
+            action_category: 'document_action',
+            description: description,
+            performed_by: userId,
+            metadata: {
+              documentId: insertedDoc.id,
+              fileName: sourceDoc.name,
+              fileSize: sourceDoc.size,
+              fileType: sourceDoc.type,
+              isMandatory: sourceDoc.is_mandatory || false,
+              isCompletionCertificate: false,
+              copiedFrom: sourceTicketId,
+            },
+          });
 
           result.successCount++;
         } catch (error) {

@@ -101,8 +101,42 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
         return `Status changed from ${entry.oldValue} to ${entry.newValue}`;
       case 'UPDATED':
         return 'Ticket updated';
+      case 'WORKFLOW_UPDATED':
+        // Provide context-aware descriptions for workflow updates
+        if (entry.actionCategory === 'status_change') {
+          // Extract progress from remarks if available
+          const progressMatch = entry.remarks?.match(/(\d+)%/);
+          if (progressMatch) {
+            return `Progress updated to ${progressMatch[1]}%`;
+          }
+          return 'Workflow status updated';
+        } else if (entry.actionCategory === 'assignment_change') {
+          return 'Team member assignment updated';
+        } else if (entry.actionCategory === 'progress_update') {
+          return 'Progress tracking updated';
+        } else if (entry.remarks) {
+          // Try to create a meaningful description from remarks
+          const shortRemarks = entry.remarks.substring(0, 50);
+          return shortRemarks.length < entry.remarks.length ? `${shortRemarks}...` : shortRemarks;
+        }
+        return 'Workflow step updated';
+      case 'STEP_CREATED':
+        return 'Workflow step added';
+      case 'STEP_UPDATED':
+        return 'Workflow step modified';
+      case 'STEP_DELETED':
+        return 'Workflow step removed';
+      case 'DOCUMENT_UPLOADED':
+        return 'Document attached';
+      case 'COMMENT_ADDED':
+        return 'Comment added';
       default:
-        return entry.action;
+        // Convert SNAKE_CASE to readable format
+        return entry.action
+          .toLowerCase()
+          .split('_')
+          .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
     }
   };
 
@@ -585,11 +619,6 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
                             <span className={`px-1.5 py-0.5 text-xs font-medium rounded border ${getActionColor(entry.action)}`}>
                               {entry.action}
                             </span>
-                            {entry.actionCategory && (
-                              <span className="px-1.5 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">
-                                {entry.actionCategory.replace('_', ' ')}
-                              </span>
-                            )}
                             {hasDocuments && (
                               <span className="px-1.5 py-0.5 text-xs bg-blue-100 text-blue-700 border border-blue-300 rounded flex items-center space-x-1">
                                 <Paperclip className="w-2.5 h-2.5" />

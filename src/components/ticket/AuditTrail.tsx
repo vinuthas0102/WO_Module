@@ -121,11 +121,11 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
         }
         return 'Workflow step updated';
       case 'STEP_CREATED':
-        return 'Workflow step added';
+        return 'New Workflow added';
       case 'STEP_UPDATED':
-        return 'Workflow step modified';
+        return 'Workflow updated';
       case 'STEP_DELETED':
-        return 'Workflow step removed';
+        return 'Workflow deleted';
       case 'DOCUMENT_UPLOADED':
         return 'Document attached';
       case 'COMMENT_ADDED':
@@ -599,9 +599,23 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
                         </div>
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex flex-col space-y-0.5">
+                        <div className="flex flex-col space-y-1">
+                          {/* Context first - Workflow step information */}
+                          {entry.stepId && (
+                            <div className="text-xs text-gray-600 bg-blue-50 p-2 rounded border-l-3 border-blue-400 flex items-center space-x-1">
+                              <span className="font-semibold text-blue-900">Workflow:</span>
+                              <span className="font-medium text-blue-800">{ticket.workflow.find(s => s.id === entry.stepId)?.title || 'Unknown Step'}</span>
+                            </div>
+                          )}
+
+                          {/* Action description - what happened */}
+                          <p className="text-sm font-medium text-gray-900">
+                            {getActionDescription(entry)}
+                          </p>
+
+                          {/* User information with badges */}
                           <div className="flex items-center space-x-1.5 flex-wrap">
-                            <span className="text-xs font-medium text-gray-900">
+                            <span className="text-xs text-gray-700">
                               {entryUser?.name || 'Unknown User'}
                             </span>
                             {entryUser?.role === 'EO' && (
@@ -626,22 +640,17 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
                               </span>
                             )}
                           </div>
+
+                          {/* Timestamp */}
                           <div className="flex items-center space-x-0.5 text-xs text-gray-500">
                             <Clock className="w-2.5 h-2.5" />
                             <span>{formatDate(new Date(entry.timestamp))}</span>
                           </div>
-                          <p className="text-xs text-gray-700">
-                            {getActionDescription(entry)}
-                          </p>
-                          {entry.stepId && (
-                            <div className="mt-1 text-xs text-gray-600 bg-blue-50 p-1.5 rounded border-l-2 border-blue-300 flex items-center space-x-1">
-                              <span className="font-medium">Workflow:</span>
-                              <span>{ticket.workflow.find(s => s.id === entry.stepId)?.title || 'Unknown Step'}</span>
-                            </div>
-                          )}
-                          {entry.remarks && (
-                            <div className="mt-1 text-xs text-gray-600 bg-gray-50 p-2 rounded-md border-l-2 border-blue-200">
-                              <strong>Remarks:</strong> {entry.remarks}
+
+                          {/* Additional remarks if they provide extra context */}
+                          {entry.remarks && !getActionDescription(entry).includes(entry.remarks.substring(0, 20)) && (
+                            <div className="mt-0.5 text-xs text-gray-600 bg-gray-50 p-2 rounded-md border-l-2 border-gray-300">
+                              <strong>Additional Details:</strong> {entry.remarks}
                             </div>
                           )}
                           {hasDocuments && (

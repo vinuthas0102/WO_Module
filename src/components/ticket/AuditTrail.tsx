@@ -466,6 +466,7 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
                 onClear={clearAllFilters}
                 activeFilterCount={activeFilterCount}
                 position="right"
+                direction="down"
                 panelClassName="w-[500px]"
               >
                 <div className="space-y-3">

@@ -27,6 +27,29 @@ export const CollapsibleFilterPanel: React.FC<CollapsibleFilterPanelProps> = ({
   direction = 'up',
 }) => {
   const panelRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [panelPosition, setPanelPosition] = React.useState<{ top?: number; left?: number; right?: number; bottom?: number }>({});
+
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const buttonRect = buttonRef.current.getBoundingClientRect();
+      const newPosition: { top?: number; left?: number; right?: number; bottom?: number } = {};
+
+      if (direction === 'down') {
+        newPosition.top = buttonRect.bottom + 8;
+      } else {
+        newPosition.bottom = window.innerHeight - buttonRect.top + 8;
+      }
+
+      if (position === 'right') {
+        newPosition.right = window.innerWidth - buttonRect.right;
+      } else {
+        newPosition.left = buttonRect.left;
+      }
+
+      setPanelPosition(newPosition);
+    }
+  }, [isOpen, position, direction]);
 
   useEffect(() => {
     if (isOpen && panelRef.current) {
@@ -44,13 +67,26 @@ export const CollapsibleFilterPanel: React.FC<CollapsibleFilterPanelProps> = ({
       }
     };
 
+    const handleClickOutside = (e: MouseEvent) => {
+      if (isOpen && panelRef.current && buttonRef.current &&
+          !panelRef.current.contains(e.target as Node) &&
+          !buttonRef.current.contains(e.target as Node)) {
+        onToggle();
+      }
+    };
+
     document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, [isOpen, onToggle]);
 
   return (
     <div className="relative">
       <button
+        ref={buttonRef}
         onClick={onToggle}
         className={`relative flex items-center space-x-1 px-2 py-1.5 text-xs rounded-lg border transition-all duration-200 ${
           isOpen
@@ -73,10 +109,11 @@ export const CollapsibleFilterPanel: React.FC<CollapsibleFilterPanelProps> = ({
       {isOpen && (
         <div
           ref={panelRef}
-          className={`absolute ${position === 'right' ? 'right-0' : 'left-0'} ${direction === 'up' ? 'bottom-full mb-2' : 'mt-2'} z-50 bg-white rounded-lg shadow-xl border border-gray-200 ${direction === 'up' ? 'animate-slideUp' : 'animate-slideDown'} ${panelClassName}`}
+          className={`fixed z-[9999] bg-white rounded-lg shadow-2xl border border-gray-200 ${direction === 'up' ? 'animate-slideUp' : 'animate-slideDown'} ${panelClassName}`}
           style={{
             minWidth: '300px',
             maxWidth: '600px',
+            ...panelPosition,
           }}
         >
           <div className="p-3">

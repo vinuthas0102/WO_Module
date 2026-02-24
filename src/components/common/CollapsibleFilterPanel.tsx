@@ -68,9 +68,10 @@ export const CollapsibleFilterPanel: React.FC<CollapsibleFilterPanelProps> = ({
     };
 
     const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
       if (isOpen && panelRef.current && buttonRef.current &&
-          !panelRef.current.contains(e.target as Node) &&
-          !buttonRef.current.contains(e.target as Node)) {
+          !panelRef.current.contains(target) &&
+          !buttonRef.current.contains(target)) {
         onToggle();
       }
     };
@@ -107,43 +108,50 @@ export const CollapsibleFilterPanel: React.FC<CollapsibleFilterPanelProps> = ({
       </button>
 
       {isOpen && (
-        <div
-          ref={panelRef}
-          className={`fixed z-[9999] bg-white rounded-lg shadow-2xl border border-gray-200 ${direction === 'up' ? 'animate-slideUp' : 'animate-slideDown'} ${panelClassName}`}
-          style={{
-            minWidth: '300px',
-            maxWidth: '600px',
-            ...panelPosition,
-          }}
-        >
-          <div className="p-3">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-semibold text-gray-900">Search & Filters</h4>
-              <div className="flex items-center space-x-1">
-                {showClearButton && activeFilterCount > 0 && onClear && (
+        <>
+          <div
+            className="fixed inset-0 bg-black bg-opacity-10 z-[9998]"
+            onClick={onToggle}
+            aria-hidden="true"
+          />
+          <div
+            ref={panelRef}
+            className={`fixed z-[9999] bg-white rounded-lg shadow-2xl border border-gray-200 ${direction === 'up' ? 'animate-slideUp' : 'animate-slideDown'} ${panelClassName}`}
+            style={{
+              minWidth: '300px',
+              maxWidth: '600px',
+              ...panelPosition,
+            }}
+          >
+            <div className="p-3">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-gray-900">Search & Filters</h4>
+                <div className="flex items-center space-x-1">
+                  {showClearButton && activeFilterCount > 0 && onClear && (
+                    <button
+                      onClick={onClear}
+                      className="flex items-center space-x-1 px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors"
+                      title="Clear all filters"
+                    >
+                      <X className="w-3 h-3" />
+                      <span>Clear</span>
+                    </button>
+                  )}
                   <button
-                    onClick={onClear}
-                    className="flex items-center space-x-1 px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors"
-                    title="Clear all filters"
+                    onClick={onToggle}
+                    className="p-1 text-gray-400 hover:text-gray-600 rounded hover:bg-gray-100 transition-colors"
+                    title="Close filters"
                   >
-                    <X className="w-3 h-3" />
-                    <span>Clear</span>
+                    <X className="w-4 h-4" />
                   </button>
-                )}
-                <button
-                  onClick={onToggle}
-                  className="p-1 text-gray-400 hover:text-gray-600 rounded hover:bg-gray-100 transition-colors"
-                  title="Close filters"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+                </div>
+              </div>
+              <div className="space-y-3">
+                {children}
               </div>
             </div>
-            <div className="space-y-3">
-              {children}
-            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

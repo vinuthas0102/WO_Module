@@ -418,7 +418,7 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
 
   return (
     <div className="space-y-2">
-      <div className="sticky top-0 bg-white bg-opacity-95 backdrop-blur-sm z-10 pb-2 space-y-2">
+      <div className="sticky top-0 bg-white bg-opacity-95 backdrop-blur-sm pb-2 space-y-2">
         <div className="flex items-center space-x-1 mb-2 border-b border-gray-200">
           <button
             onClick={() => handleTabChange('activity')}

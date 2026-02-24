@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Filter, X } from 'lucide-react';
 
 interface CollapsibleFilterPanelProps {
@@ -36,7 +37,7 @@ export const CollapsibleFilterPanel: React.FC<CollapsibleFilterPanelProps> = ({
       const newPosition: { top?: number; left?: number; right?: number; bottom?: number } = {};
 
       if (direction === 'down') {
-        newPosition.top = buttonRect.bottom + 8;
+        newPosition.top = buttonRect.bottom + window.scrollY + 8;
       } else {
         newPosition.bottom = window.innerHeight - buttonRect.top + 8;
       }
@@ -44,7 +45,7 @@ export const CollapsibleFilterPanel: React.FC<CollapsibleFilterPanelProps> = ({
       if (position === 'right') {
         newPosition.right = window.innerWidth - buttonRect.right;
       } else {
-        newPosition.left = buttonRect.left;
+        newPosition.left = buttonRect.left + window.scrollX;
       }
 
       setPanelPosition(newPosition);
@@ -107,7 +108,7 @@ export const CollapsibleFilterPanel: React.FC<CollapsibleFilterPanelProps> = ({
         )}
       </button>
 
-      {isOpen && (
+      {isOpen && createPortal(
         <>
           <div
             className="fixed inset-0 bg-black bg-opacity-10 z-[9998]"
@@ -151,7 +152,8 @@ export const CollapsibleFilterPanel: React.FC<CollapsibleFilterPanelProps> = ({
               </div>
             </div>
           </div>
-        </>
+        </>,
+        document.body
       )}
     </div>
   );

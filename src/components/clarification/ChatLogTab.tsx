@@ -3,6 +3,7 @@ import { Search, MessageSquare, Clock, Users, Loader } from 'lucide-react';
 import { Ticket, ClarificationThread } from '../../types';
 import { ClarificationService } from '../../services/clarificationService';
 import { useAuth } from '../../context/AuthContext';
+import { CollapsibleFilterPanel } from '../common/CollapsibleFilterPanel';
 
 interface ChatLogTabProps {
   ticket: Ticket;
@@ -15,6 +16,7 @@ export const ChatLogTab: React.FC<ChatLogTabProps> = ({ ticket, onOpenThread }) 
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
 
   useEffect(() => {
     loadThreads();
@@ -64,6 +66,13 @@ export const ChatLogTab: React.FC<ChatLogTabProps> = ({ ticket, onOpenThread }) 
   const openThreadCount = threads.filter(t => t.status === 'OPEN').length;
   const resolvedThreadCount = threads.filter(t => t.status === 'RESOLVED').length;
 
+  const activeFilterCount = (searchQuery ? 1 : 0) + (statusFilter ? 1 : 0);
+
+  const clearAllFilters = () => {
+    setSearchQuery('');
+    setStatusFilter('');
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -97,31 +106,52 @@ export const ChatLogTab: React.FC<ChatLogTabProps> = ({ ticket, onOpenThread }) 
             </span>
           </div>
         </div>
-      </div>
-
-      <div className="flex items-center space-x-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search threads..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs"
-          />
-        </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3 py-1.5 border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+        <CollapsibleFilterPanel
+          isOpen={isFilterPanelOpen}
+          onToggle={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
+          onClear={clearAllFilters}
+          activeFilterCount={activeFilterCount}
+          position="right"
+          direction="down"
+          panelClassName="w-[500px]"
         >
-          <option value="">All Status</option>
-          <option value="OPEN">Open</option>
-          <option value="RESOLVED">Resolved</option>
-          <option value="COMPLETED">Completed</option>
-          <option value="CLOSED">Closed</option>
-          <option value="CANCELLED">Cancelled</option>
-        </select>
+          <div className="space-y-3">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search threads..."
+                className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="">All Status</option>
+                <option value="OPEN">Open</option>
+                <option value="RESOLVED">Resolved</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="CLOSED">Closed</option>
+                <option value="CANCELLED">Cancelled</option>
+              </select>
+            </div>
+
+            {filteredThreads.length !== threads.length && (
+              <div className="pt-2 border-t border-gray-200">
+                <div className="text-xs text-gray-600 font-medium">
+                  <span>Showing {filteredThreads.length} of {threads.length} threads</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </CollapsibleFilterPanel>
       </div>
 
       {filteredThreads.length === 0 ? (

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Clock, FileText, Loader2 } from 'lucide-react';
+import { Save, Clock, FileText, Loader2, Search } from 'lucide-react';
 import { TicketUserNote } from '../../types';
 import { TicketNotesService } from '../../services/ticketNotesService';
 import { useAuth } from '../../context/AuthContext';
+import { CollapsibleFilterPanel } from '../common/CollapsibleFilterPanel';
 
 interface MyNotesTabProps {
   ticketId: string;
@@ -16,6 +17,8 @@ export const MyNotesTab: React.FC<MyNotesTabProps> = ({ ticketId }) => {
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -79,6 +82,33 @@ export const MyNotesTab: React.FC<MyNotesTabProps> = ({ ticketId }) => {
     }).format(date);
   };
 
+  const activeFilterCount = searchQuery ? 1 : 0;
+
+  const clearAllFilters = () => {
+    setSearchQuery('');
+  };
+
+  const highlightedContent = () => {
+    if (!searchQuery || !savedNote?.noteContent) {
+      return savedNote?.noteContent || 'No content';
+    }
+
+    const content = savedNote.noteContent;
+    const regex = new RegExp(`(${searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    const parts = content.split(regex);
+
+    return parts.map((part, index) =>
+      regex.test(part) ? (
+        <mark key={index} className="bg-yellow-200 text-gray-900">{part}</mark>
+      ) : (
+        part
+      )
+    );
+  };
+
+  const matchesSearch = !searchQuery ||
+    (savedNote?.noteContent && savedNote.noteContent.toLowerCase().includes(searchQuery.toLowerCase()));
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-12 space-y-3">
@@ -101,6 +131,42 @@ export const MyNotesTab: React.FC<MyNotesTabProps> = ({ ticketId }) => {
           </div>
         </div>
       </div>
+
+      {savedNote && (
+        <div className="flex items-center justify-between">
+          <h4 className="text-sm font-medium text-gray-900">Note History</h4>
+          <CollapsibleFilterPanel
+            isOpen={isFilterPanelOpen}
+            onToggle={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
+            onClear={clearAllFilters}
+            activeFilterCount={activeFilterCount}
+            position="right"
+            direction="down"
+            panelClassName="w-[500px]"
+          >
+            <div className="space-y-3">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search within your notes..."
+                  className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+
+              {searchQuery && (
+                <div className="pt-2 border-t border-gray-200">
+                  <div className="text-xs text-gray-600 font-medium">
+                    <span>{matchesSearch ? 'Match found in your note' : 'No matches found'}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CollapsibleFilterPanel>
+        </div>
+      )}
 
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="bg-gray-50 border-b border-gray-200 px-3 py-2 flex items-center justify-between">
@@ -153,10 +219,10 @@ export const MyNotesTab: React.FC<MyNotesTabProps> = ({ ticketId }) => {
         </div>
       </div>
 
-      {savedNote && (
+      {savedNote && matchesSearch && (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <div className="bg-gray-50 border-b border-gray-200 px-3 py-2">
-            <h4 className="text-sm font-medium text-gray-900">Note History</h4>
+            <h4 className="text-sm font-medium text-gray-900">Saved Version</h4>
           </div>
 
           <div className="p-3 space-y-2">
@@ -168,7 +234,7 @@ export const MyNotesTab: React.FC<MyNotesTabProps> = ({ ticketId }) => {
                 </span>
               </div>
               <div className="text-sm text-gray-700 whitespace-pre-wrap">
-                {savedNote.noteContent || 'No content'}
+                {highlightedContent()}
               </div>
             </div>
 
@@ -179,6 +245,13 @@ export const MyNotesTab: React.FC<MyNotesTabProps> = ({ ticketId }) => {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {savedNote && !matchesSearch && searchQuery && (
+        <div className="text-center py-8 text-gray-400">
+          <Search className="w-12 h-12 mx-auto mb-3 opacity-50" />
+          <p className="text-sm">No matches found for "{searchQuery}"</p>
         </div>
       )}
 

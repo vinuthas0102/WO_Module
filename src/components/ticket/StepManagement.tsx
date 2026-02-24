@@ -15,6 +15,7 @@ import DependencyBadge from './DependencyBadge';
 import ProgressDocuments from './ProgressDocuments';
 import ProgressHistoryView from './ProgressHistoryView';
 import ViewTypeToggle from '../common/ViewTypeToggle';
+import { CollapsibleFilterPanel } from '../common/CollapsibleFilterPanel';
 import { DocumentMetadata, FileService } from '../../services/fileService';
 import { TicketService } from '../../services/ticketService';
 import { DependencyService } from '../../services/dependencyService';
@@ -457,6 +458,7 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
   const [filterHierarchyLevel, setFilterHierarchyLevel] = useState<'1' | '2' | '3' | ''>('');
   const [showFilters, setShowFilters] = useState(false);
   const [displayMode, setDisplayMode] = useState<DisplayMode>('card');
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
   const { addStep, updateStep, deleteStep, users } = useTickets();
 
   useEffect(() => {
@@ -1737,6 +1739,15 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
 
   const hasActiveFilters = searchQuery || filterStatus || filterAssignedTo || filterHierarchyLevel;
 
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (searchQuery) count++;
+    if (filterStatus) count++;
+    if (filterAssignedTo) count++;
+    if (filterHierarchyLevel) count++;
+    return count;
+  }, [searchQuery, filterStatus, filterAssignedTo, filterHierarchyLevel]);
+
   const clearAllFilters = () => {
     setSearchQuery('');
     setFilterStatus('');
@@ -1759,6 +1770,82 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
           <h3 className="text-base font-medium text-gray-900">Workflow</h3>
         )}
         <div className="flex items-center space-x-2 ml-auto">
+          {ticket.workflow.length > 0 && (
+            <CollapsibleFilterPanel
+              isOpen={isFilterPanelOpen}
+              onToggle={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
+              onClear={clearAllFilters}
+              activeFilterCount={activeFilterCount}
+              position="right"
+              panelClassName="w-[500px]"
+            >
+              <div className="space-y-3">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search workflows..."
+                    className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
+                    <select
+                      value={filterStatus}
+                      onChange={(e) => setFilterStatus(e.target.value as WorkflowStepStatus | '')}
+                      className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    >
+                      <option value="">All Status</option>
+                      <option value="NOT_STARTED">Not Started</option>
+                      <option value="WIP">WIP (Active)</option>
+                      <option value="COMPLETED">Completed</option>
+                      <option value="CLOSED">Closed</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Assigned To</label>
+                    <select
+                      value={filterAssignedTo}
+                      onChange={(e) => setFilterAssignedTo(e.target.value)}
+                      className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    >
+                      <option value="">All Users</option>
+                      {users.map(u => (
+                        <option key={u.id} value={u.id}>{u.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="col-span-2">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Hierarchy Level</label>
+                    <select
+                      value={filterHierarchyLevel}
+                      onChange={(e) => setFilterHierarchyLevel(e.target.value as '1' | '2' | '3' | '')}
+                      className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    >
+                      <option value="">All Levels</option>
+                      <option value="1">Level 1</option>
+                      <option value="2">Level 2</option>
+                      <option value="3">Level 3</option>
+                    </select>
+                  </div>
+                </div>
+
+                {activeFilterCount > 0 && (
+                  <div className="pt-2 border-t border-gray-200">
+                    <div className="flex items-center justify-between text-xs text-gray-600">
+                      <span>Showing {filteredRootSteps.length} of {rootSteps.length} workflows</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CollapsibleFilterPanel>
+          )}
           <ViewTypeToggle value={displayMode} onChange={handleDisplayModeChange} />
           {canManageWorkflows && !showAddForm && !editingStep && (
             <>
@@ -1786,81 +1873,19 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
       </div>
 
       {ticket.workflow.length > 0 && (
-        <>
-          <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg px-3 py-1.5 border border-gray-200">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-gray-600">Legend:</span>
-              <div className="flex items-center space-x-3">
-                {hierarchyColorLegend.map((item) => (
-                  <div key={item.level} className="flex items-center space-x-1">
-                    <div className={`w-3 h-3 ${item.color} rounded border border-gray-400`}></div>
-                    <span className="text-xs text-gray-700 font-medium">{item.label}</span>
-                  </div>
-                ))}
-              </div>
+        <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg px-3 py-1.5 border border-gray-200">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-gray-600">Legend:</span>
+            <div className="flex items-center space-x-3">
+              {hierarchyColorLegend.map((item) => (
+                <div key={item.level} className="flex items-center space-x-1">
+                  <div className={`w-3 h-3 ${item.color} rounded border border-gray-400`}></div>
+                  <span className="text-xs text-gray-700 font-medium">{item.label}</span>
+                </div>
+              ))}
             </div>
           </div>
-
-          <div className="bg-white border border-gray-200 rounded-lg p-2">
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1 min-w-[200px]">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search workflows..."
-                  className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-                <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-              </div>
-
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as WorkflowStepStatus | '')}
-                className="px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                <option value="">All Status</option>
-                <option value="NOT_STARTED">Not Started</option>
-                <option value="WIP">WIP (Active)</option>
-                <option value="COMPLETED">Completed</option>
-                <option value="CLOSED">Closed</option>
-              </select>
-
-              <select
-                value={filterAssignedTo}
-                onChange={(e) => setFilterAssignedTo(e.target.value)}
-                className="px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                <option value="">All Users</option>
-                {users.map(u => (
-                  <option key={u.id} value={u.id}>{u.name}</option>
-                ))}
-              </select>
-
-              <select
-                value={filterHierarchyLevel}
-                onChange={(e) => setFilterHierarchyLevel(e.target.value as '1' | '2' | '3' | '')}
-                className="px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                <option value="">All Levels</option>
-                <option value="1">Level 1</option>
-                <option value="2">Level 2</option>
-                <option value="3">Level 3</option>
-              </select>
-
-              {hasActiveFilters && (
-                <button
-                  onClick={clearAllFilters}
-                  className="flex items-center gap-1 px-2 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors whitespace-nowrap"
-                  title="Clear all filters"
-                >
-                  <XCircle className="w-3.5 h-3.5" />
-                  <span>Clear</span>
-                </button>
-              )}
-            </div>
-          </div>
-        </>
+        </div>
       )}
 
       {showAddForm && canManageWorkflows && (

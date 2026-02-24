@@ -8,6 +8,7 @@ import UserCreateModal from './UserCreateModal';
 import UserEditModal from './UserEditModal';
 import UserDetailsModal from './UserDetailsModal';
 import LoadingSpinner from '../common/LoadingSpinner';
+import { CollapsibleFilterPanel } from '../common/CollapsibleFilterPanel';
 
 const UserManagementPage: React.FC = () => {
   const { user: currentUser } = useAuth();
@@ -21,6 +22,23 @@ const UserManagementPage: React.FC = () => {
   const [roleFilter, setRoleFilter] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
+
+  const activeFilterCount = React.useMemo(() => {
+    let count = 0;
+    if (searchTerm) count++;
+    if (roleFilter) count++;
+    if (departmentFilter) count++;
+    if (statusFilter !== 'all') count++;
+    return count;
+  }, [searchTerm, roleFilter, departmentFilter, statusFilter]);
+
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setRoleFilter('');
+    setDepartmentFilter('');
+    setStatusFilter('all');
+  };
 
   useEffect(() => {
     loadUsers();
@@ -174,65 +192,100 @@ const UserManagementPage: React.FC = () => {
                 <p className="text-sm text-gray-600">Manage system users, roles, and permissions</p>
               </div>
             </div>
-            <button
-              onClick={handleCreateUser}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <UserPlus className="w-4 h-4" />
-              Create User
-            </button>
-          </div>
+            <div className="flex items-center gap-2">
+              <CollapsibleFilterPanel
+                isOpen={isFilterPanelOpen}
+                onToggle={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
+                onClear={clearAllFilters}
+                activeFilterCount={activeFilterCount}
+                position="right"
+                panelClassName="w-[450px]"
+              >
+                <div className="space-y-3">
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search users..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                      className="w-full pl-8 pr-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    />
+                  </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search users..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Role</label>
+                      <select
+                        value={roleFilter}
+                        onChange={(e) => setRoleFilter(e.target.value)}
+                        className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="">All Roles</option>
+                        <option value="employee">Employee</option>
+                        <option value="dept_officer">Department Officer</option>
+                        <option value="eo">Executive Officer</option>
+                        <option value="vendor">Vendor</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
+                      <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
+                        className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="all">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                      </select>
+                    </div>
+
+                    <div className="col-span-2">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Department</label>
+                      <select
+                        value={departmentFilter}
+                        onChange={(e) => setDepartmentFilter(e.target.value)}
+                        className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="">All Departments</option>
+                        {departments.map(dept => (
+                          <option key={dept} value={dept}>{dept}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {activeFilterCount > 0 && (
+                    <div className="pt-2 border-t border-gray-200">
+                      <div className="flex items-center justify-between text-xs text-gray-600">
+                        <span>Showing {users.length} user{users.length !== 1 ? 's' : ''}</span>
+                        <button
+                          onClick={handleSearch}
+                          className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                        >
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CollapsibleFilterPanel>
+              <button
+                onClick={handleCreateUser}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <UserPlus className="w-4 h-4" />
+                Create User
+              </button>
             </div>
-
-            <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">All Roles</option>
-              <option value="employee">Employee</option>
-              <option value="dept_officer">Department Officer</option>
-              <option value="eo">Executive Officer</option>
-              <option value="vendor">Vendor</option>
-            </select>
-
-            <select
-              value={departmentFilter}
-              onChange={(e) => setDepartmentFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">All Departments</option>
-              {departments.map(dept => (
-                <option key={dept} value={dept}>{dept}</option>
-              ))}
-            </select>
-
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mt-4">
             <p className="text-sm text-gray-600">
-              Showing {users.length} user{users.length !== 1 ? 's' : ''}
+              {users.length} user{users.length !== 1 ? 's' : ''}
             </p>
             <button
               onClick={loadUsers}

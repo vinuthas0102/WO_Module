@@ -11,6 +11,7 @@ interface CollapsibleFilterPanelProps {
   panelClassName?: string;
   position?: 'left' | 'right';
   showClearButton?: boolean;
+  direction?: 'up' | 'down';
 }
 
 export const CollapsibleFilterPanel: React.FC<CollapsibleFilterPanelProps> = ({
@@ -23,6 +24,7 @@ export const CollapsibleFilterPanel: React.FC<CollapsibleFilterPanelProps> = ({
   panelClassName = '',
   position = 'left',
   showClearButton = true,
+  direction = 'up',
 }) => {
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -71,7 +73,7 @@ export const CollapsibleFilterPanel: React.FC<CollapsibleFilterPanelProps> = ({
       {isOpen && (
         <div
           ref={panelRef}
-          className={`absolute ${position === 'right' ? 'right-0' : 'left-0'} mt-2 z-50 bg-white rounded-lg shadow-xl border border-gray-200 animate-slideDown ${panelClassName}`}
+          className={`absolute ${position === 'right' ? 'right-0' : 'left-0'} ${direction === 'up' ? 'bottom-full mb-2' : 'mt-2'} z-50 bg-white rounded-lg shadow-xl border border-gray-200 ${direction === 'up' ? 'animate-slideUp' : 'animate-slideDown'} ${panelClassName}`}
           style={{
             minWidth: '300px',
             maxWidth: '600px',

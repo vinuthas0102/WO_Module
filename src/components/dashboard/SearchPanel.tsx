@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { Search, Filter, X, Grid3X3, List, LayoutGrid } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Search, Grid3X3, List, LayoutGrid } from 'lucide-react';
 import { TicketStatus } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { useTickets } from '../../context/TicketContext';
+import { CollapsibleFilterPanel } from '../common/CollapsibleFilterPanel';
 
 interface SearchFilters {
   search: string;
@@ -20,7 +21,7 @@ interface SearchPanelProps {
 }
 
 const SearchPanel: React.FC<SearchPanelProps> = ({ filters, onFiltersChange, viewMode, onViewModeChange }) => {
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
   const { user } = useAuth();
   const { users } = useTickets();
 
@@ -39,10 +40,16 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ filters, onFiltersChange, vie
       priority: '',
       department: ''
     });
-    setShowAdvanced(false);
   };
 
-  const hasActiveFilters = Object.values(filters).some(value => value !== '');
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.status) count++;
+    if (filters.priority) count++;
+    if (filters.assignedTo) count++;
+    if (filters.department) count++;
+    return count;
+  }, [filters]);
 
   const availableDepartments = [...new Set(users.map(u => u.department))];
   const availableUsers = users.filter(u => {
@@ -104,97 +111,81 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ filters, onFiltersChange, vie
             </button>
           </div>
 
-          <button
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            className={`flex items-center space-x-1 px-2 py-1.5 text-xs rounded-lg border transition-colors duration-200 ${
-              showAdvanced
-                ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white border-blue-400 shadow-lg'
-                : 'bg-white bg-opacity-80 text-gray-700 border-gray-300 hover:bg-opacity-100 shadow-sm'
-            }`}
+          <CollapsibleFilterPanel
+            isOpen={isFilterPanelOpen}
+            onToggle={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
+            onClear={clearFilters}
+            activeFilterCount={activeFilterCount}
+            position="right"
+            direction="down"
+            panelClassName="w-[500px]"
           >
-            <Filter className="w-3.5 h-3.5" />
-            <span>Filters</span>
-          </button>
-
-          {hasActiveFilters && (
-            <button
-              onClick={clearFilters}
-              className="flex items-center space-x-1 px-2 py-1.5 text-xs text-red-600 hover:bg-red-50 rounded-lg border border-red-200 transition-all duration-200 hover:shadow-md"
-            >
-              <X className="w-3.5 h-3.5" />
-              <span>Clear</span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {showAdvanced && (
-        <div className="mt-2 pt-2 border-t border-gray-200 animate-fadeIn">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-0.5">Status</label>
-              <select
-                value={filters.status}
-                onChange={(e) => handleFilterChange('status', e.target.value)}
-                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white bg-opacity-80 backdrop-blur-sm"
-              >
-                <option value="">All</option>
-                <option value="DRAFT">Draft</option>
-                <option value="CREATED">Created</option>
-                <option value="ACTIVE">Active</option>
-                <option value="COMPLETED">Completed</option>
-                <option value="CANCELLED">Cancelled</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-0.5">Priority</label>
-              <select
-                value={filters.priority}
-                onChange={(e) => handleFilterChange('priority', e.target.value)}
-                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white bg-opacity-80 backdrop-blur-sm"
-              >
-                <option value="">All</option>
-                <option value="CRITICAL">Critical</option>
-                <option value="HIGH">High</option>
-                <option value="MEDIUM">Medium</option>
-                <option value="LOW">Low</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-0.5">Assigned</label>
-              <select
-                value={filters.assignedTo}
-                onChange={(e) => handleFilterChange('assignedTo', e.target.value)}
-                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white bg-opacity-80 backdrop-blur-sm"
-              >
-                <option value="">All</option>
-                <option value="unassigned">Unassigned</option>
-                {availableUsers.map(user => (
-                  <option key={user.id} value={user.id}>{user.name.split(' ')[0]}</option>
-                ))}
-              </select>
-            </div>
-
-            {user?.role === 'EO' && (
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-0.5">Dept</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
                 <select
-                  value={filters.department}
-                  onChange={(e) => handleFilterChange('department', e.target.value)}
-                  className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white bg-opacity-80 backdrop-blur-sm"
+                  value={filters.status}
+                  onChange={(e) => handleFilterChange('status', e.target.value)}
+                  className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">All</option>
-                  {availableDepartments.map(dept => (
-                    <option key={dept} value={dept}>{dept}</option>
+                  <option value="DRAFT">Draft</option>
+                  <option value="CREATED">Created</option>
+                  <option value="ACTIVE">Active</option>
+                  <option value="COMPLETED">Completed</option>
+                  <option value="CANCELLED">Cancelled</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Priority</label>
+                <select
+                  value={filters.priority}
+                  onChange={(e) => handleFilterChange('priority', e.target.value)}
+                  className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">All</option>
+                  <option value="CRITICAL">Critical</option>
+                  <option value="HIGH">High</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="LOW">Low</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Assigned</label>
+                <select
+                  value={filters.assignedTo}
+                  onChange={(e) => handleFilterChange('assignedTo', e.target.value)}
+                  className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">All</option>
+                  <option value="unassigned">Unassigned</option>
+                  {availableUsers.map(user => (
+                    <option key={user.id} value={user.id}>{user.name.split(' ')[0]}</option>
                   ))}
                 </select>
               </div>
-            )}
-          </div>
+
+              {user?.role === 'EO' && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Dept</label>
+                  <select
+                    value={filters.department}
+                    onChange={(e) => handleFilterChange('department', e.target.value)}
+                    className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">All</option>
+                    {availableDepartments.map(dept => (
+                      <option key={dept} value={dept}>{dept}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          </CollapsibleFilterPanel>
         </div>
-      )}
+      </div>
     </div>
   );
 };

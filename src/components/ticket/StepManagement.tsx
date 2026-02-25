@@ -16,6 +16,7 @@ import ProgressDocuments from './ProgressDocuments';
 import ProgressHistoryView from './ProgressHistoryView';
 import ViewTypeToggle from '../common/ViewTypeToggle';
 import { CollapsibleFilterPanel } from '../common/CollapsibleFilterPanel';
+import { TopRightControls } from '../common/TopRightControls';
 import { DocumentMetadata, FileService } from '../../services/fileService';
 import { TicketService } from '../../services/ticketService';
 import { DependencyService } from '../../services/dependencyService';
@@ -1765,11 +1766,11 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
 
   return (
     <div className="space-y-2">
-      <div className="flex justify-between items-center">
+      <div className="relative">
         {canManageWorkflows && (
           <h3 className="text-base font-medium text-gray-900">Workflow</h3>
         )}
-        <div className="flex items-center space-x-2 ml-auto">
+        <TopRightControls>
           {ticket.workflow.length > 0 && (
             <CollapsibleFilterPanel
               isOpen={isFilterPanelOpen}
@@ -1870,7 +1871,7 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
               </button>
             </>
           )}
-        </div>
+        </TopRightControls>
       </div>
 
       {ticket.workflow.length > 0 && (

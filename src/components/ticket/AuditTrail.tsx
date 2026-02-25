@@ -13,6 +13,7 @@ import { NewClarificationForm } from '../clarification/NewClarificationForm';
 import { MyNotesTab } from './MyNotesTab';
 import { TrackProgressSection } from './TrackProgressSection';
 import { CollapsibleFilterPanel } from '../common/CollapsibleFilterPanel';
+import { TopRightControls } from '../common/TopRightControls';
 
 interface AuditTrailProps {
   ticket: Ticket;
@@ -490,83 +491,85 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
 
         {activeTab === 'activity' ? (
           <>
-            <div className="flex items-center justify-between">
+            <div className="relative">
               <h3 className="text-sm font-semibold text-gray-900">
                 Audit Trail ({ticket.auditTrail.length})
               </h3>
-              <CollapsibleFilterPanel
-                isOpen={isFilterPanelOpen}
-                onToggle={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
-                onClear={clearAllFilters}
-                activeFilterCount={activeFilterCount}
-                position="right"
-                direction="down"
-                panelClassName="w-[500px]"
-              >
-                <div className="space-y-3">
-                  <div className="relative">
-                    <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Search audit trail..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Action Category</label>
-                      <select
-                        value={filterCategory}
-                        onChange={(e) => setFilterCategory(e.target.value as any)}
-                        className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      >
-                        <option value="">All Actions</option>
-                        <option value="ticket_action">Ticket Actions</option>
-                        <option value="workflow_action">Workflow Actions</option>
-                        <option value="document_action">Document Actions</option>
-                        <option value="status_change">Status Changes</option>
-                        <option value="assignment_change">Assignments</option>
-                        <option value="progress_update">Progress Updates</option>
-                      </select>
+              <TopRightControls>
+                <CollapsibleFilterPanel
+                  isOpen={isFilterPanelOpen}
+                  onToggle={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
+                  onClear={clearAllFilters}
+                  activeFilterCount={activeFilterCount}
+                  position="right"
+                  direction="down"
+                  panelClassName="w-[500px]"
+                >
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search audit trail..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-8 pr-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs"
+                      />
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">User Role</label>
-                      <select
-                        value={filterUserRole}
-                        onChange={(e) => setFilterUserRole(e.target.value as any)}
-                        className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      >
-                        <option value="">All Users</option>
-                        <option value="EO">EO Actions</option>
-                        <option value="DO">Manager Actions</option>
-                      </select>
-                    </div>
-                  </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Action Category</label>
+                        <select
+                          value={filterCategory}
+                          onChange={(e) => setFilterCategory(e.target.value as any)}
+                          className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        >
+                          <option value="">All Actions</option>
+                          <option value="ticket_action">Ticket Actions</option>
+                          <option value="workflow_action">Workflow Actions</option>
+                          <option value="document_action">Document Actions</option>
+                          <option value="status_change">Status Changes</option>
+                          <option value="assignment_change">Assignments</option>
+                          <option value="progress_update">Progress Updates</option>
+                        </select>
+                      </div>
 
-                  <label className="flex items-center space-x-2 text-xs text-gray-700 cursor-pointer p-2 hover:bg-gray-50 rounded">
-                    <input
-                      type="checkbox"
-                      checked={filterWithDocuments}
-                      onChange={(e) => setFilterWithDocuments(e.target.checked)}
-                      className="w-3.5 h-3.5 text-blue-600 rounded focus:ring-1 focus:ring-blue-500"
-                    />
-                    <Paperclip className="w-3.5 h-3.5" />
-                    <span>Only show entries with documents</span>
-                  </label>
-
-                  {activeFilterCount > 0 && (
-                    <div className="pt-2 border-t border-gray-200">
-                      <div className="flex items-center justify-between text-xs text-gray-600">
-                        <span>Showing {filteredAuditTrail.length} of {ticket.auditTrail.length} entries</span>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">User Role</label>
+                        <select
+                          value={filterUserRole}
+                          onChange={(e) => setFilterUserRole(e.target.value as any)}
+                          className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        >
+                          <option value="">All Users</option>
+                          <option value="EO">EO Actions</option>
+                          <option value="DO">Manager Actions</option>
+                        </select>
                       </div>
                     </div>
-                  )}
-                </div>
-              </CollapsibleFilterPanel>
+
+                    <label className="flex items-center space-x-2 text-xs text-gray-700 cursor-pointer p-2 hover:bg-gray-50 rounded">
+                      <input
+                        type="checkbox"
+                        checked={filterWithDocuments}
+                        onChange={(e) => setFilterWithDocuments(e.target.checked)}
+                        className="w-3.5 h-3.5 text-blue-600 rounded focus:ring-1 focus:ring-blue-500"
+                      />
+                      <Paperclip className="w-3.5 h-3.5" />
+                      <span>Only show entries with documents</span>
+                    </label>
+
+                    {activeFilterCount > 0 && (
+                      <div className="pt-2 border-t border-gray-200">
+                        <div className="flex items-center justify-between text-xs text-gray-600">
+                          <span>Showing {filteredAuditTrail.length} of {ticket.auditTrail.length} entries</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CollapsibleFilterPanel>
+              </TopRightControls>
             </div>
 
         {sortedAuditTrail.length === 0 ? (

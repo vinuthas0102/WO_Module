@@ -4,6 +4,7 @@ import { TicketUserNote } from '../../types';
 import { TicketNotesService } from '../../services/ticketNotesService';
 import { useAuth } from '../../context/AuthContext';
 import { CollapsibleFilterPanel } from '../common/CollapsibleFilterPanel';
+import { TopRightControls } from '../common/TopRightControls';
 
 interface MyNotesTabProps {
   ticketId: string;
@@ -119,7 +120,7 @@ export const MyNotesTab: React.FC<MyNotesTabProps> = ({ ticketId }) => {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 relative">
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
         <div className="flex items-start space-x-2">
           <FileText className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
@@ -133,8 +134,7 @@ export const MyNotesTab: React.FC<MyNotesTabProps> = ({ ticketId }) => {
       </div>
 
       {savedNote && (
-        <div className="flex items-center justify-between">
-          <h4 className="text-sm font-medium text-gray-900">Note History</h4>
+        <TopRightControls className="top-3">
           <CollapsibleFilterPanel
             isOpen={isFilterPanelOpen}
             onToggle={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
@@ -165,7 +165,7 @@ export const MyNotesTab: React.FC<MyNotesTabProps> = ({ ticketId }) => {
               )}
             </div>
           </CollapsibleFilterPanel>
-        </div>
+        </TopRightControls>
       )}
 
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">

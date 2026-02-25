@@ -4,7 +4,6 @@ import { TicketStatus } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { useTickets } from '../../context/TicketContext';
 import { CollapsibleFilterPanel } from '../common/CollapsibleFilterPanel';
-import { TopRightControls } from '../common/TopRightControls';
 
 interface SearchFilters {
   search: string;
@@ -61,8 +60,8 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ filters, onFiltersChange, vie
   });
 
   return (
-    <TopRightControls>
-      <div className="flex items-center bg-white bg-opacity-80 rounded-lg border border-gray-300 shadow-sm">
+    <div className="flex items-center gap-2">
+      <div className="flex items-center bg-white rounded-lg border border-gray-300 shadow-sm">
         <button
           onClick={() => onViewModeChange('grid')}
           className={`p-1.5 rounded-l-lg transition-colors duration-200 ${
@@ -187,7 +186,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ filters, onFiltersChange, vie
           </div>
         </div>
       </CollapsibleFilterPanel>
-    </TopRightControls>
+    </div>
   );
 };
 

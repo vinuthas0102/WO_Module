@@ -60,6 +60,7 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
   const [woItemsCount, setWoItemsCount] = useState(0);
   const [woSpecsCount, setWoSpecsCount] = useState(0);
   const [loadingWoCounts, setLoadingWoCounts] = useState(true);
+  const [activeHighlightedStepId, setActiveHighlightedStepId] = useState<string | null>(null);
 
   const createdByUser = users.find(u => u.id === ticket.createdBy);
   const assignedToUser = ticket.assignedTo ? users.find(u => u.id === ticket.assignedTo) : undefined;
@@ -225,6 +226,7 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
     }
 
     setCreatingInlineClarification({ stepId, stepTitle, assignedUserId });
+    setActiveHighlightedStepId(stepId);
   };
 
   const handleCreateClarification = async (data: {
@@ -286,11 +288,13 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
 
   const handleCancelInlineClarification = () => {
     setCreatingInlineClarification(null);
+    setActiveHighlightedStepId(null);
   };
 
   const handleCloseClarificationThread = () => {
     setActiveClarificationThread(null);
     setCreatingInlineClarification(null);
+    setActiveHighlightedStepId(null);
   };
 
   const handleRefreshClarifications = () => {
@@ -299,6 +303,9 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
 
   const handleOpenClarificationThread = (thread: ClarificationThread) => {
     setActiveClarificationThread(thread);
+    if (thread.stepId) {
+      setActiveHighlightedStepId(thread.stepId);
+    }
   };
 
   const getStatusIcon = (status: string) => {
@@ -596,28 +603,35 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                 canManage={canEdit()}
                 refreshKey={refreshKey}
                 onRefresh={() => setRefreshKey(prev => prev + 1)}
+                activeHighlightedStepId={activeHighlightedStepId}
                 onViewDocument={(doc, workflowTitle) => {
                   setViewingDocument({ document: doc, workflowTitle });
+                  // Don't highlight on document view - documents may not have direct step association
                 }}
                 onViewStepSpecs={(stepId, stepTitle) => {
                   setViewingStepSpecs({ stepId, stepTitle });
+                  setActiveHighlightedStepId(stepId);
                 }}
                 onViewProgress={(stepId, stepTitle) => {
                   setViewingProgress({ stepId, stepTitle });
+                  setActiveHighlightedStepId(stepId);
                 }}
                 onAllocateSpec={(stepId, stepTitle) => {
                   if (user) {
                     setAllocatingSpec({ ticketId: ticket.id, stepId, stepTitle, userId: user.id });
+                    setActiveHighlightedStepId(stepId);
                   }
                 }}
                 onCreateSpec={(stepId, stepTitle) => {
                   if (user) {
                     setCreatingInlineSpec({ ticketId: ticket.id, stepId, stepTitle, userId: user.id });
+                    setActiveHighlightedStepId(stepId);
                   }
                 }}
                 onAllocateItem={(stepId, stepTitle) => {
                   if (user) {
                     setAllocatingItem({ ticketId: ticket.id, stepId, stepTitle, userId: user.id });
+                    setActiveHighlightedStepId(stepId);
                   }
                 }}
                 onOpenClarification={handleOpenClarification}
@@ -651,29 +665,48 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                   stepId={creatingInlineSpec.stepId}
                   stepTitle={creatingInlineSpec.stepTitle}
                   userId={creatingInlineSpec.userId}
-                  onClose={() => setCreatingInlineSpec(null)}
+                  onClose={() => {
+                    setCreatingInlineSpec(null);
+                    setActiveHighlightedStepId(null);
+                  }}
                   onSpecCreated={() => {
                     setRefreshKey(prev => prev + 1);
                     setCreatingInlineSpec(null);
+                    setActiveHighlightedStepId(null);
                   }}
                 />
               ) : (
                 <AuditTrail
                 ticket={ticket}
                 viewingDocument={viewingDocument}
-                onCloseDocument={() => setViewingDocument(null)}
+                onCloseDocument={() => {
+                  setViewingDocument(null);
+                  setActiveHighlightedStepId(null);
+                }}
                 onViewProgressDocument={(doc, workflowTitle) => {
                   setViewingDocument({ document: doc, workflowTitle });
                 }}
                 viewingStepSpecs={viewingStepSpecs}
-                onCloseStepSpecs={() => setViewingStepSpecs(null)}
+                onCloseStepSpecs={() => {
+                  setViewingStepSpecs(null);
+                  setActiveHighlightedStepId(null);
+                }}
                 viewingProgress={viewingProgress}
-                onCloseProgress={() => setViewingProgress(null)}
+                onCloseProgress={() => {
+                  setViewingProgress(null);
+                  setActiveHighlightedStepId(null);
+                }}
                 allocatingSpec={allocatingSpec}
-                onCloseSpecAllocation={() => setAllocatingSpec(null)}
+                onCloseSpecAllocation={() => {
+                  setAllocatingSpec(null);
+                  setActiveHighlightedStepId(null);
+                }}
                 onSpecAllocated={() => setRefreshKey(prev => prev + 1)}
                 allocatingItem={allocatingItem}
-                onCloseItemAllocation={() => setAllocatingItem(null)}
+                onCloseItemAllocation={() => {
+                  setAllocatingItem(null);
+                  setActiveHighlightedStepId(null);
+                }}
                 onItemAllocated={() => setRefreshKey(prev => prev + 1)}
                 activeClarificationThread={activeClarificationThread}
                 onCloseClarificationThread={handleCloseClarificationThread}
@@ -711,26 +744,32 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                     }}
                     onViewStepSpecs={(stepId, stepTitle) => {
                       setViewingStepSpecs({ stepId, stepTitle });
+                      setActiveHighlightedStepId(stepId);
                     }}
                     onAllocateSpec={(stepId, stepTitle) => {
                       if (user) {
                         setAllocatingSpec({ ticketId: ticket.id, stepId, stepTitle, userId: user.id });
+                        setActiveHighlightedStepId(stepId);
                       }
                     }}
                     onCreateSpec={(stepId, stepTitle) => {
                       if (user) {
                         setCreatingInlineSpec({ ticketId: ticket.id, stepId, stepTitle, userId: user.id });
+                        setActiveHighlightedStepId(stepId);
                       }
                     }}
                     onAllocateItem={(stepId, stepTitle) => {
                       if (user) {
                         setAllocatingItem({ ticketId: ticket.id, stepId, stepTitle, userId: user.id });
+                        setActiveHighlightedStepId(stepId);
                       }
                     }}
                     onOpenClarification={handleOpenClarification}
                     onViewProgress={(stepId, stepTitle) => {
                       setViewingProgress({ stepId, stepTitle });
+                      setActiveHighlightedStepId(stepId);
                     }}
+                    activeHighlightedStepId={activeHighlightedStepId}
                   />
                 ) : undefined}
                 woItemsCount={woItemsCount}

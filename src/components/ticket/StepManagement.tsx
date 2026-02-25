@@ -35,6 +35,7 @@ interface WorkflowManagementProps {
   onAllocateItem?: (stepId: string, stepTitle: string) => void;
   onOpenClarification?: (stepId: string, stepTitle: string, assignedUserId: string | undefined) => void;
   onViewProgress?: (stepId: string, stepTitle: string) => void;
+  activeHighlightedStepId?: string | null;
 }
 
 const SpecProgressIndicator: React.FC<{ stepId: string; ticketId: string }> = ({ stepId, ticketId }) => {
@@ -441,7 +442,7 @@ const FileReferenceInfoDisplay: React.FC<{ stepId: string; ticketId: string; sho
   );
 };
 
-const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canManage, onViewDocument, onViewStepSpecs, onAllocateSpec, onCreateSpec, onAllocateItem, onOpenClarification, onViewProgress }) => {
+const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canManage, onViewDocument, onViewStepSpecs, onAllocateSpec, onCreateSpec, onAllocateItem, onOpenClarification, onViewProgress, activeHighlightedStepId }) => {
   const { selectedModule, user, displayPreferences } = useAuth();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingStep, setEditingStep] = useState<WorkflowStep | null>(null);
@@ -460,6 +461,7 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
   const [showFilters, setShowFilters] = useState(false);
   const [displayMode, setDisplayMode] = useState<DisplayMode>('card');
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
+  const stepRefs = React.useRef<Map<string, HTMLDivElement>>(new Map());
   const { addStep, updateStep, deleteStep, users } = useTickets();
 
   useEffect(() => {
@@ -467,6 +469,51 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
       setDisplayMode(displayPreferences.workflowDisplayType);
     }
   }, [displayPreferences]);
+
+  // Auto-expand parent workflows and scroll to highlighted step
+  useEffect(() => {
+    if (!activeHighlightedStepId) return;
+
+    // Find the highlighted step and all its parents
+    const findParentPath = (stepId: string): string[] => {
+      const step = ticket.workflow.find(s => s.id === stepId);
+      if (!step) return [];
+
+      const path: string[] = [];
+      let current: WorkflowStep | undefined = step;
+
+      while (current) {
+        path.unshift(current.id);
+        if (current.parentStepId) {
+          current = ticket.workflow.find(s => s.id === current!.parentStepId);
+        } else {
+          break;
+        }
+      }
+
+      return path;
+    };
+
+    const parentPath = findParentPath(activeHighlightedStepId);
+
+    // Expand all parents (exclude the highlighted step itself)
+    const parentsToExpand = parentPath.slice(0, -1);
+    if (parentsToExpand.length > 0) {
+      setExpandedSteps(prev => {
+        const newSet = new Set(prev);
+        parentsToExpand.forEach(id => newSet.add(id));
+        return newSet;
+      });
+    }
+
+    // Scroll to the highlighted step after a short delay to allow for expansion
+    setTimeout(() => {
+      const element = stepRefs.current.get(activeHighlightedStepId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 300);
+  }, [activeHighlightedStepId, ticket.workflow]);
 
   const handleDisplayModeChange = async (mode: DisplayMode) => {
     setDisplayMode(mode);
@@ -1486,6 +1533,9 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
     const borderStyle = getHierarchyBorderStyle(hierarchyLevel);
     const statusColor = getStatusBadgeColor(step.status, step.level_1, step.level_2, step.level_3);
 
+    // Check if this step is highlighted
+    const isHighlighted = activeHighlightedStepId === step.id;
+
     return (
       <div key={step.id} className={`ml-${depth * 6} mb-2`}>
         {editingStep?.id === step.id && canManageWorkflow(step) ? (
@@ -1495,7 +1545,21 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
             onCancel={() => setEditingStep(null)}
           />
         ) : (
-          <div className={`${hierarchyColors.background} ${borderStyle} ${hierarchyColors.border} rounded-lg p-3 transition-all duration-200 ${hierarchyColors.backgroundHover} ${hierarchyColors.borderHover} hover:shadow-md`}>
+          <div
+            ref={(el) => {
+              if (el) {
+                stepRefs.current.set(step.id, el);
+              } else {
+                stepRefs.current.delete(step.id);
+              }
+            }}
+            className={`
+              ${hierarchyColors.background} ${borderStyle} ${hierarchyColors.border}
+              rounded-lg p-3 transition-all duration-300
+              ${hierarchyColors.backgroundHover} ${hierarchyColors.borderHover} hover:shadow-md
+              ${isHighlighted ? 'ring-4 ring-blue-400 ring-opacity-60 shadow-2xl scale-[1.02] animate-pulse-subtle bg-gradient-to-r from-blue-50 to-indigo-50' : ''}
+            `}
+          >
             <div className="flex justify-between items-start">
               <div className="flex-1">
                 <div className="flex items-center space-x-2 mb-1">

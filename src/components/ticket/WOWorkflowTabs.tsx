@@ -46,6 +46,7 @@ interface WOWorkflowTabsProps {
   onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onDownloadAttachment: (attachment: DocumentMetadata) => void;
   onDeleteAttachment: (id: string) => void;
+  activeHighlightedStepId?: string | null;
 }
 
 type TabType = 'wo-info' | 'wo-details' | 'measurement-book' | 'bills' | 'workflow';
@@ -79,7 +80,8 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
   fileInputRef,
   onFileUpload,
   onDownloadAttachment,
-  onDeleteAttachment
+  onDeleteAttachment,
+  activeHighlightedStepId
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('wo-info');
   const [woItemsCount, setWoItemsCount] = useState(0);
@@ -485,6 +487,7 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
                   onAllocateItem={onAllocateItem}
                   onOpenClarification={onOpenClarification}
                   onViewProgress={onViewProgress}
+                  activeHighlightedStepId={activeHighlightedStepId}
                 />
               </div>
             </div>
@@ -524,6 +527,7 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
             onAllocateItem={onAllocateItem}
             onOpenClarification={onOpenClarification}
             onViewProgress={onViewProgress}
+            activeHighlightedStepId={activeHighlightedStepId}
           />
         </div>
       )}

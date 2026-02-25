@@ -23,7 +23,7 @@ interface TicketCardProps {
   onSendToFinance?: (ticket: Ticket) => void;
   onView?: (ticket: Ticket) => void;
   isExpanded?: boolean;
-  viewMode?: 'grid' | 'list' | 'compact';
+  viewMode?: 'grid' | 'list' | 'table';
   selectedModule?: Module;
 }
 

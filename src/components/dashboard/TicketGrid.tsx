@@ -1,6 +1,7 @@
 import React from 'react';
 import { Ticket, User } from '../../types';
 import TicketCard from './TicketCard';
+import TicketTable from './TicketTable';
 import { useTickets } from '../../context/TicketContext';
 import StatusTransitionModal from '../ticket/StatusTransitionModal';
 import { useAuth } from '../../context/AuthContext';
@@ -12,7 +13,7 @@ interface TicketGridProps {
   expandedTickets: Set<string>;
   onToggleExpand: (ticketId: string) => void;
   onModifyTicket: (ticket: Ticket) => void;
-  viewMode: 'grid' | 'list' | 'compact';
+  viewMode: 'grid' | 'list' | 'table';
 }
 
 const TicketGrid: React.FC<TicketGridProps> = ({
@@ -80,36 +81,51 @@ const TicketGrid: React.FC<TicketGridProps> = ({
 
   return (
     <>
-      <div className={`${
-        viewMode === 'grid' 
-          ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8' 
-          : viewMode === 'list'
-          ? 'space-y-4'
-          : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4'
-      }`}>
-        {tickets.map((ticket) => (
-          <TicketCard
-            key={ticket.id}
-            ticket={ticket}
-            createdByUser={getUserById(ticket.createdBy)}
-            assignedToUser={ticket.assignedTo ? getUserById(ticket.assignedTo) : undefined}
-            onClick={() => onTicketClick(ticket)}
-            isExpanded={expandedTickets.has(ticket.id)}
-            onExpand={() => onToggleExpand(ticket.id)}
-            onModify={onModifyTicket}
-            onApprove={(ticket) => handleStatusChange(ticket, 'approve')}
-            onClose={(ticket) => handleStatusChange(ticket, 'close')}
-            onCancel={(ticket) => handleStatusChange(ticket, 'cancel')}
-            onMarkInProgress={(ticket) => handleStatusChange(ticket, 'inprogress')}
-            onReopen={(ticket) => handleStatusChange(ticket, 'reopen')}
-            onReinstate={(ticket) => handleStatusChange(ticket, 'reinstate')}
-            selectedModule={selectedModule || undefined}
-            onSendToFinance={(ticket) => handleStatusChange(ticket, 'sendToFinance')}
-            onView={onTicketClick}
-            viewMode={viewMode}
-          />
-        ))}
-      </div>
+      {viewMode === 'table' ? (
+        <TicketTable
+          tickets={tickets}
+          onTicketClick={onTicketClick}
+          onModifyTicket={onModifyTicket}
+          onApprove={(ticket) => handleStatusChange(ticket, 'approve')}
+          onClose={(ticket) => handleStatusChange(ticket, 'close')}
+          onCancel={(ticket) => handleStatusChange(ticket, 'cancel')}
+          onMarkInProgress={(ticket) => handleStatusChange(ticket, 'inprogress')}
+          onReopen={(ticket) => handleStatusChange(ticket, 'reopen')}
+          onReinstate={(ticket) => handleStatusChange(ticket, 'reinstate')}
+          onSendToFinance={(ticket) => handleStatusChange(ticket, 'sendToFinance')}
+          onView={onTicketClick}
+          selectedModule={selectedModule || undefined}
+        />
+      ) : (
+        <div className={`${
+          viewMode === 'grid'
+            ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'
+            : 'space-y-4'
+        }`}>
+          {tickets.map((ticket) => (
+            <TicketCard
+              key={ticket.id}
+              ticket={ticket}
+              createdByUser={getUserById(ticket.createdBy)}
+              assignedToUser={ticket.assignedTo ? getUserById(ticket.assignedTo) : undefined}
+              onClick={() => onTicketClick(ticket)}
+              isExpanded={expandedTickets.has(ticket.id)}
+              onExpand={() => onToggleExpand(ticket.id)}
+              onModify={onModifyTicket}
+              onApprove={(ticket) => handleStatusChange(ticket, 'approve')}
+              onClose={(ticket) => handleStatusChange(ticket, 'close')}
+              onCancel={(ticket) => handleStatusChange(ticket, 'cancel')}
+              onMarkInProgress={(ticket) => handleStatusChange(ticket, 'inprogress')}
+              onReopen={(ticket) => handleStatusChange(ticket, 'reopen')}
+              onReinstate={(ticket) => handleStatusChange(ticket, 'reinstate')}
+              selectedModule={selectedModule || undefined}
+              onSendToFinance={(ticket) => handleStatusChange(ticket, 'sendToFinance')}
+              onView={onTicketClick}
+              viewMode={viewMode}
+            />
+          ))}
+        </div>
+      )}
 
       {statusModalTicket && (
         <StatusTransitionModal

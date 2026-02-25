@@ -48,7 +48,7 @@ const Dashboard: React.FC = () => {
   const [showEditForm, setShowEditForm] = useState(false);
   const [statusFilter, setStatusFilter] = useState<TicketStatus | null>(null);
   const [expandedTickets, setExpandedTickets] = useState<Set<string>>(new Set());
-  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'compact'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'table'>('grid');
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [showUserPreferences, setShowUserPreferences] = useState(false);

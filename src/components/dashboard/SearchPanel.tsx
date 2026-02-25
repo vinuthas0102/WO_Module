@@ -4,6 +4,7 @@ import { TicketStatus } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { useTickets } from '../../context/TicketContext';
 import { CollapsibleFilterPanel } from '../common/CollapsibleFilterPanel';
+import { TopRightControls } from '../common/TopRightControls';
 
 interface SearchFilters {
   search: string;
@@ -44,6 +45,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ filters, onFiltersChange, vie
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
+    if (filters.search) count++;
     if (filters.status) count++;
     if (filters.priority) count++;
     if (filters.assignedTo) count++;
@@ -59,134 +61,133 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ filters, onFiltersChange, vie
   });
 
   return (
-    <div className="bg-white bg-opacity-70 backdrop-blur-sm rounded-xl shadow-lg border border-white border-opacity-30 p-2 mb-1.5">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex-1 min-w-[200px]">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-blue-400 w-4 h-4" />
-            <input
-              type="text"
-              placeholder="Search tickets..."
-              value={filters.search}
-              onChange={(e) => handleFilterChange('search', e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white bg-opacity-80 backdrop-blur-sm shadow-sm"
-            />
+    <TopRightControls>
+      <div className="flex items-center bg-white bg-opacity-80 rounded-lg border border-gray-300 shadow-sm">
+        <button
+          onClick={() => onViewModeChange('grid')}
+          className={`p-1.5 rounded-l-lg transition-colors duration-200 ${
+            viewMode === 'grid'
+              ? 'bg-blue-500 text-white shadow-sm'
+              : 'text-gray-600 hover:bg-gray-100'
+          }`}
+          title="Grid View"
+        >
+          <Grid3X3 className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={() => onViewModeChange('list')}
+          className={`p-1.5 transition-colors duration-200 ${
+            viewMode === 'list'
+              ? 'bg-blue-500 text-white shadow-sm'
+              : 'text-gray-600 hover:bg-gray-100'
+          }`}
+          title="List View"
+        >
+          <List className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={() => onViewModeChange('compact')}
+          className={`p-1.5 rounded-r-lg transition-colors duration-200 ${
+            viewMode === 'compact'
+              ? 'bg-blue-500 text-white shadow-sm'
+              : 'text-gray-600 hover:bg-gray-100'
+          }`}
+          title="Compact View"
+        >
+          <LayoutGrid className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      <CollapsibleFilterPanel
+        isOpen={isFilterPanelOpen}
+        onToggle={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
+        onClear={clearFilters}
+        activeFilterCount={activeFilterCount}
+        position="right"
+        direction="down"
+        panelClassName="w-[500px]"
+      >
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Search</label>
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-blue-400 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Search tickets..."
+                value={filters.search}
+                onChange={(e) => handleFilterChange('search', e.target.value)}
+                className="w-full pl-9 pr-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
+              />
+            </div>
           </div>
-        </div>
 
-        <div className="flex items-center space-x-2">
-          <div className="flex items-center bg-white bg-opacity-80 rounded-lg border border-gray-300 shadow-sm">
-            <button
-              onClick={() => onViewModeChange('grid')}
-              className={`p-1.5 rounded-l-lg transition-colors duration-200 ${
-                viewMode === 'grid'
-                  ? 'bg-blue-500 text-white shadow-sm'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-              title="Grid View"
-            >
-              <Grid3X3 className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => onViewModeChange('list')}
-              className={`p-1.5 transition-colors duration-200 ${
-                viewMode === 'list'
-                  ? 'bg-blue-500 text-white shadow-sm'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-              title="List View"
-            >
-              <List className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => onViewModeChange('compact')}
-              className={`p-1.5 rounded-r-lg transition-colors duration-200 ${
-                viewMode === 'compact'
-                  ? 'bg-blue-500 text-white shadow-sm'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-              title="Compact View"
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
+              <select
+                value={filters.status}
+                onChange={(e) => handleFilterChange('status', e.target.value)}
+                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">All</option>
+                <option value="DRAFT">Draft</option>
+                <option value="CREATED">Created</option>
+                <option value="ACTIVE">Active</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="CANCELLED">Cancelled</option>
+              </select>
+            </div>
 
-          <CollapsibleFilterPanel
-            isOpen={isFilterPanelOpen}
-            onToggle={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
-            onClear={clearFilters}
-            activeFilterCount={activeFilterCount}
-            position="right"
-            direction="down"
-            panelClassName="w-[500px]"
-          >
-            <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Priority</label>
+              <select
+                value={filters.priority}
+                onChange={(e) => handleFilterChange('priority', e.target.value)}
+                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">All</option>
+                <option value="CRITICAL">Critical</option>
+                <option value="HIGH">High</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="LOW">Low</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Assigned</label>
+              <select
+                value={filters.assignedTo}
+                onChange={(e) => handleFilterChange('assignedTo', e.target.value)}
+                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">All</option>
+                <option value="unassigned">Unassigned</option>
+                {availableUsers.map(user => (
+                  <option key={user.id} value={user.id}>{user.name.split(' ')[0]}</option>
+                ))}
+              </select>
+            </div>
+
+            {user?.role === 'EO' && (
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Dept</label>
                 <select
-                  value={filters.status}
-                  onChange={(e) => handleFilterChange('status', e.target.value)}
+                  value={filters.department}
+                  onChange={(e) => handleFilterChange('department', e.target.value)}
                   className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">All</option>
-                  <option value="DRAFT">Draft</option>
-                  <option value="CREATED">Created</option>
-                  <option value="ACTIVE">Active</option>
-                  <option value="COMPLETED">Completed</option>
-                  <option value="CANCELLED">Cancelled</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Priority</label>
-                <select
-                  value={filters.priority}
-                  onChange={(e) => handleFilterChange('priority', e.target.value)}
-                  className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">All</option>
-                  <option value="CRITICAL">Critical</option>
-                  <option value="HIGH">High</option>
-                  <option value="MEDIUM">Medium</option>
-                  <option value="LOW">Low</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Assigned</label>
-                <select
-                  value={filters.assignedTo}
-                  onChange={(e) => handleFilterChange('assignedTo', e.target.value)}
-                  className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">All</option>
-                  <option value="unassigned">Unassigned</option>
-                  {availableUsers.map(user => (
-                    <option key={user.id} value={user.id}>{user.name.split(' ')[0]}</option>
+                  {availableDepartments.map(dept => (
+                    <option key={dept} value={dept}>{dept}</option>
                   ))}
                 </select>
               </div>
-
-              {user?.role === 'EO' && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Dept</label>
-                  <select
-                    value={filters.department}
-                    onChange={(e) => handleFilterChange('department', e.target.value)}
-                    className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="">All</option>
-                    {availableDepartments.map(dept => (
-                      <option key={dept} value={dept}>{dept}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
-          </CollapsibleFilterPanel>
+            )}
+          </div>
         </div>
-      </div>
-    </div>
+      </CollapsibleFilterPanel>
+    </TopRightControls>
   );
 };
 

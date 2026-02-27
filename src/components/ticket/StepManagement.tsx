@@ -1557,7 +1557,7 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
               ${hierarchyColors.background} ${borderStyle} ${hierarchyColors.border}
               rounded-lg p-3 transition-all duration-300
               ${hierarchyColors.backgroundHover} ${hierarchyColors.borderHover} hover:shadow-md
-              ${isHighlighted ? 'ring-4 ring-blue-400 ring-opacity-60 shadow-2xl scale-[1.02] animate-pulse-subtle bg-gradient-to-r from-blue-50 to-indigo-50' : ''}
+              ${isHighlighted ? 'ring-[6px] ring-teal-500 ring-opacity-70 shadow-2xl scale-[1.03] animate-pulse-subtle bg-gradient-to-r from-teal-100 to-cyan-100 border-l-8 border-teal-600' : ''}
             `}
           >
             <div className="flex justify-between items-start">

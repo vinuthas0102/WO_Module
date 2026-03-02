@@ -179,11 +179,14 @@ export class FileService {
         performed_by: userId,
         metadata: {
           documentId: insertData.id,
+          storagePath: storagePath,
           fileName: file.name,
           fileSize: file.size,
           fileType: file.type,
           isMandatory: isMandatory,
           isCompletionCertificate: isCompletionCertificate,
+          documentType: 'step_document',
+          storageBucket: 'step-documents',
         },
       });
 
@@ -805,6 +808,44 @@ export class FileService {
       return data.signedUrl;
     } catch (error) {
       console.error('Get progress document URL failed:', error);
+      throw error;
+    }
+  }
+
+  static async getDocumentUrlFromMetadata(metadata: {
+    storagePath?: string;
+    storageBucket?: string;
+    documentType?: string;
+    documentId?: string;
+  }): Promise<string> {
+    if (!isSupabaseAvailable()) {
+      throw new Error('File download requires Supabase connection');
+    }
+
+    if (!metadata.storagePath) {
+      throw new Error('Storage path not available for this document');
+    }
+
+    try {
+      const bucket = metadata.storageBucket || 'step-documents';
+      const expiresIn = 3600;
+
+      const { data, error } = await supabase!
+        .storage
+        .from(bucket)
+        .createSignedUrl(metadata.storagePath, expiresIn);
+
+      if (error) {
+        throw new Error(`Failed to generate file URL: ${error.message}`);
+      }
+
+      if (!data?.signedUrl) {
+        throw new Error('Failed to generate signed URL');
+      }
+
+      return data.signedUrl;
+    } catch (error) {
+      console.error('Get document URL from metadata failed:', error);
       throw error;
     }
   }

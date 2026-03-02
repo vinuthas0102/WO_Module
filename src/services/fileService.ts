@@ -812,6 +812,46 @@ export class FileService {
     }
   }
 
+  static async getDocumentByIdFromDatabase(documentId: string): Promise<{
+    storagePath: string;
+    name: string;
+    size: number;
+    type: string;
+  } | null> {
+    if (!isSupabaseAvailable()) {
+      throw new Error('Database query requires Supabase connection');
+    }
+
+    try {
+      validateUUID(documentId, 'Document ID');
+
+      const { data, error } = await supabase!
+        .from('documents')
+        .select('storage_path, name, size, type')
+        .eq('id', documentId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Failed to fetch document from database:', error);
+        return null;
+      }
+
+      if (!data) {
+        return null;
+      }
+
+      return {
+        storagePath: data.storage_path,
+        name: data.name,
+        size: data.size,
+        type: data.type,
+      };
+    } catch (error) {
+      console.error('Get document by ID failed:', error);
+      return null;
+    }
+  }
+
   static async getDocumentUrlFromMetadata(metadata: {
     storagePath?: string;
     storageBucket?: string;
@@ -822,18 +862,27 @@ export class FileService {
       throw new Error('File download requires Supabase connection');
     }
 
-    if (!metadata.storagePath) {
-      throw new Error('Storage path not available for this document');
+    let storagePath = metadata.storagePath;
+    let storageBucket = metadata.storageBucket || 'step-documents';
+
+    if (!storagePath && metadata.documentId) {
+      const document = await this.getDocumentByIdFromDatabase(metadata.documentId);
+      if (document) {
+        storagePath = document.storagePath;
+      }
+    }
+
+    if (!storagePath) {
+      throw new Error('Document not available');
     }
 
     try {
-      const bucket = metadata.storageBucket || 'step-documents';
       const expiresIn = 3600;
 
       const { data, error } = await supabase!
         .storage
-        .from(bucket)
-        .createSignedUrl(metadata.storagePath, expiresIn);
+        .from(storageBucket)
+        .createSignedUrl(storagePath, expiresIn);
 
       if (error) {
         throw new Error(`Failed to generate file URL: ${error.message}`);

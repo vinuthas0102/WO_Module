@@ -584,7 +584,7 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
               const isLast = index === sortedAuditTrail.length - 1;
               const entryDocs = entry.progressDocs || [];
               const hasProgressDocuments = entryDocs.length > 0;
-              const hasDocumentMetadata = entry.metadata?.storagePath && entry.action === 'DOCUMENT_UPLOADED';
+              const hasDocumentMetadata = (entry.metadata?.storagePath || entry.metadata?.documentId) && entry.action === 'DOCUMENT_UPLOADED';
               const hasDocuments = hasProgressDocuments || hasDocumentMetadata;
               const isExpanded = expandedEntries.has(entry.id);
 

@@ -24,6 +24,7 @@ import { SpecAllocationProgressService } from '../../services/specAllocationProg
 import { UserPreferencesService } from '../../services/userPreferencesService';
 import { getHierarchyColors, getStatusBadgeColor, getHierarchyLevel, getHierarchyLevelInfo, getHierarchyIcon, getHierarchyBorderStyle, hierarchyColorLegend } from '../../lib/hierarchyColors';
 import { WorkOrderSpecService } from '../../services/workOrderSpecService';
+import { WorkflowDetailView } from './WorkflowDetailView';
 
 interface WorkflowManagementProps {
   ticket: Ticket;
@@ -461,6 +462,7 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
   const [showFilters, setShowFilters] = useState(false);
   const [displayMode, setDisplayMode] = useState<DisplayMode>('card');
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
+  const [viewingStepDetailsId, setViewingStepDetailsId] = useState<string | null>(null);
   const stepRefs = React.useRef<Map<string, HTMLDivElement>>(new Map());
   const { addStep, updateStep, deleteStep, users } = useTickets();
 
@@ -577,6 +579,14 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
       newExpanded.add(stepId);
     }
     setExpandedSteps(newExpanded);
+  };
+
+  const toggleDetailView = (stepId: string) => {
+    if (viewingStepDetailsId === stepId) {
+      setViewingStepDetailsId(null);
+    } else {
+      setViewingStepDetailsId(stepId);
+    }
   };
 
   const toggleDocUpload = (stepId: string) => {
@@ -1349,6 +1359,72 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
     }
   };
 
+  const handleFieldUpdate = async (stepId: string, field: keyof WorkflowStep, value: any) => {
+    const step = ticket.workflow.find(s => s.id === stepId);
+    if (!step) {
+      throw new Error('Step not found');
+    }
+
+    if (field === 'status' && value === 'COMPLETED') {
+      const fileReferences = await FileReferenceService.getStepFileReferences(step.id);
+      const mandatoryReferences = fileReferences.filter(ref => ref.isMandatory);
+      const incompleteMandatory = mandatoryReferences.filter(ref => !ref.documentId);
+
+      if (incompleteMandatory.length > 0) {
+        const refNames = incompleteMandatory.map(ref => `- ${ref.referenceName}`).join('\n');
+        throw new Error(`Cannot complete workflow. The following mandatory file references have not been uploaded:\n\n${refNames}\n\nPlease upload all mandatory files before marking this workflow as completed.`);
+      }
+
+      const validationResult = await DependencyService.validateStepCompletion(step, ticket.workflow);
+      if (!validationResult.canComplete) {
+        const incompleteTitles = validationResult.incompleteDependencies
+          .map(s => `- ${s.title} (Status: ${s.status})`)
+          .join('\n');
+        throw new Error(`Cannot complete this workflow due to incomplete dependencies.\n\n${validationResult.message}\n\nIncomplete dependencies:\n${incompleteTitles}`);
+      }
+
+      if (step.mandatory_documents && step.mandatory_documents.length > 0) {
+        const hasMandatoryDocs = await checkMandatoryDocuments(step.id, step.mandatory_documents.length);
+        if (!hasMandatoryDocs) {
+          throw new Error(`Cannot complete this workflow. Please upload all ${step.mandatory_documents.length} mandatory documents first.`);
+        }
+      }
+
+      if (user?.role === 'DO') {
+        const hasCompletionCert = await checkCompletionCertificate(step.id);
+        if (!hasCompletionCert) {
+          throw new Error('Completion certificate is mandatory for Manager role. Please upload evidence/completion certificate before marking this workflow as completed.');
+        }
+      }
+
+      const mandatoryRefsComplete = await FileReferenceService.checkMandatoryReferencesComplete(step.id);
+      if (!mandatoryRefsComplete) {
+        const incompleteRefs = await FileReferenceService.getIncompleteReferences(step.id);
+        if (incompleteRefs.length > 0) {
+          const refList = incompleteRefs.map(ref => `- ${ref.referenceName}`).join('\n');
+          throw new Error(`Cannot complete this workflow. Please upload all required file references first:\n\n${refList}`);
+        }
+      }
+    }
+
+    const updateData: any = {};
+
+    if (field === 'title') updateData.title = value;
+    if (field === 'description') updateData.description = value;
+    if (field === 'status') {
+      updateData.status = value;
+      if (value === 'COMPLETED') updateData.completedAt = new Date();
+    }
+    if (field === 'assignedTo') updateData.assignedTo = value || undefined;
+    if (field === 'dueDate') updateData.dueDate = value ? new Date(value) : undefined;
+    if (field === 'startDate') updateData.startDate = value ? new Date(value) : undefined;
+    if (field === 'is_parallel') updateData.is_parallel = value;
+    if (field === 'progress') updateData.progress = value;
+    if (field === 'dependency_mode') updateData.dependency_mode = value;
+
+    await updateStep(ticket.id, step.id, updateData);
+  };
+
   const checkMandatoryDocuments = async (stepId: string, requiredCount: number): Promise<boolean> => {
     try {
       const documents = await FileService.getStepDocuments(stepId);
@@ -1558,9 +1634,13 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
               rounded-lg p-3 transition-all duration-300
               ${hierarchyColors.backgroundHover} ${hierarchyColors.borderHover} hover:shadow-md
               ${isHighlighted ? 'ring-[6px] ring-teal-500 ring-opacity-70 shadow-2xl scale-[1.03] animate-pulse-subtle bg-gradient-to-r from-teal-100 to-cyan-100 border-l-8 border-teal-600' : ''}
+              ${viewingStepDetailsId === step.id ? 'ring-2 ring-blue-400 border-blue-400' : ''}
             `}
           >
-            <div className="flex justify-between items-start">
+            <div
+              className="flex justify-between items-start cursor-pointer"
+              onClick={() => toggleDetailView(step.id)}
+            >
               <div className="flex-1">
                 <div className="flex items-center space-x-2 mb-1">
                   {hasChildren && (
@@ -1729,6 +1809,33 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
                 </div>
               )}
             </div>
+
+            {viewingStepDetailsId === step.id && (
+              <WorkflowDetailView
+                step={step}
+                ticket={ticket}
+                users={users}
+                canManage={canManageWorkflow(step)}
+                onClose={() => setViewingStepDetailsId(null)}
+                onUpdate={async (field, value) => {
+                  await handleFieldUpdate(step.id, field, value);
+                }}
+                onViewSpecs={() => {
+                  onViewStepSpecs?.(step.id, step.title);
+                }}
+                onViewProgress={() => {
+                  onViewProgress?.(step.id, step.title);
+                }}
+                onViewDocuments={() => {
+                  toggleDocUpload(step.id);
+                }}
+                onViewClarifications={() => {
+                  onOpenClarification?.(step.id, step.title, step.assignedTo);
+                }}
+                dependencies={ticket.workflow.filter(s => step.dependencies?.includes(s.id))}
+                allSteps={ticket.workflow}
+              />
+            )}
           </div>
         )}
 

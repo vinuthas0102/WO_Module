@@ -17,6 +17,7 @@ interface InlineEditableFieldProps {
   validator?: (value: any) => string | null;
   hint?: string;
   renderValue?: (value: any) => React.ReactNode;
+  compactMode?: boolean;
 }
 
 export const InlineEditableField: React.FC<InlineEditableFieldProps> = ({
@@ -34,6 +35,7 @@ export const InlineEditableField: React.FC<InlineEditableFieldProps> = ({
   validator,
   hint,
   renderValue,
+  compactMode = false,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value);
@@ -190,6 +192,66 @@ export const InlineEditableField: React.FC<InlineEditableFieldProps> = ({
 
   const displayValue = renderValue ? renderValue(value) : value;
   const showEditIcon = isEditable && !isReadOnly && !isAutoCalculated;
+
+  if (compactMode) {
+    return (
+      <div className="flex items-center space-x-2 py-1">
+        <span className="text-xs font-medium text-gray-600 whitespace-nowrap">
+          {label}:
+        </span>
+        {!isEditing ? (
+          <div className="group flex items-center space-x-1">
+            <div className={`text-xs ${isReadOnly || isAutoCalculated ? 'text-gray-500 italic' : 'text-gray-900'}`}>
+              {displayValue || <span className="text-gray-400">Not set</span>}
+            </div>
+            {isAutoCalculated && (
+              <span className="text-blue-600" title="Auto-calculated">
+                <Calculator className="w-3 h-3" />
+              </span>
+            )}
+            {showEditIcon && (
+              <button
+                onClick={handleStartEdit}
+                className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-gray-100 rounded transition-all"
+                title="Click to edit"
+              >
+                <Edit2 className="w-3 h-3 text-gray-500" />
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center space-x-1">
+            {renderInput()}
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="p-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              title="Save"
+            >
+              {isSaving ? (
+                <div className="w-2.5 h-2.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <Check className="w-2.5 h-2.5" />
+              )}
+            </button>
+            <button
+              onClick={handleCancel}
+              disabled={isSaving}
+              className="p-1 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              title="Cancel"
+            >
+              <X className="w-2.5 h-2.5" />
+            </button>
+          </div>
+        )}
+        {error && (
+          <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-2 py-0.5">
+            {error}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="py-2 border-b border-gray-200 last:border-b-0">

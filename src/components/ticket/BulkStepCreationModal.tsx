@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Save, AlertCircle, CheckCircle, FileText, Edit } from 'lucide-react';
+import { X, Plus, Trash2, Save, AlertCircle, CheckCircle, FileText, CreditCard as Edit } from 'lucide-react';
 import { WorkflowStep, BulkStepRow, BulkStepInput, FileReferenceTemplate } from '../../types';
 import { useTickets } from '../../context/TicketContext';
 import { DependencyService } from '../../services/dependencyService';

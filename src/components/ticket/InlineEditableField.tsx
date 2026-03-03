@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Edit2, Check, X, Calendar, Info, Calculator } from 'lucide-react';
+import { CreditCard as Edit2, Check, X, Calendar, Info, Calculator } from 'lucide-react';
 import { WorkflowStep, WorkflowStepStatus } from '../../types';
 
 interface InlineEditableFieldProps {

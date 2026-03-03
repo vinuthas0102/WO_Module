@@ -575,7 +575,7 @@ export class TicketService {
         await DependencyService.lockStepDependencies(data.id);
       }
 
-      if (stepData.fileReferenceTemplateId && stepData.selectedFileReferences && stepData.selectedFileReferences.length > 0) {
+      if (stepData.referenceMode === 'template' && stepData.fileReferenceTemplateId && stepData.selectedFileReferences && stepData.selectedFileReferences.length > 0) {
         const { FileReferenceService } = await import('./fileReferenceService');
 
         const referencesToCreate = stepData.selectedFileReferences.map((ref: any) => ({
@@ -583,6 +583,7 @@ export class TicketService {
           template_id: stepData.fileReferenceTemplateId,
           reference_name: ref.referenceName,
           is_mandatory: ref.isMandatory,
+          reference_source: 'template',
         }));
 
         const { error: refError } = await supabase
@@ -591,6 +592,18 @@ export class TicketService {
 
         if (refError) {
           console.error('Error creating file references:', refError);
+        }
+      } else if (stepData.referenceMode === 'custom' && stepData.customFileReferences && stepData.customFileReferences.length > 0) {
+        const { FileReferenceService } = await import('./fileReferenceService');
+
+        try {
+          await FileReferenceService.createCustomStepFileReferences(
+            data.id,
+            stepData.customFileReferences,
+            userId
+          );
+        } catch (refError) {
+          console.error('Error creating custom file references:', refError);
         }
       }
 
@@ -876,13 +889,14 @@ export class TicketService {
             }
           }
 
-          if (originalStepData?.fileReferenceTemplateId && originalStepData.selectedFileReferences && originalStepData.selectedFileReferences.length > 0) {
+          if (originalStepData?.referenceMode === 'template' && originalStepData?.fileReferenceTemplateId && originalStepData.selectedFileReferences && originalStepData.selectedFileReferences.length > 0) {
             try {
               const referencesToCreate = originalStepData.selectedFileReferences.map((ref: any) => ({
                 step_id: insertedStep.id,
                 template_id: originalStepData.fileReferenceTemplateId,
                 reference_name: ref.referenceName,
                 is_mandatory: ref.isMandatory,
+                reference_source: 'template',
               }));
 
               const { error: refError } = await supabase
@@ -894,6 +908,17 @@ export class TicketService {
               }
             } catch (refError) {
               console.error(`Error processing file references for step ${insertedStep.title}:`, refError);
+            }
+          } else if (originalStepData?.referenceMode === 'custom' && originalStepData?.customFileReferences && originalStepData.customFileReferences.length > 0) {
+            try {
+              const { FileReferenceService } = await import('./fileReferenceService');
+              await FileReferenceService.createCustomStepFileReferences(
+                insertedStep.id,
+                originalStepData.customFileReferences,
+                userId
+              );
+            } catch (refError) {
+              console.error(`Error processing custom file references for step ${insertedStep.title}:`, refError);
             }
           }
         }

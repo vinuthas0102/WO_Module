@@ -4,6 +4,8 @@ import { Ticket, WorkflowStep, WorkflowStepStatus, ActionIconDefinition, FileRef
 import { FileReferenceService } from '../../services/fileReferenceService';
 import FileReferenceUpload from './FileReferenceUpload';
 import FileReferenceSelector, { SelectedFileReference } from './FileReferenceSelector';
+import FileReferenceConfigurator from './FileReferenceConfigurator';
+import { CustomFileReference } from './InlineFileReferenceEditor';
 import FileReferenceStatusBadge from './FileReferenceStatusBadge';
 import { useTickets } from '../../context/TicketContext';
 import { useAuth } from '../../context/AuthContext';
@@ -666,7 +668,9 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
       mandatoryDocuments: step?.mandatory_documents || [],
       optionalDocuments: step?.optional_documents || [],
       fileReferenceTemplateId: '',
-      selectedFileReferences: [] as SelectedFileReference[]
+      selectedFileReferences: [] as SelectedFileReference[],
+      customFileReferences: [] as CustomFileReference[],
+      referenceMode: 'none' as 'none' | 'template' | 'custom'
     });
     const [availableDependencySteps, setAvailableDependencySteps] = useState<WorkflowStep[]>([]);
     const [fileReferenceTemplates, setFileReferenceTemplates] = useState<FileReferenceTemplate[]>([]);
@@ -889,13 +893,17 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
           </div>
         </div>
 
-        {isEO && !step && fileReferenceTemplates.length > 0 && (
-          <FileReferenceSelector
+        {isEO && !step && (
+          <FileReferenceConfigurator
             templates={fileReferenceTemplates}
             selectedTemplateId={formData.fileReferenceTemplateId}
             selectedReferences={formData.selectedFileReferences}
+            customReferences={formData.customFileReferences}
+            referenceMode={formData.referenceMode}
             onTemplateChange={(templateId) => setFormData({ ...formData, fileReferenceTemplateId: templateId })}
             onReferencesChange={(references) => setFormData({ ...formData, selectedFileReferences: references })}
+            onCustomReferencesChange={(references) => setFormData({ ...formData, customFileReferences: references })}
+            onReferenceModeChange={(mode) => setFormData({ ...formData, referenceMode: mode })}
           />
         )}
 
@@ -1227,8 +1235,10 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
         dependencies: data.dependencies,
         mandatory_documents: data.mandatoryDocuments,
         optional_documents: data.optionalDocuments,
-        fileReferenceTemplateId: data.fileReferenceTemplateId,
-        selectedFileReferences: data.selectedFileReferences
+        fileReferenceTemplateId: data.referenceMode === 'template' ? data.fileReferenceTemplateId : undefined,
+        selectedFileReferences: data.referenceMode === 'template' ? data.selectedFileReferences : undefined,
+        customFileReferences: data.referenceMode === 'custom' ? data.customFileReferences : undefined,
+        referenceMode: data.referenceMode
       };
 
       await addStep(ticket.id, stepData);

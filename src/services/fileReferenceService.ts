@@ -23,9 +23,11 @@ export interface UpdateFileReferenceTemplateInput {
 
 export interface CreateStepFileReferenceInput {
   stepId: string;
-  templateId: string;
+  templateId?: string;
   referenceName: string;
   isMandatory: boolean;
+  referenceSource?: 'template' | 'custom';
+  referenceDescription?: string;
 }
 
 export interface UpdateStepFileReferenceInput {
@@ -283,6 +285,52 @@ export class FileReferenceService {
     }
   }
 
+  static async createCustomStepFileReferences(
+    stepId: string,
+    customReferences: Array<{ referenceName: string; isMandatory: boolean; description?: string }>,
+    userId: string
+  ): Promise<WorkflowStepFileReference[]> {
+    if (!isSupabaseAvailable()) {
+      throw new Error('Database connection required');
+    }
+
+    try {
+      validateUUID(stepId, 'Step ID');
+      validateUUID(userId, 'User ID');
+    } catch (error) {
+      throw new Error(`Invalid UUID: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+
+    if (!customReferences || customReferences.length === 0) {
+      throw new Error('At least one custom file reference is required');
+    }
+
+    try {
+      const referencesToCreate = customReferences.map((ref) => ({
+        step_id: stepId,
+        template_id: null,
+        reference_name: ref.referenceName,
+        is_mandatory: ref.isMandatory,
+        reference_source: 'custom',
+        reference_description: ref.description || null,
+      }));
+
+      const { data, error } = await supabase!
+        .from('workflow_step_file_references')
+        .insert(referencesToCreate)
+        .select();
+
+      if (error) {
+        throw new Error(`Failed to create custom file references: ${error.message}`);
+      }
+
+      return (data || []).map(this.mapStepFileReferenceFromDB);
+    } catch (error) {
+      console.error('Create custom step file references failed:', error);
+      throw error;
+    }
+  }
+
   static async createStepFileReferences(
     stepId: string,
     templateId: string,
@@ -317,6 +365,7 @@ export class FileReferenceService {
         template_id: templateId,
         reference_name: ref,
         is_mandatory: mandatoryFlags[index] || false,
+        reference_source: 'template',
       }));
 
       const { data, error } = await supabase!

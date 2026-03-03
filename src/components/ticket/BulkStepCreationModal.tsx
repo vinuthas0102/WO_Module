@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Save, AlertCircle, CheckCircle, FileText } from 'lucide-react';
+import { X, Plus, Trash2, Save, AlertCircle, CheckCircle, FileText, Edit } from 'lucide-react';
 import { WorkflowStep, BulkStepRow, BulkStepInput, FileReferenceTemplate } from '../../types';
 import { useTickets } from '../../context/TicketContext';
 import { DependencyService } from '../../services/dependencyService';
 import { useAuth } from '../../context/AuthContext';
 import { FileReferenceService } from '../../services/fileReferenceService';
 import { SelectedFileReference } from './FileReferenceSelector';
+import InlineFileReferenceEditor, { CustomFileReference } from './InlineFileReferenceEditor';
 
 interface BulkStepCreationModalProps {
   ticketId: string;
@@ -29,6 +30,7 @@ const BulkStepCreationModal: React.FC<BulkStepCreationModalProps> = ({
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [fileReferenceTemplates, setFileReferenceTemplates] = useState<FileReferenceTemplate[]>([]);
   const [showFileRefModal, setShowFileRefModal] = useState<string | null>(null);
+  const [showCustomRefModal, setShowCustomRefModal] = useState<string | null>(null);
   const [operationResult, setOperationResult] = useState<{
     success: boolean;
     message: string;
@@ -51,6 +53,8 @@ const BulkStepCreationModal: React.FC<BulkStepCreationModalProps> = ({
       optional_documents: [],
       fileReferenceTemplateId: '',
       selectedFileReferences: [],
+      customFileReferences: [],
+      referenceMode: 'none' as 'none' | 'template' | 'custom',
       errors: {},
     }));
     setRows(initialRows);
@@ -155,6 +159,25 @@ const BulkStepCreationModal: React.FC<BulkStepCreationModalProps> = ({
   const handleFileReferencesSelect = (rowId: string, references: SelectedFileReference[]) => {
     updateRow(rowId, 'selectedFileReferences', references);
     setShowFileRefModal(null);
+  };
+
+  const handleCustomReferencesSelect = (rowId: string, references: CustomFileReference[]) => {
+    updateRow(rowId, 'customFileReferences', references);
+    setShowCustomRefModal(null);
+  };
+
+  const handleReferenceModeChange = (rowId: string, mode: 'none' | 'template' | 'custom') => {
+    updateRow(rowId, 'referenceMode', mode);
+    if (mode === 'template') {
+      updateRow(rowId, 'customFileReferences', []);
+    } else if (mode === 'custom') {
+      updateRow(rowId, 'fileReferenceTemplateId', '');
+      updateRow(rowId, 'selectedFileReferences', []);
+    } else {
+      updateRow(rowId, 'fileReferenceTemplateId', '');
+      updateRow(rowId, 'selectedFileReferences', []);
+      updateRow(rowId, 'customFileReferences', []);
+    }
   };
 
   const getValidRows = (): BulkStepRow[] => {
@@ -521,40 +544,118 @@ const BulkStepCreationModal: React.FC<BulkStepCreationModalProps> = ({
                     </div>
                   )}
 
-                  {isEO && fileReferenceTemplates.length > 0 && (
+                  {isEO && (
                     <div className="md:col-span-3">
                       <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          File Reference Template (Optional)
+                          Document Upload Requirements
                         </label>
-                        <div className="flex items-center space-x-2">
-                          <select
-                            value={row.fileReferenceTemplateId || ''}
-                            onChange={(e) => handleTemplateSelect(row.rowId, e.target.value)}
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        <div className="flex items-center space-x-2 mb-3">
+                          <button
+                            type="button"
+                            onClick={() => handleReferenceModeChange(row.rowId, 'none')}
+                            className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                              row.referenceMode === 'none'
+                                ? 'bg-blue-600 text-white border-2 border-blue-600'
+                                : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-blue-400'
+                            }`}
                           >
-                            <option value="">No template</option>
-                            {fileReferenceTemplates.map(template => (
-                              <option key={template.id} value={template.id}>
-                                {template.templateName} ({template.jsonContent.fileReferences.length} refs)
-                              </option>
-                            ))}
-                          </select>
-                          {row.fileReferenceTemplateId && (
+                            None
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleReferenceModeChange(row.rowId, 'template')}
+                            disabled={fileReferenceTemplates.length === 0}
+                            className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                              row.referenceMode === 'template'
+                                ? 'bg-blue-600 text-white border-2 border-blue-600'
+                                : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-blue-400'
+                            } ${fileReferenceTemplates.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          >
+                            Template
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleReferenceModeChange(row.rowId, 'custom')}
+                            className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                              row.referenceMode === 'custom'
+                                ? 'bg-blue-600 text-white border-2 border-blue-600'
+                                : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-blue-400'
+                            }`}
+                          >
+                            Custom
+                          </button>
+                        </div>
+
+                        {row.referenceMode === 'template' && fileReferenceTemplates.length > 0 && (
+                          <div className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                              <select
+                                value={row.fileReferenceTemplateId || ''}
+                                onChange={(e) => handleTemplateSelect(row.rowId, e.target.value)}
+                                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                              >
+                                <option value="">Select a template</option>
+                                {fileReferenceTemplates.map(template => (
+                                  <option key={template.id} value={template.id}>
+                                    {template.templateName} ({template.jsonContent.fileReferences.length} refs)
+                                  </option>
+                                ))}
+                              </select>
+                              {row.fileReferenceTemplateId && (
+                                <button
+                                  type="button"
+                                  onClick={() => setShowFileRefModal(row.rowId)}
+                                  className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm whitespace-nowrap"
+                                >
+                                  {row.selectedFileReferences && row.selectedFileReferences.length > 0
+                                    ? `${row.selectedFileReferences.length} selected`
+                                    : 'Select files'}
+                                </button>
+                              )}
+                            </div>
+                            {row.selectedFileReferences && row.selectedFileReferences.length > 0 && (
+                              <div className="text-xs text-green-700 bg-green-50 border border-green-200 rounded p-2">
+                                {row.selectedFileReferences.length} file reference(s) configured
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {row.referenceMode === 'custom' && (
+                          <div className="space-y-2">
                             <button
                               type="button"
-                              onClick={() => setShowFileRefModal(row.rowId)}
-                              className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm whitespace-nowrap"
+                              onClick={() => setShowCustomRefModal(row.rowId)}
+                              className="w-full px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm flex items-center justify-center space-x-2"
                             >
-                              {row.selectedFileReferences && row.selectedFileReferences.length > 0
-                                ? `${row.selectedFileReferences.length} selected`
-                                : 'Select files'}
+                              <Edit className="w-4 h-4" />
+                              <span>
+                                {row.customFileReferences && row.customFileReferences.length > 0
+                                  ? `Edit Custom References (${row.customFileReferences.length})`
+                                  : 'Define Custom References'}
+                              </span>
                             </button>
-                          )}
-                        </div>
-                        {row.selectedFileReferences && row.selectedFileReferences.length > 0 && (
-                          <div className="mt-2 text-xs text-green-700">
-                            {row.selectedFileReferences.length} file reference(s) will be required for this workflow
+                            {row.customFileReferences && row.customFileReferences.length > 0 && (
+                              <div className="text-xs text-green-700 bg-green-50 border border-green-200 rounded p-2">
+                                <div className="font-medium mb-1">{row.customFileReferences.length} custom reference(s) configured:</div>
+                                <ul className="list-disc list-inside space-y-1">
+                                  {row.customFileReferences.slice(0, 3).map((ref, idx) => (
+                                    <li key={idx}>
+                                      {ref.referenceName}
+                                      <span className={`ml-2 text-xs px-1.5 py-0.5 rounded ${
+                                        ref.isMandatory ? 'bg-red-100 text-red-800' : 'bg-gray-200 text-gray-700'
+                                      }`}>
+                                        {ref.isMandatory ? 'Mandatory' : 'Optional'}
+                                      </span>
+                                    </li>
+                                  ))}
+                                  {row.customFileReferences.length > 3 && (
+                                    <li className="text-gray-600">...and {row.customFileReferences.length - 3} more</li>
+                                  )}
+                                </ul>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -758,6 +859,46 @@ const BulkStepCreationModal: React.FC<BulkStepCreationModalProps> = ({
               <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 p-4 flex justify-end space-x-3">
                 <button
                   onClick={() => setShowFileRefModal(null)}
+                  className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {showCustomRefModal && (() => {
+        const row = rows.find(r => r.rowId === showCustomRefModal);
+        if (!row) return null;
+
+        return (
+          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-3xl w-full max-h-[80vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Define Custom File References</h3>
+                  <p className="text-sm text-gray-600 mt-1">For: {row.title || 'Untitled workflow'}</p>
+                </div>
+                <button
+                  onClick={() => setShowCustomRefModal(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6">
+                <InlineFileReferenceEditor
+                  references={row.customFileReferences || []}
+                  onReferencesChange={(refs) => handleCustomReferencesSelect(row.rowId, refs)}
+                />
+              </div>
+
+              <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 p-4 flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowCustomRefModal(null)}
                   className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
                 >
                   Done

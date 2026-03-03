@@ -180,6 +180,8 @@ export interface BulkStepInput {
   optional_documents?: string[];
   fileReferenceTemplateId?: string;
   selectedFileReferences?: Array<{ referenceName: string; isMandatory: boolean }>;
+  customFileReferences?: Array<{ referenceName: string; isMandatory: boolean; description?: string }>;
+  referenceMode?: 'none' | 'template' | 'custom';
 }
 
 export interface BulkStepRow extends BulkStepInput {

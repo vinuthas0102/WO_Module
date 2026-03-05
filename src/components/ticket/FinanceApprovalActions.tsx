@@ -120,7 +120,7 @@ const FinanceApprovalActions: React.FC<FinanceApprovalActionsProps> = ({
 
     try {
       const url = await FileService.getFileUrl(approval.approvalDocumentFilePath, 'finance-approval-documents');
-      window.open(url, '_blank');
+      await FileService.downloadFile(url, approval.approvalDocumentFileName || 'document');
     } catch (error) {
       console.error('Error downloading document:', error);
       alert('Failed to download document. Please try again.');

@@ -250,7 +250,20 @@ export class FileService {
     }
   }
 
-  static async getFileUrl(storagePath: string, expiresIn: number = 3600): Promise<string> {
+  static async downloadFile(url: string, filename: string): Promise<void> {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const link = window.document.createElement('a');
+    link.href = objectUrl;
+    link.download = filename;
+    window.document.body.appendChild(link);
+    link.click();
+    window.document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 100);
+  }
+
+  static async getFileUrl(storagePath: string, bucket: string = 'step-documents', expiresIn: number = 3600): Promise<string> {
     if (!isSupabaseAvailable()) {
       throw new Error('File download requires Supabase connection');
     }
@@ -258,7 +271,7 @@ export class FileService {
     try {
       const { data, error } = await supabase!
         .storage
-        .from('step-documents')
+        .from(bucket)
         .createSignedUrl(storagePath, expiresIn);
 
       if (error) {

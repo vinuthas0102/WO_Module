@@ -38,7 +38,7 @@ const ProgressDocuments: React.FC<ProgressDocumentsProps> = ({ step, ticketId })
   const handleDownload = async (document: ProgressDocumentMetadata) => {
     try {
       const url = await FileService.getProgressDocumentUrl(document.filePath);
-      window.open(url, '_blank');
+      await FileService.downloadFile(url, document.fileName);
     } catch (error) {
       alert('Failed to download file: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }

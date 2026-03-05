@@ -139,10 +139,10 @@ export const ProgressEntryDetails: React.FC<ProgressEntryDetailsProps> = ({
     }
   };
 
-  const handleDownload = async (filePath: string) => {
+  const handleDownload = async (filePath: string, fileName: string) => {
     try {
       const url = await FileService.getProgressDocumentUrl(filePath);
-      window.open(url, '_blank');
+      await FileService.downloadFile(url, fileName);
     } catch (error) {
       alert(`Failed to download: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -292,7 +292,7 @@ export const ProgressEntryDetails: React.FC<ProgressEntryDetailsProps> = ({
                     </div>
                   </div>
                   <button
-                    onClick={() => handleDownload(doc.filePath)}
+                    onClick={() => handleDownload(doc.filePath, doc.fileName)}
                     className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                     title="Download"
                   >

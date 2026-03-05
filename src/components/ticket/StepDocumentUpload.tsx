@@ -124,12 +124,7 @@ const WorkflowDocumentUpload: React.FC<WorkflowDocumentUploadProps> = ({
       }
 
       const url = await FileService.getFileUrl(document.storagePath);
-      const link = window.document.createElement('a');
-      link.href = url;
-      link.download = document.name;
-      window.document.body.appendChild(link);
-      link.click();
-      window.document.body.removeChild(link);
+      await FileService.downloadFile(url, document.name);
     } catch (error) {
       console.error('Download failed:', error);
       setError(error instanceof Error ? error.message : 'Download failed');

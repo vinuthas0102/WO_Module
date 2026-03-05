@@ -118,16 +118,16 @@ export const ProgressEntryDetailsModal: React.FC<ProgressEntryDetailsModalProps>
   const handleDownload = async (doc: any) => {
     try {
       const url = await FileService.getProgressDocumentUrl(doc.filePath);
-      window.open(url, '_blank');
+      await FileService.downloadFile(url, doc.fileName);
     } catch (error) {
       alert('Failed to download file: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
 
-  const handleDownloadCertificate = async (storagePath: string) => {
+  const handleDownloadCertificate = async (storagePath: string, fileName: string) => {
     try {
       const url = await FileService.getFileUrl(storagePath);
-      window.open(url, '_blank');
+      await FileService.downloadFile(url, fileName);
     } catch (error) {
       alert('Failed to download file: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
@@ -320,7 +320,7 @@ export const ProgressEntryDetailsModal: React.FC<ProgressEntryDetailsModalProps>
                             </div>
                           </div>
                           <button
-                            onClick={() => handleDownloadCertificate(cert.storagePath!)}
+                            onClick={() => handleDownloadCertificate(cert.storagePath!, cert.name)}
                             className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors"
                             title="Download"
                           >

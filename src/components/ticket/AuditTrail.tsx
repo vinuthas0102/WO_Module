@@ -233,13 +233,11 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
 
   const handleDownloadDocument = async () => {
     if (!viewingDocument?.document || !documentUrl) return;
-
-    const link = window.document.createElement('a');
-    link.href = documentUrl;
-    link.download = viewingDocument.document.name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      await FileService.downloadFile(documentUrl, viewingDocument.document.name);
+    } catch (error) {
+      alert('Failed to download document: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
   };
 
   if (creatingClarification && onCancelNewClarification && onSubmitNewClarification) {
@@ -712,12 +710,7 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
                                       onClick={async () => {
                                         try {
                                           const url = await FileService.getDocumentUrlFromMetadata(entry.metadata);
-                                          const link = document.createElement('a');
-                                          link.href = url;
-                                          link.download = entry.metadata.fileName;
-                                          document.body.appendChild(link);
-                                          link.click();
-                                          document.body.removeChild(link);
+                                          await FileService.downloadFile(url, entry.metadata.fileName);
                                         } catch (error) {
                                           alert('Failed to download document: ' + (error instanceof Error ? error.message : 'Unknown error'));
                                         }
@@ -805,12 +798,7 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
                                           onClick={async () => {
                                             try {
                                               const url = await FileService.getProgressDocumentUrl(doc.filePath);
-                                              const link = document.createElement('a');
-                                              link.href = url;
-                                              link.download = doc.fileName;
-                                              document.body.appendChild(link);
-                                              link.click();
-                                              document.body.removeChild(link);
+                                              await FileService.downloadFile(url, doc.fileName);
                                             } catch (error) {
                                               alert('Failed to download document: ' + (error instanceof Error ? error.message : 'Unknown error'));
                                             }

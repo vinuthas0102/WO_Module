@@ -1,5 +1,5 @@
-import React from 'react';
-import { X, FileText, Upload } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, FileText, Upload, ChevronDown, ChevronRight } from 'lucide-react';
 import { WorkflowStep } from '../../types';
 import { DocumentMetadata } from '../../services/fileService';
 import FileReferenceUpload from './FileReferenceUpload';
@@ -14,6 +14,42 @@ interface StepDocumentsPanelProps {
   onViewDocument: (doc: DocumentMetadata, step: WorkflowStep) => void;
 }
 
+interface CollapsibleSectionProps {
+  title: string;
+  icon: React.ReactNode;
+  headerClass: string;
+  titleClass: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}
+
+const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
+  title, icon, headerClass, titleClass, isOpen, onToggle, children,
+}) => (
+  <div className="border border-gray-200 rounded-lg overflow-hidden">
+    <button
+      type="button"
+      onClick={onToggle}
+      className={`w-full flex items-center justify-between px-4 py-2.5 ${headerClass} hover:brightness-95 transition-all`}
+    >
+      <div className="flex items-center space-x-2">
+        {icon}
+        <span className={`text-sm font-semibold ${titleClass}`}>{title}</span>
+      </div>
+      {isOpen
+        ? <ChevronDown className={`w-4 h-4 ${titleClass}`} />
+        : <ChevronRight className={`w-4 h-4 ${titleClass}`} />
+      }
+    </button>
+    {isOpen && (
+      <div className="p-3 border-t border-gray-200 bg-white">
+        {children}
+      </div>
+    )}
+  </div>
+);
+
 export const StepDocumentsPanel: React.FC<StepDocumentsPanelProps> = ({
   step,
   ticketId,
@@ -21,6 +57,15 @@ export const StepDocumentsPanel: React.FC<StepDocumentsPanelProps> = ({
   onClose,
   onViewDocument,
 }) => {
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    fileRefs: false,
+    stepDocs: true,
+    progressDocs: false,
+  });
+
+  const toggle = (key: string) =>
+    setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
+
   return (
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between p-3 border-b border-gray-200 bg-gradient-to-r from-teal-50 to-cyan-50">
@@ -40,42 +85,51 @@ export const StepDocumentsPanel: React.FC<StepDocumentsPanelProps> = ({
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3 space-y-4">
-        <div>
-          <div className="mb-2 flex items-center space-x-2 bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-2 rounded-lg border border-blue-200">
-            <FileText className="w-4 h-4 text-blue-600" />
-            <h5 className="text-sm font-semibold text-blue-900">File References (Template-Based)</h5>
-          </div>
+      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+        <CollapsibleSection
+          title="File References (Template-Based)"
+          icon={<FileText className="w-4 h-4 text-blue-600" />}
+          headerClass="bg-gradient-to-r from-blue-50 to-sky-50"
+          titleClass="text-blue-900"
+          isOpen={openSections.fileRefs}
+          onToggle={() => toggle('fileRefs')}
+        >
           <FileReferenceUpload
             stepId={step.id}
             ticketId={ticketId}
             onUploadComplete={() => {}}
             onViewDocument={(doc) => onViewDocument(doc, step)}
           />
-        </div>
+        </CollapsibleSection>
 
-        <div>
-          <div className="mb-2 flex items-center space-x-2 bg-gradient-to-r from-green-50 to-emerald-50 px-4 py-2 rounded-lg border border-green-200">
-            <Upload className="w-4 h-4 text-green-600" />
-            <h5 className="text-sm font-semibold text-green-900">Step Documents (General Upload)</h5>
-          </div>
+        <CollapsibleSection
+          title="Step Documents (General Upload)"
+          icon={<Upload className="w-4 h-4 text-green-600" />}
+          headerClass="bg-gradient-to-r from-green-50 to-emerald-50"
+          titleClass="text-green-900"
+          isOpen={openSections.stepDocs}
+          onToggle={() => toggle('stepDocs')}
+        >
           <WorkflowDocumentUpload
             step={step}
             ticketId={ticketId}
             onViewDocument={(doc) => onViewDocument(doc, step)}
           />
-        </div>
+        </CollapsibleSection>
 
-        <div>
-          <div className="mb-2 flex items-center space-x-2 bg-gradient-to-r from-orange-50 to-amber-50 px-4 py-2 rounded-lg border border-orange-200">
-            <FileText className="w-4 h-4 text-orange-600" />
-            <h5 className="text-sm font-semibold text-orange-900">Progress Documents</h5>
-          </div>
+        <CollapsibleSection
+          title="Progress Documents"
+          icon={<FileText className="w-4 h-4 text-orange-600" />}
+          headerClass="bg-gradient-to-r from-orange-50 to-amber-50"
+          titleClass="text-orange-900"
+          isOpen={openSections.progressDocs}
+          onToggle={() => toggle('progressDocs')}
+        >
           <ProgressDocuments
             step={step}
             ticketId={ticketId}
           />
-        </div>
+        </CollapsibleSection>
       </div>
     </div>
   );

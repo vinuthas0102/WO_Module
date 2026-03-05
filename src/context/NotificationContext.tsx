@@ -1,12 +1,15 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { ClarificationService } from '../services/clarificationService';
+import { ClarificationThread } from '../types';
 import { useAuth } from './AuthContext';
 
 interface NotificationContextType {
   unreadCount: number;
   unreadThreadIds: Set<string>;
+  recentThreads: ClarificationThread[];
   markThreadAsRead: (threadId: string) => Promise<void>;
+  markAllAsRead: () => Promise<void>;
   refreshUnread: () => Promise<void>;
 }
 
@@ -29,6 +32,7 @@ const POLL_INTERVAL_MS = 20000;
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({ children }) => {
   const { user } = useAuth();
   const [unreadThreadIds, setUnreadThreadIds] = useState<Set<string>>(new Set());
+  const [recentThreads, setRecentThreads] = useState<ClarificationThread[]>([]);
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const subscriptionRef = useRef<any>(null);
 
@@ -37,8 +41,17 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     setUnreadThreadIds(new Set(ids));
   };
 
+  const fetchRecentThreads = async (userId: string) => {
+    const threads = await ClarificationService.getRecentThreadsForUser(userId, 20);
+    setRecentThreads(threads);
+  };
+
   const refreshUnread = async () => {
-    if (user) await fetchUnread(user.id);
+    if (!user) return;
+    await Promise.all([
+      fetchUnread(user.id),
+      fetchRecentThreads(user.id)
+    ]);
   };
 
   const markThreadAsRead = async (threadId: string) => {
@@ -49,18 +62,34 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       next.delete(threadId);
       return next;
     });
+    setRecentThreads(prev =>
+      prev.map(t => t.id === threadId ? { ...t, isRead: true } : t)
+    );
+  };
+
+  const markAllAsRead = async () => {
+    if (!user) return;
+    const unreadIds = Array.from(unreadThreadIds);
+    await Promise.all(
+      unreadIds.map(id => ClarificationService.markThreadAsRead(id, user.id))
+    );
+    setUnreadThreadIds(new Set());
+    setRecentThreads(prev => prev.map(t => ({ ...t, isRead: true })));
   };
 
   useEffect(() => {
     if (!user) {
       setUnreadThreadIds(new Set());
+      setRecentThreads([]);
       return;
     }
 
     fetchUnread(user.id);
+    fetchRecentThreads(user.id);
 
     pollTimerRef.current = setInterval(() => {
       fetchUnread(user.id);
+      fetchRecentThreads(user.id);
     }, POLL_INTERVAL_MS);
 
     if (supabase) {
@@ -75,8 +104,11 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
             filter: `assigned_to=eq.${user.id}`
           },
           (payload) => {
-            if (payload.new && !payload.new.is_read) {
-              setUnreadThreadIds(prev => new Set([...prev, payload.new.id]));
+            if (payload.new) {
+              fetchRecentThreads(user.id);
+              if (!payload.new.is_read) {
+                setUnreadThreadIds(prev => new Set([...prev, payload.new.id]));
+              }
             }
           }
         )
@@ -90,6 +122,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
           },
           (payload) => {
             if (payload.new) {
+              fetchRecentThreads(user.id);
               setUnreadThreadIds(prev => {
                 const next = new Set(prev);
                 if (payload.new.is_read) {
@@ -120,7 +153,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   const value: NotificationContextType = {
     unreadCount: unreadThreadIds.size,
     unreadThreadIds,
+    recentThreads,
     markThreadAsRead,
+    markAllAsRead,
     refreshUnread
   };
 

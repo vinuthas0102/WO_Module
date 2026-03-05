@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Plus, Settings, MoreVertical, Ticket as TicketIcon, Layers, ChevronRight, Users, FileJson, Package, FileCheck } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { NavigationProvider, useNavigation } from './context/NavigationContext';
 import { TicketProvider, useTickets } from './context/TicketContext';
 import LoginForm from './components/auth/LoginForm';
 import ModuleSelection from './components/auth/ModuleSelection';
@@ -59,6 +60,20 @@ const Dashboard: React.FC = () => {
   const [showActionsMenu, setShowActionsMenu] = useState(false);
   const [showCreateSubmenu, setShowCreateSubmenu] = useState(false);
   const actionsMenuRef = useRef<HTMLDivElement>(null);
+  const [initialThreadId, setInitialThreadId] = useState<string | null>(null);
+
+  const { pendingNavigation, clearPendingNavigation } = useNavigation();
+
+  useEffect(() => {
+    if (!pendingNavigation) return;
+    const target = tickets.find(t => t.id === pendingNavigation.ticketId);
+    if (target) {
+      setInitialThreadId(pendingNavigation.threadId);
+      setSelectedTicket(target);
+      setShowTicketView(true);
+      clearPendingNavigation();
+    }
+  }, [pendingNavigation, tickets]);
   
   const [searchFilters, setSearchFilters] = useState<SearchFilters>({
     search: '',
@@ -307,9 +322,11 @@ const Dashboard: React.FC = () => {
           onClose={() => {
             setShowTicketView(false);
             setSelectedTicket(null);
+            setInitialThreadId(null);
           }}
           onEdit={handleEditTicket}
           onDelete={handleDeleteTicket}
+          initialThreadId={initialThreadId}
         />
       </div>
     );
@@ -628,9 +645,11 @@ const App: React.FC = () => {
   return (
     <AuthProvider>
       <NotificationProvider>
-        <TicketProvider>
-          <AppContent />
-        </TicketProvider>
+        <NavigationProvider>
+          <TicketProvider>
+            <AppContent />
+          </TicketProvider>
+        </NavigationProvider>
       </NotificationProvider>
     </AuthProvider>
   );

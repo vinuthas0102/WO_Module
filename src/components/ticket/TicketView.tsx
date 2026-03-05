@@ -29,9 +29,10 @@ interface TicketViewProps {
   onClose: () => void;
   onEdit: (ticket: Ticket) => void;
   onDelete: (ticketId: string) => void;
+  initialThreadId?: string | null;
 }
 
-const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDelete }) => {
+const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDelete, initialThreadId }) => {
   const { user, selectedModule } = useAuth();
   const { users } = useTickets();
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -296,6 +297,23 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
     setCreatingInlineClarification(null);
     setActiveHighlightedStepId(null);
   };
+
+  useEffect(() => {
+    if (!initialThreadId) return;
+    const openThread = async () => {
+      try {
+        const threads = await ClarificationService.getThreadsByTicket(ticket.id);
+        const target = threads.find(t => t.id === initialThreadId);
+        if (target) {
+          setActiveRightPanelTab('chat');
+          setActiveClarificationThread(target);
+        }
+      } catch (err) {
+        console.error('Error auto-opening clarification thread:', err);
+      }
+    };
+    openThread();
+  }, [initialThreadId, ticket.id]);
 
   const handleRefreshClarifications = () => {
     setRefreshKey(prev => prev + 1);

@@ -584,6 +584,26 @@ export class ClarificationService {
     }
   }
 
+  static async getRecentThreadsForUser(userId: string, limit = 20): Promise<ClarificationThread[]> {
+    try {
+      if (!supabase) return [];
+
+      const { data, error } = await supabase
+        .from('clarification_threads')
+        .select('*')
+        .eq('assigned_to', userId)
+        .order('updated_at', { ascending: false })
+        .limit(limit);
+
+      if (error) throw error;
+
+      return (data || []).map(row => this.mapThreadFromDb(row));
+    } catch (error) {
+      console.error('Error fetching recent threads for user:', error);
+      return [];
+    }
+  }
+
   static async getUnreadThreadIds(userId: string): Promise<string[]> {
     try {
       if (!supabase) return [];

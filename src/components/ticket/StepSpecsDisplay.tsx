@@ -117,6 +117,13 @@ const StepSpecsDisplay: React.FC<StepSpecsDisplayProps> = ({
     ? (overallProgress.totalCompleted / overallProgress.totalAllocated) * 100
     : 0;
 
+  const getCardBorderColor = (progress: SpecAllocationProgressSummary | undefined) => {
+    if (!progress || !progress.hasProgress) return 'border-l-gray-300';
+    if (progress.progressPercentage >= 100) return 'border-l-green-500';
+    if (progress.progressPercentage >= 50) return 'border-l-blue-500';
+    return 'border-l-yellow-500';
+  };
+
   const renderSpecsContent = () => (
     <div className="space-y-2">
       <div className="flex items-center justify-between pb-2 border-b border-gray-200">
@@ -152,205 +159,177 @@ const StepSpecsDisplay: React.FC<StepSpecsDisplayProps> = ({
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-12">
+        <div className="flex items-center justify-center py-8">
           <div className="text-gray-500 text-sm">Loading specifications...</div>
         </div>
       ) : specs.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
-            <FileCheck className="w-6 h-6 text-gray-400" />
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mb-2">
+            <FileCheck className="w-5 h-5 text-gray-400" />
           </div>
           <h4 className="text-sm font-semibold text-gray-900 mb-1">No Specifications Allocated</h4>
-          <p className="text-xs text-gray-600 max-w-md">
-            No specifications have been allocated to this workflow step yet.
-          </p>
+          <p className="text-xs text-gray-500">No specifications have been allocated to this workflow step yet.</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {specs.length > 0 && (
-            <div className="bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-semibold text-gray-900 flex items-center space-x-2">
-                  <Package className="w-4 h-4 text-blue-600" />
-                  <span>Overall Spec Progress</span>
-                </h4>
-                <div className={`text-lg font-bold ${getProgressStatusColor(overallPercentage)}`}>
+            <div className="bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-lg p-2.5">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
+                  <Package className="w-3.5 h-3.5 text-blue-600" />
+                  Overall Spec Progress
+                </span>
+                <span className={`text-sm font-bold ${getProgressStatusColor(overallPercentage)}`}>
                   {overallPercentage.toFixed(1)}%
-                </div>
+                </span>
               </div>
 
-              <div className="w-full bg-gray-200 rounded-full h-3 mb-3">
+              <div className="w-full bg-gray-200 rounded-full h-1.5 mb-2">
                 <div
-                  className={`h-3 rounded-full transition-all ${getProgressColor(overallPercentage)}`}
+                  className={`h-1.5 rounded-full transition-all ${getProgressColor(overallPercentage)}`}
                   style={{ width: `${Math.min(overallPercentage, 100)}%` }}
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-3 text-xs">
-                <div className="bg-white rounded-lg p-2">
-                  <p className="text-gray-500 mb-0.5">Total Specs</p>
-                  <p className="text-sm font-semibold text-gray-900">{specs.length}</p>
+              <div className="flex items-center gap-3 text-xs">
+                <div className="flex items-center gap-1">
+                  <span className="text-gray-500">Specs:</span>
+                  <span className="font-semibold text-gray-800">{specs.length}</span>
                 </div>
-                <div className="bg-white rounded-lg p-2">
-                  <p className="text-gray-500 mb-0.5">In Progress</p>
-                  <p className="text-sm font-semibold text-blue-600">{overallProgress.specsWithProgress}</p>
+                <div className="w-px h-3 bg-gray-300" />
+                <div className="flex items-center gap-1">
+                  <span className="text-gray-500">In Progress:</span>
+                  <span className="font-semibold text-blue-600">{overallProgress.specsWithProgress}</span>
                 </div>
-                <div className="bg-white rounded-lg p-2">
-                  <p className="text-gray-500 mb-0.5">Completed Qty</p>
-                  <p className="text-sm font-semibold text-green-600">
-                    {overallProgress.totalCompleted.toFixed(2)} / {overallProgress.totalAllocated.toFixed(2)}
-                  </p>
+                <div className="w-px h-3 bg-gray-300" />
+                <div className="flex items-center gap-1">
+                  <span className="text-gray-500">Done:</span>
+                  <span className="font-semibold text-green-600">
+                    {overallProgress.totalCompleted.toFixed(1)} / {overallProgress.totalAllocated.toFixed(1)}
+                  </span>
                 </div>
               </div>
             </div>
           )}
 
-          {specs.map((spec) => {
+          {specs.map((spec, index) => {
             const progress = progressSummaries.get(spec.allocation.id);
+            const isEven = index % 2 === 0;
             return (
-            <div
-              key={spec.id}
-              className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-sm transition-shadow"
-            >
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2 mb-1">
-                    <Package className="w-3.5 h-3.5 text-blue-600" />
-                    <h4 className="text-sm font-semibold text-gray-900">
-                      {spec.specMaster?.specCode || 'N/A'}
-                    </h4>
-                  </div>
-                  <p className="text-xs text-gray-600 mb-2">
-                    {spec.specMaster?.description || 'No description'}
-                  </p>
-                  {spec.specMaster?.category && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {spec.specMaster.category}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
-                <div>
-                  <p className="text-xs text-gray-500 mb-0.5">Work Chunk</p>
-                  <p className="text-xs font-medium text-gray-900">
-                    {spec.specMaster?.workChunk || 'N/A'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 mb-0.5">Allocated Quantity</p>
-                  <p className="text-xs font-semibold text-green-600">
-                    {spec.allocation.allocatedQuantity} {spec.unit}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 mb-0.5">Total Quantity</p>
-                  <p className="text-xs font-medium text-gray-900">
-                    {spec.quantity} {spec.unit}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 mb-0.5">Unit</p>
-                  <p className="text-xs font-medium text-gray-900">
-                    {spec.unit}
-                  </p>
-                </div>
-              </div>
-
-              {progress && (
-                <div className="mt-3 pt-3 border-t border-gray-100">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center space-x-2">
-                      <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
-                      <span className="text-xs font-medium text-gray-700">Progress</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className={`text-xs font-bold ${getProgressStatusColor(progress.progressPercentage)}`}>
-                        {progress.progressPercentage.toFixed(1)}%
+              <div
+                key={spec.id}
+                className={`border border-l-4 ${getCardBorderColor(progress)} rounded-lg overflow-hidden hover:shadow-sm transition-shadow ${isEven ? 'bg-white' : 'bg-gray-50'}`}
+              >
+                <div className="px-3 py-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Package className="w-3 h-3 text-blue-600 shrink-0" />
+                      <span className="text-xs font-bold text-gray-900 truncate">
+                        {spec.specMaster?.specCode || 'N/A'}
                       </span>
-                      {progress.progressPercentage >= 100 && (
-                        <CheckCircle className="w-3.5 h-3.5 text-green-600" />
+                      {spec.specMaster?.category && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-700 shrink-0">
+                          {spec.specMaster.category}
+                        </span>
                       )}
                     </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {progress ? (
+                        <>
+                          {progress.progressPercentage >= 100 && (
+                            <CheckCircle className="w-3 h-3 text-green-600" />
+                          )}
+                          <span className={`text-xs font-bold ${getProgressStatusColor(progress.progressPercentage)}`}>
+                            {progress.progressPercentage.toFixed(1)}%
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
+                          <AlertCircle className="w-3 h-3" />
+                          No data
+                        </span>
+                      )}
+                      <button
+                        onClick={() => setSelectedAllocation({
+                          allocationId: spec.allocation.id,
+                          specDetails: {
+                            description: spec.specMaster?.description || 'Unknown Spec',
+                            allocatedQuantity: spec.allocation.allocatedQuantity,
+                            unit: spec.unit
+                          }
+                        })}
+                        className="ml-1 px-2 py-0.5 bg-blue-600 text-white text-[10px] font-medium rounded hover:bg-blue-700 flex items-center gap-1 transition-colors"
+                      >
+                        <TrendingUp className="w-2.5 h-2.5" />
+                        {progress && progress.hasProgress ? 'Update' : 'Track'}
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                    <div
-                      className={`h-2 rounded-full transition-all ${getProgressColor(progress.progressPercentage)}`}
-                      style={{ width: `${Math.min(progress.progressPercentage, 100)}%` }}
-                    />
+                  <p className="text-[11px] text-gray-500 mt-0.5 truncate">
+                    {spec.specMaster?.description || 'No description'}
+                  </p>
+
+                  <div className="flex items-center gap-3 mt-1.5 text-[11px]">
+                    {spec.specMaster?.workChunk && spec.specMaster.workChunk !== spec.specMaster.description && (
+                      <>
+                        <span className="text-gray-400">Chunk:</span>
+                        <span className="text-gray-700 font-medium truncate max-w-[120px]">{spec.specMaster.workChunk}</span>
+                        <div className="w-px h-3 bg-gray-200" />
+                      </>
+                    )}
+                    <span className="text-gray-400">Alloc:</span>
+                    <span className="text-green-700 font-semibold">{spec.allocation.allocatedQuantity} {spec.unit}</span>
+                    <div className="w-px h-3 bg-gray-200" />
+                    <span className="text-gray-400">Total:</span>
+                    <span className="text-gray-700 font-medium">{spec.quantity} {spec.unit}</span>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 text-xs">
-                    <div>
-                      <p className="text-gray-500 mb-0.5">Completed</p>
-                      <p className="font-semibold text-green-600">
-                        {progress.completedQuantity.toFixed(2)} {spec.unit}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500 mb-0.5">Entries</p>
-                      <p className="font-semibold text-blue-600">{progress.entryCount}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500 mb-0.5">Status</p>
-                      <div className="flex items-center space-x-1">
+                  {progress && progress.hasProgress && (
+                    <div className="mt-1.5">
+                      <div className="w-full bg-gray-200 rounded-full h-1">
+                        <div
+                          className={`h-1 rounded-full transition-all ${getProgressColor(progress.progressPercentage)}`}
+                          style={{ width: `${Math.min(progress.progressPercentage, 100)}%` }}
+                        />
+                      </div>
+                      <div className="flex items-center gap-3 mt-1 text-[10px] text-gray-500">
+                        <span className="flex items-center gap-0.5">
+                          <span className="font-medium text-green-600">{progress.completedQuantity.toFixed(1)} {spec.unit}</span>
+                          <span>done</span>
+                        </span>
+                        <span className="flex items-center gap-0.5">
+                          <span className="font-medium text-blue-600">{progress.entryCount}</span>
+                          <span>entries</span>
+                        </span>
                         {progress.pendingEntries > 0 && (
-                          <span className="flex items-center text-yellow-600">
-                            <Clock className="w-3 h-3 mr-0.5" />
-                            {progress.pendingEntries}
+                          <span className="flex items-center gap-0.5 text-yellow-600">
+                            <Clock className="w-2.5 h-2.5" />
+                            {progress.pendingEntries} pending
                           </span>
                         )}
                         {progress.verifiedEntries > 0 && (
-                          <span className="flex items-center text-green-600">
-                            <CheckCircle className="w-3 h-3 mr-0.5" />
-                            {progress.verifiedEntries}
+                          <span className="flex items-center gap-0.5 text-green-600">
+                            <CheckCircle className="w-2.5 h-2.5" />
+                            {progress.verifiedEntries} verified
+                          </span>
+                        )}
+                        {progress.lastUpdateDate && (
+                          <span className="ml-auto text-gray-400">
+                            {new Date(progress.lastUpdateDate).toLocaleDateString()}
                           </span>
                         )}
                       </div>
                     </div>
-                  </div>
+                  )}
 
-                  {progress.lastUpdateDate && (
-                    <p className="text-xs text-gray-500 mt-2">
-                      Last updated: {new Date(progress.lastUpdateDate).toLocaleDateString()}
+                  {spec.remarks && (
+                    <p className="mt-1 text-[10px] text-gray-500 italic truncate">
+                      {spec.remarks}
                     </p>
                   )}
                 </div>
-              )}
-
-              {!progress && (
-                <div className="mt-3 pt-3 border-t border-gray-100">
-                  <div className="flex items-center justify-center text-xs text-gray-500 py-2">
-                    <AlertCircle className="w-3.5 h-3.5 mr-1" />
-                    No progress recorded yet
-                  </div>
-                </div>
-              )}
-
-              {spec.remarks && (
-                <div className="mt-2 pt-2 border-t border-gray-100">
-                  <p className="text-xs text-gray-500 mb-0.5">Remarks</p>
-                  <p className="text-xs text-gray-700">{spec.remarks}</p>
-                </div>
-              )}
-
-              <button
-                onClick={() => setSelectedAllocation({
-                  allocationId: spec.allocation.id,
-                  specDetails: {
-                    description: spec.specMaster?.description || 'Unknown Spec',
-                    allocatedQuantity: spec.allocation.allocatedQuantity,
-                    unit: spec.unit
-                  }
-                })}
-                className="w-full mt-2 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 flex items-center justify-center space-x-1"
-              >
-                <TrendingUp className="w-3 h-3" />
-                <span>{progress && progress.hasProgress ? 'Update Progress' : 'Track Progress'}</span>
-              </button>
-            </div>
+              </div>
             );
           })}
         </div>

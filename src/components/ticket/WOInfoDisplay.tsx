@@ -101,15 +101,6 @@ const WOInfoDisplay: React.FC<WOInfoDisplayProps> = ({
         </CollapsibleSection>
       )}
 
-      <CollapsibleSection
-        title="Description"
-        defaultExpanded={true}
-      >
-        <div className="pt-3">
-          <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{ticket.description}</p>
-        </div>
-      </CollapsibleSection>
-
       {hasWorkOrderDetails && (
         <CollapsibleSection
           title="Work Order Details"
@@ -160,7 +151,12 @@ const WOInfoDisplay: React.FC<WOInfoDisplayProps> = ({
           </span>
         }
       >
-        <div className="pt-3">
+        <div className="pt-3 space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Description</label>
+            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{ticket.description}</p>
+          </div>
+          <div className="border-t border-gray-100" />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="space-y-3">
               <div>

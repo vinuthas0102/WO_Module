@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Send, Paperclip, CheckCircle, XCircle, FileText, Loader, Lock, Ban } from 'lucide-react';
+import Breadcrumb from '../common/Breadcrumb';
 import { ClarificationThread, ClarificationMessage, NotificationChannel } from '../../types';
 import { ClarificationService } from '../../services/clarificationService';
 import { ClarificationMessageBubble } from './ClarificationMessageBubble';
@@ -197,13 +198,18 @@ export const ClarificationThreadView: React.FC<ClarificationThreadViewProps> = (
       <div className="flex-shrink-0 px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center space-x-2 mb-1">
+            <Breadcrumb
+              items={[
+                { label: ticketNumber },
+                { label: 'Chat Log' },
+                { label: thread.subject },
+              ]}
+            />
+            <div className="flex items-center space-x-2 mt-1 mb-1">
               <h3 className="text-sm font-semibold text-gray-900 truncate">{thread.subject}</h3>
               {getStatusBadge()}
             </div>
             <div className="flex items-center space-x-2 text-xs text-gray-600">
-              <span>{ticketNumber}</span>
-              <span>•</span>
               <span>{thread.creatorUser?.name} → {thread.assignedUser?.name}</span>
             </div>
           </div>

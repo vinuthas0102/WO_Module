@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, FileCheck, Package, TrendingUp, Maximize2, Layers, Workflow, FileText, CheckCircle, AlertCircle, Clock } from 'lucide-react';
+import Breadcrumb from '../common/Breadcrumb';
 import { WorkOrderSpecService } from '../../services/workOrderSpecService';
 import { WorkOrderSpecDetail, WorkOrderSpecAllocation, Ticket } from '../../types';
 import { SpecAllocationProgressTracker } from './SpecAllocationProgressTracker';
@@ -120,17 +121,15 @@ const StepSpecsDisplay: React.FC<StepSpecsDisplayProps> = ({
     <div className="space-y-2">
       <div className="flex items-center justify-between pb-2 border-b border-gray-200">
         <div className="flex-1">
-          <h3 className="text-sm font-semibold text-gray-900">Allocated Specifications</h3>
-          <div className="flex items-center space-x-1.5 text-xs text-gray-600 mt-0.5">
-            <span>{ticketNumber}</span>
-            <span>•</span>
-            <span>{stepTitle}</span>
-            <span>•</span>
-            <span className="flex items-center space-x-1">
-              <FileCheck className="w-3 h-3" />
-              <span>Specifications</span>
-            </span>
-          </div>
+          <Breadcrumb
+            items={[
+              { label: ticketNumber },
+              { label: 'Workflow' },
+              { label: stepTitle },
+              { label: 'Specifications' },
+            ]}
+          />
+          <h3 className="text-sm font-semibold text-gray-900 mt-1">Allocated Specifications</h3>
         </div>
         <div className="flex items-center space-x-2">
           {!isFullScreen && (

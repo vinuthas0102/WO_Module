@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, FileText, Upload, ChevronDown, ChevronRight } from 'lucide-react';
+import Breadcrumb from '../common/Breadcrumb';
 import { WorkflowStep } from '../../types';
 import { DocumentMetadata } from '../../services/fileService';
 import FileReferenceUpload from './FileReferenceUpload';
@@ -70,11 +71,18 @@ export const StepDocumentsPanel: React.FC<StepDocumentsPanelProps> = ({
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between p-3 border-b border-gray-200 bg-gradient-to-r from-teal-50 to-cyan-50">
         <div>
-          <h3 className="text-sm font-semibold text-gray-900 flex items-center">
+          <Breadcrumb
+            items={[
+              { label: ticketNumber },
+              { label: 'Workflow' },
+              { label: step.title },
+              { label: 'Documents' },
+            ]}
+          />
+          <h3 className="text-sm font-semibold text-gray-900 flex items-center mt-1">
             <Upload className="w-4 h-4 mr-2 text-teal-600" />
-            Documents: {step.title}
+            Documents
           </h3>
-          <p className="text-xs text-gray-600 mt-0.5">{ticketNumber}</p>
         </div>
         <button
           onClick={onClose}

@@ -15,6 +15,7 @@ import { UserPreferencesService } from '../../services/userPreferencesService';
 import { ClarificationService } from '../../services/clarificationService';
 import { getHierarchyLevel } from '../../lib/hierarchyColors';
 import { getModuleTerminology, getModuleTerminologyLower } from '../../lib/utils';
+import Breadcrumb from '../common/Breadcrumb';
 import WOItemSelector from './WOItemSelector';
 import WOSpecSelector from './WOSpecSelector';
 import WOWorkflowTabs from './WOWorkflowTabs';
@@ -59,6 +60,7 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
   const [creatingInlineClarification, setCreatingInlineClarification] = useState<{ stepId: string; stepTitle: string; assignedUserId: string } | null>(null);
   const [creatingInlineSpec, setCreatingInlineSpec] = useState<{ ticketId: string; stepId: string; stepTitle: string; userId: string } | null>(null);
   const [activeRightPanelTab, setActiveRightPanelTab] = useState<'activity' | 'chat' | 'notes'>('activity');
+  const [activeLeftTab, setActiveLeftTab] = useState<string>('Workflow');
   const [woItemsCount, setWoItemsCount] = useState(0);
   const [woSpecsCount, setWoSpecsCount] = useState(0);
   const [loadingWoCounts, setLoadingWoCounts] = useState(true);
@@ -567,6 +569,18 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
               })()}
             </div>
           </div>
+          <div className="mt-2 pt-1.5 border-t border-gray-100">
+            <Breadcrumb
+              items={[
+                {
+                  label: getModuleTerminology(selectedModule?.id, 'plural'),
+                  onClick: onClose,
+                },
+                { label: ticket.ticketNumber },
+                { label: activeLeftTab },
+              ]}
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
@@ -658,6 +672,7 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                   }
                 }}
                 onOpenClarification={handleOpenClarification}
+                onActiveTabChange={setActiveLeftTab}
                 selectedModule={selectedModule}
                 completedWorkflows={completedWorkflows}
                 totalWorkflows={totalWorkflows}

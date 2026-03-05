@@ -48,6 +48,7 @@ interface WOWorkflowTabsProps {
   onDownloadAttachment: (attachment: DocumentMetadata) => void;
   onDeleteAttachment: (id: string) => void;
   activeHighlightedStepId?: string | null;
+  onActiveTabChange?: (tabLabel: string) => void;
 }
 
 type TabType = 'wo-info' | 'wo-details' | 'measurement-book' | 'bills' | 'workflow';
@@ -83,9 +84,24 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
   onFileUpload,
   onDownloadAttachment,
   onDeleteAttachment,
-  activeHighlightedStepId
+  activeHighlightedStepId,
+  onActiveTabChange
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('wo-info');
+
+  const tabLabels: Record<TabType, string> = {
+    'wo-info': 'WO Info',
+    'wo-details': 'WO Details',
+    'workflow': 'Workflow',
+    'measurement-book': 'Measurement Book',
+    'bills': 'Bills',
+  };
+
+  useEffect(() => {
+    if (onActiveTabChange) {
+      onActiveTabChange(tabLabels[activeTab]);
+    }
+  }, [activeTab]);
   const [woItemsCount, setWoItemsCount] = useState(0);
   const [woSpecsCount, setWoSpecsCount] = useState(0);
   const [mbookCount, setMbookCount] = useState(0);

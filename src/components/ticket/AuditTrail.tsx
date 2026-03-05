@@ -15,6 +15,7 @@ import { TrackProgressSection } from './TrackProgressSection';
 import { StepDocumentsPanel } from './StepDocumentsPanel';
 import { CollapsibleFilterPanel } from '../common/CollapsibleFilterPanel';
 import { TopRightControls } from '../common/TopRightControls';
+import Breadcrumb from '../common/Breadcrumb';
 
 interface AuditTrailProps {
   ticket: Ticket;
@@ -299,11 +300,18 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
         <div className="h-full flex flex-col">
           <div className="flex items-center justify-between p-3 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
             <div>
-              <h3 className="text-sm font-semibold text-gray-900 flex items-center">
+              <Breadcrumb
+                items={[
+                  { label: ticket.ticketNumber },
+                  { label: 'Workflow' },
+                  { label: viewingProgress.stepTitle },
+                  { label: 'Track Progress' },
+                ]}
+              />
+              <h3 className="text-sm font-semibold text-gray-900 flex items-center mt-1">
                 <TrendingUp className="w-4 h-4 mr-2 text-blue-600" />
-                Track Progress: {viewingProgress.stepTitle}
+                Track Progress
               </h3>
-              <p className="text-xs text-gray-600 mt-0.5">{ticket.ticketNumber}</p>
             </div>
             <button
               onClick={onCloseProgress}
@@ -326,17 +334,15 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
       <div className="space-y-2">
         <div className="flex items-center justify-between pb-2 border-b border-gray-200">
           <div className="flex-1">
-            <h3 className="text-sm font-semibold text-gray-900">Document Viewer</h3>
-            <div className="flex items-center space-x-1.5 text-xs text-gray-600 mt-0.5">
-              <span>{ticket.ticketNumber}</span>
-              <span>•</span>
-              <span>{viewingDocument.workflowTitle}</span>
-              <span>•</span>
-              <span className="flex items-center space-x-1">
-                <span className="text-2xl">{FileService.getFileIcon(viewingDocument.document.type)}</span>
-                <span>{viewingDocument.document.name}</span>
-              </span>
-            </div>
+            <Breadcrumb
+              items={[
+                { label: ticket.ticketNumber },
+                { label: 'Workflow' },
+                { label: viewingDocument.workflowTitle },
+                { label: viewingDocument.document.name },
+              ]}
+            />
+            <h3 className="text-sm font-semibold text-gray-900 mt-1">Document Viewer</h3>
           </div>
           <div className="flex items-center space-x-2">
             <button

@@ -454,7 +454,7 @@ export class WorkOrderSpecService {
       const specMasterId = await this.createSpecMaster(specData, userId);
 
       const { data: specDetailData, error: detailError } = await supabase
-        .from('work_order_specs_detail')
+        .from('work_order_spec_details')
         .insert([
           {
             ticket_id: ticketId,

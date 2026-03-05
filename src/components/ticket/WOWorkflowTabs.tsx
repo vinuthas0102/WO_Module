@@ -25,6 +25,7 @@ interface WOWorkflowTabsProps {
   onAllocateItem: (stepId: string, stepTitle: string) => void;
   onOpenClarification?: (stepId: string, stepTitle: string, assignedUserId: string | undefined) => void;
   onViewProgress?: (stepId: string, stepTitle: string) => void;
+  onViewDocuments?: (stepId: string, stepTitle: string) => void;
   selectedModule?: { id: string };
   completedWorkflows: number;
   totalWorkflows: number;
@@ -64,6 +65,7 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
   onAllocateItem,
   onOpenClarification,
   onViewProgress,
+  onViewDocuments,
   selectedModule,
   completedWorkflows,
   totalWorkflows,
@@ -487,6 +489,7 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
                   onAllocateItem={onAllocateItem}
                   onOpenClarification={onOpenClarification}
                   onViewProgress={onViewProgress}
+                  onViewDocuments={onViewDocuments}
                   activeHighlightedStepId={activeHighlightedStepId}
                 />
               </div>
@@ -527,6 +530,7 @@ const WOWorkflowTabs: React.FC<WOWorkflowTabsProps> = ({
             onAllocateItem={onAllocateItem}
             onOpenClarification={onOpenClarification}
             onViewProgress={onViewProgress}
+            onViewDocuments={onViewDocuments}
             activeHighlightedStepId={activeHighlightedStepId}
           />
         </div>

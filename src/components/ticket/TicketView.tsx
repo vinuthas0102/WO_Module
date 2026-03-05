@@ -41,6 +41,7 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
   const [viewingDocument, setViewingDocument] = useState<{ document: DocumentMetadata; workflowTitle: string } | null>(null);
   const [viewingStepSpecs, setViewingStepSpecs] = useState<{ stepId: string; stepTitle: string } | null>(null);
   const [viewingProgress, setViewingProgress] = useState<{ stepId: string; stepTitle: string } | null>(null);
+  const [viewingDocuments, setViewingDocuments] = useState<{ stepId: string; stepTitle: string } | null>(null);
   const [allocatingSpec, setAllocatingSpec] = useState<{ ticketId: string; stepId: string; stepTitle: string; userId: string } | null>(null);
   const [allocatingItem, setAllocatingItem] = useState<{ ticketId: string; stepId: string; stepTitle: string; userId: string } | null>(null);
   const [ticketAttachments, setTicketAttachments] = useState<DocumentMetadata[]>([]);
@@ -634,6 +635,10 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                   setViewingProgress({ stepId, stepTitle });
                   setActiveHighlightedStepId(stepId);
                 }}
+                onViewDocuments={(stepId, stepTitle) => {
+                  setViewingDocuments({ stepId, stepTitle });
+                  setActiveHighlightedStepId(stepId);
+                }}
                 onAllocateSpec={(stepId, stepTitle) => {
                   if (user) {
                     setAllocatingSpec({ ticketId: ticket.id, stepId, stepTitle, userId: user.id });
@@ -714,6 +719,11 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                   setViewingProgress(null);
                   setActiveHighlightedStepId(null);
                 }}
+                viewingDocuments={viewingDocuments}
+                onCloseDocuments={() => {
+                  setViewingDocuments(null);
+                  setActiveHighlightedStepId(null);
+                }}
                 allocatingSpec={allocatingSpec}
                 onCloseSpecAllocation={() => {
                   setAllocatingSpec(null);
@@ -785,6 +795,10 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
                     onOpenClarification={handleOpenClarification}
                     onViewProgress={(stepId, stepTitle) => {
                       setViewingProgress({ stepId, stepTitle });
+                      setActiveHighlightedStepId(stepId);
+                    }}
+                    onViewDocuments={(stepId, stepTitle) => {
+                      setViewingDocuments({ stepId, stepTitle });
                       setActiveHighlightedStepId(stepId);
                     }}
                     activeHighlightedStepId={activeHighlightedStepId}

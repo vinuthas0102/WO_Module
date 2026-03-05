@@ -12,6 +12,7 @@ import { ClarificationThreadView } from '../clarification/ClarificationThreadVie
 import { NewClarificationForm } from '../clarification/NewClarificationForm';
 import { MyNotesTab } from './MyNotesTab';
 import { TrackProgressSection } from './TrackProgressSection';
+import { StepDocumentsPanel } from './StepDocumentsPanel';
 import { CollapsibleFilterPanel } from '../common/CollapsibleFilterPanel';
 import { TopRightControls } from '../common/TopRightControls';
 
@@ -24,6 +25,8 @@ interface AuditTrailProps {
   onCloseStepSpecs?: () => void;
   viewingProgress?: { stepId: string; stepTitle: string } | null;
   onCloseProgress?: () => void;
+  viewingDocuments?: { stepId: string; stepTitle: string } | null;
+  onCloseDocuments?: () => void;
   allocatingSpec?: { ticketId: string; stepId: string; stepTitle: string; userId: string } | null;
   onCloseSpecAllocation?: () => void;
   onSpecAllocated?: () => void;
@@ -47,7 +50,7 @@ interface AuditTrailProps {
   totalWorkflows?: number;
 }
 
-const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onCloseDocument, onViewProgressDocument, viewingStepSpecs, onCloseStepSpecs, allocatingSpec, onCloseSpecAllocation, onSpecAllocated, allocatingItem, onCloseItemAllocation, onItemAllocated, activeClarificationThread, onCloseClarificationThread, onRefreshClarifications, onOpenClarificationThread, creatingClarification, onCancelNewClarification, onSubmitNewClarification, activeTab: externalActiveTab, onTabChange, viewingProgress, onCloseProgress, woInfoContent, workflowContent, woItemsCount, woSpecsCount, completedWorkflows, totalWorkflows }) => {
+const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onCloseDocument, onViewProgressDocument, viewingStepSpecs, onCloseStepSpecs, allocatingSpec, onCloseSpecAllocation, onSpecAllocated, allocatingItem, onCloseItemAllocation, onItemAllocated, activeClarificationThread, onCloseClarificationThread, onRefreshClarifications, onOpenClarificationThread, creatingClarification, onCancelNewClarification, onSubmitNewClarification, activeTab: externalActiveTab, onTabChange, viewingProgress, onCloseProgress, viewingDocuments, onCloseDocuments, woInfoContent, workflowContent, woItemsCount, woSpecsCount, completedWorkflows, totalWorkflows }) => {
   const { users } = useTickets();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
@@ -316,6 +319,25 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
             <TrackProgressSection step={step} ticketId={ticket.id} />
           </div>
         </div>
+      );
+    }
+  }
+
+  if (viewingDocuments && onCloseDocuments) {
+    const step = ticket.workflow.find(s => s.id === viewingDocuments.stepId);
+    if (step) {
+      return (
+        <StepDocumentsPanel
+          step={step}
+          ticketId={ticket.id}
+          ticketNumber={ticket.ticketNumber}
+          onClose={onCloseDocuments}
+          onViewDocument={(doc, s) => {
+            if (onViewProgressDocument) {
+              onViewProgressDocument(doc, s.title);
+            }
+          }}
+        />
       );
     }
   }

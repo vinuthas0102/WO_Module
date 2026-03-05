@@ -38,6 +38,7 @@ interface WorkflowManagementProps {
   onAllocateItem?: (stepId: string, stepTitle: string) => void;
   onOpenClarification?: (stepId: string, stepTitle: string, assignedUserId: string | undefined) => void;
   onViewProgress?: (stepId: string, stepTitle: string) => void;
+  onViewDocuments?: (stepId: string, stepTitle: string) => void;
   activeHighlightedStepId?: string | null;
 }
 
@@ -445,7 +446,7 @@ const FileReferenceInfoDisplay: React.FC<{ stepId: string; ticketId: string; sho
   );
 };
 
-const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canManage, onViewDocument, onViewStepSpecs, onAllocateSpec, onCreateSpec, onAllocateItem, onOpenClarification, onViewProgress, activeHighlightedStepId }) => {
+const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canManage, onViewDocument, onViewStepSpecs, onAllocateSpec, onCreateSpec, onAllocateItem, onOpenClarification, onViewProgress, onViewDocuments, activeHighlightedStepId }) => {
   const { selectedModule, user, displayPreferences } = useAuth();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingStep, setEditingStep] = useState<WorkflowStep | null>(null);
@@ -1548,8 +1549,14 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
     actions.push({
       id: 'upload',
       icon: Upload,
-      label: showDocUpload.has(step.id) ? 'Hide documents' : 'Show documents',
-      action: () => toggleDocUpload(step.id),
+      label: 'View Documents',
+      action: () => {
+        if (onViewDocuments) {
+          onViewDocuments(step.id, step.title);
+        } else {
+          toggleDocUpload(step.id);
+        }
+      },
       category: 'document',
       color: 'text-gray-600'
     });
@@ -1837,7 +1844,11 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
                   onViewProgress?.(step.id, step.title);
                 }}
                 onViewDocuments={() => {
-                  toggleDocUpload(step.id);
+                  if (onViewDocuments) {
+                    onViewDocuments(step.id, step.title);
+                  } else {
+                    toggleDocUpload(step.id);
+                  }
                 }}
                 onViewClarifications={() => {
                   onOpenClarification?.(step.id, step.title, step.assignedTo);

@@ -323,45 +323,6 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
     }
   }
 
-  if (viewingDocuments && onCloseDocuments) {
-    const step = ticket.workflow.find(s => s.id === viewingDocuments.stepId);
-    if (step) {
-      return (
-        <StepDocumentsPanel
-          step={step}
-          ticketId={ticket.id}
-          ticketNumber={ticket.ticketNumber}
-          onClose={onCloseDocuments}
-          onViewDocument={(doc, s) => {
-            if (onViewProgressDocument) {
-              onViewProgressDocument(doc, s.title);
-            }
-          }}
-        />
-      );
-    }
-  }
-
-  if (viewingStepSpecs && onCloseStepSpecs) {
-    return (
-      <StepSpecsDisplay
-        stepId={viewingStepSpecs.stepId}
-        stepTitle={viewingStepSpecs.stepTitle}
-        ticketNumber={ticket.ticketNumber}
-        ticketTitle={ticket.title}
-        ticketId={ticket.id}
-        onClose={onCloseStepSpecs}
-        ticket={ticket}
-        woInfoContent={woInfoContent}
-        workflowContent={workflowContent}
-        woItemsCount={woItemsCount}
-        woSpecsCount={woSpecsCount}
-        completedWorkflows={completedWorkflows}
-        totalWorkflows={totalWorkflows}
-      />
-    );
-  }
-
   if (viewingDocument) {
     return (
       <div className="space-y-2">
@@ -462,6 +423,45 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
           </dl>
         </div>
       </div>
+    );
+  }
+
+  if (viewingDocuments && onCloseDocuments) {
+    const step = ticket.workflow.find(s => s.id === viewingDocuments.stepId);
+    if (step) {
+      return (
+        <StepDocumentsPanel
+          step={step}
+          ticketId={ticket.id}
+          ticketNumber={ticket.ticketNumber}
+          onClose={onCloseDocuments}
+          onViewDocument={(doc, s) => {
+            if (onViewProgressDocument) {
+              onViewProgressDocument(doc, s.title);
+            }
+          }}
+        />
+      );
+    }
+  }
+
+  if (viewingStepSpecs && onCloseStepSpecs) {
+    return (
+      <StepSpecsDisplay
+        stepId={viewingStepSpecs.stepId}
+        stepTitle={viewingStepSpecs.stepTitle}
+        ticketNumber={ticket.ticketNumber}
+        ticketTitle={ticket.title}
+        ticketId={ticket.id}
+        onClose={onCloseStepSpecs}
+        ticket={ticket}
+        woInfoContent={woInfoContent}
+        workflowContent={workflowContent}
+        woItemsCount={woItemsCount}
+        woSpecsCount={woSpecsCount}
+        completedWorkflows={completedWorkflows}
+        totalWorkflows={totalWorkflows}
+      />
     );
   }
 

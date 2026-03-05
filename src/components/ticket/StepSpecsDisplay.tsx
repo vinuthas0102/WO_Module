@@ -126,7 +126,7 @@ const StepSpecsDisplay: React.FC<StepSpecsDisplayProps> = ({
 
   const renderSpecsContent = () => (
     <div className="space-y-2">
-      <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+      <div className="flex items-center justify-between pb-2 border-b border-gray-200 sticky top-0 bg-white z-10 -mx-0.5 px-0.5 pt-0.5">
         <div className="flex-1">
           <Breadcrumb
             items={[
@@ -218,7 +218,7 @@ const StepSpecsDisplay: React.FC<StepSpecsDisplayProps> = ({
             return (
               <div
                 key={spec.id}
-                className={`border border-l-4 ${getCardBorderColor(progress)} rounded-lg overflow-hidden hover:shadow-sm transition-shadow ${isEven ? 'bg-white' : 'bg-gray-50'}`}
+                className={`border border-gray-200 border-l-4 ${getCardBorderColor(progress)} rounded-lg overflow-hidden hover:shadow-sm transition-shadow ${isEven ? 'bg-white' : 'bg-gray-50'}`}
               >
                 <div className="px-3 py-2">
                   <div className="flex items-center justify-between gap-2">

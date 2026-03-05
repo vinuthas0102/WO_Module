@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { TrendingUp, CheckCircle, AlertCircle, Package, Calendar, FileText, Upload, X, Edit2, Send, Shield } from 'lucide-react';
 import {
   SpecAllocationProgressService,
@@ -260,7 +261,7 @@ export const SpecAllocationProgressTracker: React.FC<SpecAllocationProgressTrack
   const totalCompleted = entries.reduce((sum, entry) => sum + entry.workDoneQuantity, 0);
   const progressPercentage = (totalCompleted / specDetails.allocatedQuantity) * 100;
 
-  return (
+  return ReactDOM.createPortal(
     <div className="fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-50 flex items-center justify-center">
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         <div className="flex items-center justify-between p-4 border-b">
@@ -689,6 +690,7 @@ export const SpecAllocationProgressTracker: React.FC<SpecAllocationProgressTrack
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

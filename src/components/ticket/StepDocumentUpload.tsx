@@ -240,10 +240,10 @@ const WorkflowDocumentUpload: React.FC<WorkflowDocumentUploadProps> = ({
       )}
 
       <div
-        className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+        className={`border border-dashed rounded-md transition-colors ${
           dragActive
             ? 'border-blue-500 bg-blue-50'
-            : 'border-gray-300 hover:border-gray-400'
+            : 'border-gray-300 hover:border-gray-400 bg-gray-50'
         } ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
@@ -260,48 +260,42 @@ const WorkflowDocumentUpload: React.FC<WorkflowDocumentUploadProps> = ({
         />
 
         {uploading ? (
-          <div className="space-y-2">
-            <Upload className="w-8 h-8 text-blue-500 mx-auto animate-pulse" />
-            <p className="text-sm text-gray-600">Uploading... {uploadProgress}%</p>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="flex items-center gap-2 px-3 py-2">
+            <Upload className="w-4 h-4 text-blue-500 animate-pulse flex-shrink-0" />
+            <span className="text-xs text-gray-600 flex-shrink-0">Uploading... {uploadProgress}%</span>
+            <div className="flex-1 bg-gray-200 rounded-full h-1.5">
               <div
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
                 style={{ width: `${uploadProgress}%` }}
               />
             </div>
           </div>
         ) : (
-          <div className="space-y-3">
-            <Upload className="w-8 h-8 text-gray-400 mx-auto" />
-            <div>
+          <div className="flex items-center gap-2 px-3 py-2">
+            <Upload className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+                className="text-blue-600 hover:text-blue-700 font-medium text-xs"
               >
                 Click to upload
               </button>
-              <span className="text-gray-500 text-sm"> or drag and drop</span>
+              <span className="text-gray-400 text-xs"> or drag and drop</span>
+              <span className="text-gray-400 text-xs"> · PDF, Images, Word, Excel (max 5MB)</span>
             </div>
-            <p className="text-xs text-gray-500">
-              PDF, Images, Word, Excel (max 5MB)
-            </p>
-
-            <div className="flex items-center justify-center space-x-2 pt-2">
+            <label className="flex items-center gap-1 flex-shrink-0 cursor-pointer">
               <input
                 type="checkbox"
                 id={`mandatory-${step.id}`}
                 checked={isMandatory}
                 onChange={(e) => setIsMandatory(e.target.checked)}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="w-3 h-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
               />
-              <label
-                htmlFor={`mandatory-${step.id}`}
-                className="text-sm text-gray-700 cursor-pointer"
-              >
-                {isDORole ? 'Mark as completion certificate' : 'Mark as mandatory document'}
-              </label>
-            </div>
+              <span className="text-xs text-gray-500">
+                {isDORole ? 'Completion cert' : 'Mandatory'}
+              </span>
+            </label>
           </div>
         )}
       </div>

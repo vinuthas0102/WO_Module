@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
-import { TrendingUp, CheckCircle, AlertCircle, Package, Calendar, FileText, Upload, X, Edit2, Send, Shield } from 'lucide-react';
+import { TrendingUp, CheckCircle, AlertCircle, Package, Calendar, FileText, Upload, X, CreditCard as Edit2, Send, Shield } from 'lucide-react';
 import {
   SpecAllocationProgressService,
   SpecAllocationProgress,

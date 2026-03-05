@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Plus, Settings, MoreVertical, Ticket as TicketIcon, Layers, ChevronRight, Users, FileJson, Package, FileCheck } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { NotificationProvider } from './context/NotificationContext';
 import { TicketProvider, useTickets } from './context/TicketContext';
 import LoginForm from './components/auth/LoginForm';
 import ModuleSelection from './components/auth/ModuleSelection';
@@ -626,9 +627,11 @@ const App: React.FC = () => {
 
   return (
     <AuthProvider>
-      <TicketProvider>
-        <AppContent />
-      </TicketProvider>
+      <NotificationProvider>
+        <TicketProvider>
+          <AppContent />
+        </TicketProvider>
+      </NotificationProvider>
     </AuthProvider>
   );
 };

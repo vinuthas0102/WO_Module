@@ -563,6 +563,47 @@ export class ClarificationService {
     }
   }
 
+  static async markThreadAsRead(threadId: string, userId: string): Promise<void> {
+    try {
+      if (!supabase) return;
+
+      const { data: thread } = await supabase
+        .from('clarification_threads')
+        .select('assigned_to, is_read')
+        .eq('id', threadId)
+        .maybeSingle();
+
+      if (!thread || thread.assigned_to !== userId || thread.is_read) return;
+
+      await supabase
+        .from('clarification_threads')
+        .update({ is_read: true, read_at: new Date().toISOString() })
+        .eq('id', threadId);
+    } catch (error) {
+      console.error('Error marking thread as read:', error);
+    }
+  }
+
+  static async getUnreadThreadIds(userId: string): Promise<string[]> {
+    try {
+      if (!supabase) return [];
+
+      const { data, error } = await supabase
+        .from('clarification_threads')
+        .select('id')
+        .eq('assigned_to', userId)
+        .eq('is_read', false)
+        .eq('status', 'OPEN');
+
+      if (error) throw error;
+
+      return (data || []).map(row => row.id);
+    } catch (error) {
+      console.error('Error fetching unread thread ids:', error);
+      return [];
+    }
+  }
+
   static async deleteMessage(messageId: string, userId: string): Promise<void> {
     try {
       if (!supabase) {
@@ -602,7 +643,9 @@ export class ClarificationService {
       cancellationReason: data.cancellation_reason,
       closureNotes: data.closure_notes,
       actionTakenBy: data.action_taken_by,
-      actionTakenAt: data.action_taken_at ? new Date(data.action_taken_at) : undefined
+      actionTakenAt: data.action_taken_at ? new Date(data.action_taken_at) : undefined,
+      isRead: data.is_read ?? true,
+      readAt: data.read_at ? new Date(data.read_at) : undefined
     };
   }
 

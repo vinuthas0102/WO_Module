@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { LogOut, User, Clock, Database, Wifi, Grid3X3, Download } from 'lucide-react';
+import { LogOut, User, Clock, Database, Wifi, Grid3X3, Download, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
 import { getEnvironmentConfig } from '../../lib/environment';
 import { htmlExportService } from '../../services/htmlExportService';
+import NotificationBadge from '../common/NotificationBadge';
 
 const Header: React.FC = () => {
   const { user, logout, selectedModule, setSelectedModule } = useAuth();
+  const { unreadCount } = useNotifications();
   const envConfig = getEnvironmentConfig();
   const [isExporting, setIsExporting] = useState(false);
 
@@ -95,7 +98,17 @@ const Header: React.FC = () => {
                 <Grid3X3 className="w-4 h-4" />
               </button>
             )}
-            
+
+            <div className="relative">
+              <button
+                className="relative p-2 text-blue-200 hover:text-white transition-all duration-200 hover:bg-blue-500 rounded-lg"
+                title={unreadCount > 0 ? `${unreadCount} unread chat${unreadCount !== 1 ? 's' : ''}` : 'No new chats'}
+              >
+                <MessageSquare className="w-4 h-4" />
+                <NotificationBadge count={unreadCount} />
+              </button>
+            </div>
+
             <div className="flex items-center space-x-3 pl-4 border-l border-blue-400">
               <div className="flex items-center space-x-2">
                 <User className="w-4 h-4 text-blue-200" />

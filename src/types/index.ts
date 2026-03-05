@@ -615,6 +615,8 @@ export interface ClarificationThread {
   closureNotes?: string;
   actionTakenBy?: string;
   actionTakenAt?: Date;
+  isRead?: boolean;
+  readAt?: Date;
   messages?: ClarificationMessage[];
   creatorUser?: User;
   assignedUser?: User;

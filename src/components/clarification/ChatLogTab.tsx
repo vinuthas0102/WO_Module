@@ -3,6 +3,7 @@ import { Search, MessageSquare, Clock, Users, Loader } from 'lucide-react';
 import { Ticket, ClarificationThread } from '../../types';
 import { ClarificationService } from '../../services/clarificationService';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
 import { CollapsibleFilterPanel } from '../common/CollapsibleFilterPanel';
 import { TopRightControls } from '../common/TopRightControls';
 
@@ -13,6 +14,7 @@ interface ChatLogTabProps {
 
 export const ChatLogTab: React.FC<ChatLogTabProps> = ({ ticket, onOpenThread }) => {
   const { user } = useAuth();
+  const { unreadThreadIds } = useNotifications();
   const [threads, setThreads] = useState<ClarificationThread[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -181,16 +183,27 @@ export const ChatLogTab: React.FC<ChatLogTabProps> = ({ ticket, onOpenThread }) 
               CANCELLED: 'bg-red-100 text-red-700 border-red-300'
             };
 
+            const isUnread = unreadThreadIds.has(thread.id);
+
             return (
               <button
                 key={thread.id}
                 onClick={() => onOpenThread(thread)}
-                className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:shadow-md hover:border-blue-300 transition-all"
+                className={`w-full text-left p-3 rounded-lg hover:shadow-md transition-all ${
+                  isUnread
+                    ? 'bg-blue-50 border-l-4 border-l-blue-500 border border-blue-200 hover:border-blue-400'
+                    : 'bg-white border border-gray-200 hover:border-blue-300'
+                }`}
               >
                 <div className="flex items-start justify-between mb-2">
-                  <h4 className="text-sm font-semibold text-gray-900 flex-1 pr-2">
-                    {thread.subject}
-                  </h4>
+                  <div className="flex items-center gap-2 flex-1 pr-2 min-w-0">
+                    {isUnread && (
+                      <span className="flex-shrink-0 w-2 h-2 rounded-full bg-blue-500 mt-0.5" />
+                    )}
+                    <h4 className={`text-sm flex-1 truncate ${isUnread ? 'font-bold text-blue-900' : 'font-semibold text-gray-900'}`}>
+                      {thread.subject}
+                    </h4>
+                  </div>
                   <span className={`px-2 py-0.5 text-xs font-medium rounded-full border flex-shrink-0 ${statusColors[thread.status]}`}>
                     {thread.status}
                   </span>

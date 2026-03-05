@@ -6,6 +6,7 @@ import { ClarificationMessageBubble } from './ClarificationMessageBubble';
 import { NotificationChannelSelector } from './NotificationChannelSelector';
 import { FileService } from '../../services/fileService';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
 import { ActionConfirmationModal } from './ActionConfirmationModal';
 import { ClarificationActionMenu } from './ClarificationActionMenu';
 
@@ -25,6 +26,7 @@ export const ClarificationThreadView: React.FC<ClarificationThreadViewProps> = (
   onRefresh
 }) => {
   const { user } = useAuth();
+  const { markThreadAsRead } = useNotifications();
   const [messages, setMessages] = useState<ClarificationMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [newMessage, setNewMessage] = useState('');
@@ -46,6 +48,7 @@ export const ClarificationThreadView: React.FC<ClarificationThreadViewProps> = (
 
   useEffect(() => {
     loadMessages();
+    markThreadAsRead(thread.id);
   }, [thread.id]);
 
   useEffect(() => {

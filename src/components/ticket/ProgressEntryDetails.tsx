@@ -1,9 +1,5 @@
 import React, { useState } from 'react';
-import {
-  TrendingUp, User, Clock, Edit2, Save, X, Download,
-  FileText, AlertCircle, CheckCircle, Calendar, MessageSquare,
-  Shield, Upload
-} from 'lucide-react';
+import { TrendingUp, User, Clock, CreditCard as Edit2, Save, X, Download, FileText, AlertCircle, CheckCircle, Calendar, MessageSquare, Shield, Upload } from 'lucide-react';
 import { ProgressEntryWithDocuments, ProgressTrackingService } from '../../services/progressTrackingService';
 import { FileService } from '../../services/fileService';
 import { useAuth } from '../../context/AuthContext';

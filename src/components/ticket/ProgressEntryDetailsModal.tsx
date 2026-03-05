@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
-import {
-  X, Download, FileText, Award, Clock, Calendar, User,
-  Shield, Edit2, Save, Trash2, AlertCircle, Upload
-} from 'lucide-react';
+import { X, Download, FileText, Award, Clock, Calendar, User, Shield, CreditCard as Edit2, Save, Trash2, AlertCircle, Upload } from 'lucide-react';
 import { ProgressHistoryEntry, FileService } from '../../services/fileService';
 import { useAuth } from '../../context/AuthContext';
 import { TicketService } from '../../services/ticketService';

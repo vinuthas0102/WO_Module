@@ -1026,4 +1026,5 @@ export class FileService {
   }
 }
 
-export { ProgressHistoryEntry, ProgressHistoryService } from './progressHistoryService';
+export type { ProgressHistoryEntry } from './progressHistoryService';
+export { ProgressHistoryService } from './progressHistoryService';

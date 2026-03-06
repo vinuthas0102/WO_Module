@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase';
 import { Ticket, StatusTransitionRequest, WorkflowStep, WorkflowStepStatus, BulkStepInput, BulkOperationResult, BulkTicketInput, BulkTicketOperationResult, AuditActionCategory } from '../types';
 import { FileService } from './fileService';
 import { DependencyService } from './dependencyService';
+import { FileReferenceService } from './fileReferenceService';
 
 export class TicketService {
   static async getTicketsByModule(moduleId: string, userId?: string, userRole?: string): Promise<Ticket[]> {
@@ -576,8 +577,6 @@ export class TicketService {
       }
 
       if (stepData.referenceMode === 'template' && stepData.fileReferenceTemplateId && stepData.selectedFileReferences && stepData.selectedFileReferences.length > 0) {
-        const { FileReferenceService } = await import('./fileReferenceService');
-
         const referencesToCreate = stepData.selectedFileReferences.map((ref: any) => ({
           step_id: data.id,
           template_id: stepData.fileReferenceTemplateId,
@@ -594,8 +593,6 @@ export class TicketService {
           console.error('Error creating file references:', refError);
         }
       } else if (stepData.referenceMode === 'custom' && stepData.customFileReferences && stepData.customFileReferences.length > 0) {
-        const { FileReferenceService } = await import('./fileReferenceService');
-
         try {
           await FileReferenceService.createCustomStepFileReferences(
             data.id,
@@ -911,7 +908,6 @@ export class TicketService {
             }
           } else if (originalStepData?.referenceMode === 'custom' && originalStepData?.customFileReferences && originalStepData.customFileReferences.length > 0) {
             try {
-              const { FileReferenceService } = await import('./fileReferenceService');
               await FileReferenceService.createCustomStepFileReferences(
                 insertedStep.id,
                 originalStepData.customFileReferences,

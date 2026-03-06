@@ -1,32 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, CheckCircle, Clock, Users, Trash2, CreditCard as Edit, X, ChevronDown, ChevronRight, FileText, Upload, Layers, Search, Filter, XCircle, Workflow, ArrowRight, History, ExternalLink, AlertCircle, Package, FileCheck, MessageCircle, PlusCircle, TrendingUp, Calculator, RefreshCw } from 'lucide-react';
-import { Ticket, WorkflowStep, WorkflowStepStatus, ActionIconDefinition, FileReferenceTemplate, DisplayMode } from '../../types';
-import { FileReferenceService } from '../../services/fileReferenceService';
-import FileReferenceUpload from './FileReferenceUpload';
-import FileReferenceSelector, { SelectedFileReference } from './FileReferenceSelector';
-import FileReferenceConfigurator from './FileReferenceConfigurator';
-import { CustomFileReference } from './InlineFileReferenceEditor';
-import FileReferenceStatusBadge from './FileReferenceStatusBadge';
+import { CheckCircle, Clock } from 'lucide-react';
+import { Ticket, WorkflowStep, WorkflowStepStatus, DisplayMode } from '../../types';
 import { useTickets } from '../../context/TicketContext';
 import { useAuth } from '../../context/AuthContext';
-import IconDisplayWrapper from '../iconDisplay/IconDisplayWrapper';
-import WorkflowDocumentUpload from './StepDocumentUpload';
-import BulkStepCreationModal from './BulkStepCreationModal';
-import DependencySelector from './DependencySelector';
-import DependencyBadge from './DependencyBadge';
-import ProgressDocuments from './ProgressDocuments';
-import ProgressHistoryView from './ProgressHistoryView';
-import ViewTypeToggle from '../common/ViewTypeToggle';
-import { CollapsibleFilterPanel } from '../common/CollapsibleFilterPanel';
-import { TopRightControls } from '../common/TopRightControls';
-import { DocumentMetadata, FileService } from '../../services/fileService';
-import { TicketService } from '../../services/ticketService';
-import { DependencyService } from '../../services/dependencyService';
-import { SpecAllocationProgressService } from '../../services/specAllocationProgressService';
 import { UserPreferencesService } from '../../services/userPreferencesService';
-import { getHierarchyColors, getStatusBadgeColor, getHierarchyLevel, getHierarchyLevelInfo, getHierarchyIcon, getHierarchyBorderStyle, hierarchyColorLegend } from '../../lib/hierarchyColors';
-import { WorkOrderSpecService } from '../../services/workOrderSpecService';
-import { WorkflowDetailView } from './WorkflowDetailView';
+import { DocumentMetadata } from '../../services/fileService';
+import { getHierarchyLevel } from '../../lib/hierarchyColors';
+import StepListContainer from '../steps/StepListContainer';
+import { getStepActions as getStepActionsHelper } from '../steps/useStepActions';
+import { executeUpdateWorkflow, executeFieldUpdate } from '../steps/stepWorkflowHandlers';
 
 interface WorkflowManagementProps {
   ticket: Ticket;
@@ -42,412 +24,13 @@ interface WorkflowManagementProps {
   activeHighlightedStepId?: string | null;
 }
 
-const SpecProgressIndicator: React.FC<{ stepId: string; ticketId: string }> = ({ stepId, ticketId }) => {
-  const [specs, setSpecs] = React.useState<any[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  const [progressSummaries, setProgressSummaries] = React.useState<Map<string, any>>(new Map());
-  const [showDetails, setShowDetails] = React.useState(false);
-
-  React.useEffect(() => {
-    const loadSpecs = async () => {
-      try {
-        const data = await WorkOrderSpecService.getSpecDetailsForStep(stepId);
-        setSpecs(data);
-
-        if (data.length > 0) {
-          const allocations = data.map((spec: any) => ({
-            id: spec.allocation.id,
-            allocatedQuantity: spec.allocation.allocatedQuantity,
-            unit: spec.unit,
-          }));
-          const summaries = await SpecAllocationProgressService.getProgressSummariesForAllocations(allocations);
-          setProgressSummaries(summaries);
-        }
-      } catch (error) {
-        console.error('Failed to load specs:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadSpecs();
-  }, [stepId]);
-
-  if (loading || specs.length === 0) return null;
-
-  const getProgressColor = (percentage: number) => {
-    if (percentage === 0) return 'bg-gray-400';
-    if (percentage < 50) return 'bg-yellow-500';
-    if (percentage < 100) return 'bg-blue-500';
-    return 'bg-green-500';
-  };
-
-  const calculateOverallProgress = () => {
-    let totalWeightedProgress = 0;
-    let totalWeight = 0;
-    let completedCount = 0;
-    let inProgressCount = 0;
-
-    specs.forEach((spec: any) => {
-      const summary = progressSummaries.get(spec.allocation.id);
-      const percentage = summary?.progressPercentage || 0;
-      const weight = spec.allocation.allocatedQuantity || 1;
-
-      totalWeightedProgress += percentage * weight;
-      totalWeight += weight;
-
-      if (percentage === 100) {
-        completedCount++;
-      } else if (percentage > 0) {
-        inProgressCount++;
-      }
-    });
-
-    const overallPercentage = totalWeight > 0 ? totalWeightedProgress / totalWeight : 0;
-
-    return {
-      percentage: overallPercentage,
-      completed: completedCount,
-      inProgress: inProgressCount,
-      notStarted: specs.length - completedCount - inProgressCount,
-      total: specs.length
-    };
-  };
-
-  const progress = calculateOverallProgress();
-
-  return (
-    <div className="mt-2">
-      <button
-        onClick={() => setShowDetails(!showDetails)}
-        className="w-full text-left hover:bg-gray-50 rounded p-1 transition-colors"
-      >
-        <div className="flex items-center justify-between mb-1">
-          <div className="text-xs font-medium text-gray-700 flex items-center space-x-1">
-            <Package className="w-3 h-3" />
-            <span>Specs Progress ({progress.total})</span>
-          </div>
-          <div className="text-xs text-gray-600">
-            {progress.completed}/{progress.total} completed
-          </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className="flex-1 bg-gray-200 rounded-full h-2">
-            <div
-              className={`${getProgressColor(progress.percentage)} h-2 rounded-full transition-all duration-300`}
-              style={{ width: `${progress.percentage}%` }}
-            ></div>
-          </div>
-          <span className="text-xs text-gray-700 font-semibold w-12 text-right">
-            {progress.percentage.toFixed(0)}%
-          </span>
-        </div>
-        {progress.inProgress > 0 && (
-          <div className="text-[10px] text-gray-500 mt-0.5">
-            {progress.inProgress} in progress, {progress.notStarted} not started
-          </div>
-        )}
-      </button>
-
-      {showDetails && (
-        <div className="mt-2 pl-2 space-y-1 border-l-2 border-gray-200">
-          {specs.map((spec: any) => {
-            const summary = progressSummaries.get(spec.allocation.id);
-            const percentage = summary?.progressPercentage || 0;
-            return (
-              <div key={spec.allocation.id} className="text-xs">
-                <div className="flex items-center justify-between">
-                  <div className="truncate text-gray-700 font-medium flex-1">
-                    {spec.specMaster?.description || 'Spec'}
-                  </div>
-                  <span className="text-gray-600 text-[10px] ml-2">{percentage.toFixed(0)}%</span>
-                </div>
-                <div className="bg-gray-200 rounded-full h-1 mt-0.5">
-                  <div
-                    className={`${getProgressColor(percentage)} h-1 rounded-full transition-all duration-300`}
-                    style={{ width: `${percentage}%` }}
-                  ></div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-};
-
-const FileReferenceInfoDisplay: React.FC<{ stepId: string; ticketId: string; showFullInterface?: boolean; onViewDocument?: (document: DocumentMetadata) => void }> = ({ stepId, ticketId, showFullInterface = false, onViewDocument }) => {
-  const { user } = useAuth();
-  const [fileReferences, setFileReferences] = React.useState<any[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  const [uploadingRefId, setUploadingRefId] = React.useState<string | null>(null);
-  const [error, setError] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    const loadRefs = async () => {
-      try {
-        const refs = await FileReferenceService.getStepFileReferences(stepId);
-        setFileReferences(refs);
-      } catch (error) {
-        console.error('Failed to load file reference info:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadRefs();
-  }, [stepId]);
-
-  const handleFileUpload = async (reference: any, file: File) => {
-    if (!user) return;
-
-    try {
-      setUploadingRefId(reference.id);
-      setError(null);
-
-      const uploadedDoc = await FileService.uploadStepDocument({
-        file,
-        stepId,
-        ticketId,
-        userId: user.id,
-        isMandatory: reference.isMandatory,
-        isCompletionCertificate: false,
-      });
-
-      await FileReferenceService.updateStepFileReference(reference.id, {
-        documentId: uploadedDoc.id,
-        uploadedBy: user.id,
-        uploadedAt: new Date(),
-      });
-
-      // Reload file references after upload
-      const refs = await FileReferenceService.getStepFileReferences(stepId);
-      setFileReferences(refs);
-    } catch (err) {
-      console.error('File upload failed:', err);
-      setError(`Failed to upload file: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    } finally {
-      setUploadingRefId(null);
-    }
-  };
-
-  const handleFileInputChange = (reference: any, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const validation = FileService.validateFile(file);
-    if (!validation.valid) {
-      setError(validation.error || 'Invalid file');
-      return;
-    }
-
-    handleFileUpload(reference, file);
-  };
-
-  const handleViewDocument = async (reference: any) => {
-    if (!reference.documentId) return;
-
-    try {
-      const docs = await FileService.getStepDocuments(stepId);
-      const doc = docs.find(d => d.id === reference.documentId);
-
-      if (doc) {
-        if (onViewDocument) {
-          onViewDocument(doc);
-        } else if (doc.storagePath) {
-          const url = await FileService.getFileUrl(doc.storagePath);
-          window.open(url, '_blank');
-        }
-      }
-    } catch (err) {
-      alert('Failed to open document');
-    }
-  };
-
-  if (loading) {
-    return showFullInterface ? (
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-        <div className="flex items-center space-x-2 text-sm text-gray-600">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-          <span>Loading file references...</span>
-        </div>
-      </div>
-    ) : null;
-  }
-
-  if (fileReferences.length === 0) return null;
-
-  const mandatoryCount = fileReferences.filter(ref => ref.isMandatory).length;
-  const completedCount = fileReferences.filter(ref => ref.documentId).length;
-  const completedMandatoryCount = fileReferences.filter(ref => ref.isMandatory && ref.documentId).length;
-
-  // Show full interface with upload capabilities
-  if (showFullInterface) {
-    return (
-      <div className="space-y-3">
-        <label className="block text-sm font-medium text-gray-700 mb-2">File References (Template-Based)</label>
-        <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-3">
-          <div className="flex items-start space-x-2">
-            <FileText className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-            <div className="flex-1">
-              <h4 className="text-sm font-semibold text-blue-900 mb-1">File References Required</h4>
-              <p className="text-xs text-blue-700 mb-2">
-                This workflow step has {fileReferences.length} file reference(s) that need to be uploaded.
-                {mandatoryCount > 0 && ` ${mandatoryCount} are mandatory and must be uploaded before completion.`}
-              </p>
-              <div className="flex items-center space-x-2 text-xs">
-                <span className="font-medium text-blue-800">Progress:</span>
-                <span className={completedMandatoryCount === mandatoryCount ? 'text-green-700 font-semibold' : 'text-orange-700 font-semibold'}>
-                  {completedCount}/{fileReferences.length} uploaded ({completedMandatoryCount}/{mandatoryCount} mandatory)
-                </span>
-                {completedMandatoryCount === mandatoryCount && (
-                  <CheckCircle className="w-4 h-4 text-green-600" />
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-2 text-red-700 text-xs flex items-start space-x-2">
-            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-            <span>{error}</span>
-            <button onClick={() => setError(null)} className="ml-auto">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-
-        <div className="space-y-2">
-          {fileReferences.map((reference) => {
-            const isUploading = uploadingRefId === reference.id;
-            const isUploaded = !!reference.documentId;
-
-            return (
-              <div
-                key={reference.id}
-                className={`border-2 rounded-lg p-3 transition-all ${
-                  reference.isMandatory
-                    ? isUploaded
-                      ? 'border-green-300 bg-green-50'
-                      : 'border-red-300 bg-red-50'
-                    : isUploaded
-                    ? 'border-blue-300 bg-blue-50'
-                    : 'border-gray-300 bg-gray-50'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <h5 className="text-sm font-semibold text-gray-900">{reference.referenceName}</h5>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded ${
-                          reference.isMandatory
-                            ? 'bg-red-100 text-red-800 border border-red-300'
-                            : 'bg-gray-200 text-gray-700'
-                        }`}
-                      >
-                        {reference.isMandatory ? 'Required' : 'Optional'}
-                      </span>
-                      {isUploaded && (
-                        <span className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-800 border border-green-300 flex items-center space-x-1">
-                          <CheckCircle className="w-3 h-3" />
-                          <span>Uploaded</span>
-                        </span>
-                      )}
-                    </div>
-
-                    {isUploaded && reference.documentName && (
-                      <div className="text-xs text-gray-600">
-                        <span className="font-medium">File:</span> {reference.documentName}
-                        {reference.documentSize && (
-                          <span className="ml-2">({FileService.formatFileSize(reference.documentSize)})</span>
-                        )}
-                      </div>
-                    )}
-
-                    {isUploading && (
-                      <div className="flex items-center space-x-2 text-xs text-blue-600 mt-1">
-                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
-                        <span>Uploading...</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex items-center space-x-2 ml-4">
-                    {isUploaded ? (
-                      <button
-                        onClick={() => handleViewDocument(reference)}
-                        className="flex items-center space-x-1 px-3 py-1.5 text-sm text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                        <span>View</span>
-                      </button>
-                    ) : (
-                      <>
-                        <input
-                          type="file"
-                          id={`file-ref-edit-${reference.id}`}
-                          className="hidden"
-                          accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx"
-                          onChange={(e) => handleFileInputChange(reference, e)}
-                          disabled={isUploading}
-                        />
-                        <label
-                          htmlFor={`file-ref-edit-${reference.id}`}
-                          className={`flex items-center space-x-1 px-3 py-1.5 text-sm rounded-md transition-colors cursor-pointer ${
-                            isUploading
-                              ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                              : 'bg-blue-600 text-white hover:bg-blue-700'
-                          }`}
-                        >
-                          <Upload className="w-3.5 h-3.5" />
-                          <span>Upload</span>
-                        </label>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
-
-  // Show summary info only
-  return (
-    <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-3">
-      <div className="flex items-start space-x-2">
-        <FileText className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-        <div className="flex-1">
-          <h4 className="text-sm font-semibold text-blue-900 mb-1">File References Attached</h4>
-          <p className="text-xs text-blue-700 mb-2">
-            This workflow step has {fileReferences.length} file reference(s) that need to be uploaded.
-            {mandatoryCount > 0 && ` ${mandatoryCount} are mandatory.`}
-          </p>
-          <div className="space-y-1">
-            <div className="flex items-center space-x-2 text-xs">
-              <span className="font-medium text-blue-800">Progress:</span>
-              <span className={completedMandatoryCount === mandatoryCount ? 'text-green-700 font-semibold' : 'text-orange-700 font-semibold'}>
-                {completedCount}/{fileReferences.length} uploaded ({completedMandatoryCount}/{mandatoryCount} mandatory)
-              </span>
-              {completedMandatoryCount === mandatoryCount && (
-                <CheckCircle className="w-4 h-4 text-green-600" />
-              )}
-            </div>
-            <p className="text-xs text-blue-600 italic">
-              To upload files, click the "Show documents" button and look for the "File References (Template-Based)" section.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canManage, onViewDocument, onViewStepSpecs, onAllocateSpec, onCreateSpec, onAllocateItem, onOpenClarification, onViewProgress, onViewDocuments, activeHighlightedStepId }) => {
+const WorkflowManagement: React.FC<WorkflowManagementProps> = ({
+  ticket, canManage, onViewDocument, onViewStepSpecs, onAllocateSpec, onCreateSpec,
+  onAllocateItem, onOpenClarification, onViewProgress, onViewDocuments, activeHighlightedStepId
+}) => {
   const { selectedModule, user, displayPreferences } = useAuth();
+  const { addStep, updateStep, deleteStep, users } = useTickets();
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingStep, setEditingStep] = useState<WorkflowStep | null>(null);
   const [parentStepForNewStep, setParentStepForNewStep] = useState<WorkflowStep | null>(null);
@@ -462,12 +45,10 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
   const [filterStatus, setFilterStatus] = useState<WorkflowStepStatus | ''>('');
   const [filterAssignedTo, setFilterAssignedTo] = useState('');
   const [filterHierarchyLevel, setFilterHierarchyLevel] = useState<'1' | '2' | '3' | ''>('');
-  const [showFilters, setShowFilters] = useState(false);
   const [displayMode, setDisplayMode] = useState<DisplayMode>('card');
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
   const [viewingStepDetailsId, setViewingStepDetailsId] = useState<string | null>(null);
   const stepRefs = React.useRef<Map<string, HTMLDivElement>>(new Map());
-  const { addStep, updateStep, deleteStep, users } = useTickets();
 
   useEffect(() => {
     if (displayPreferences?.workflowDisplayType) {
@@ -475,18 +56,14 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
     }
   }, [displayPreferences]);
 
-  // Auto-expand parent workflows and scroll to highlighted step
   useEffect(() => {
     if (!activeHighlightedStepId) return;
 
-    // Find the highlighted step and all its parents
     const findParentPath = (stepId: string): string[] => {
       const step = ticket.workflow.find(s => s.id === stepId);
       if (!step) return [];
-
       const path: string[] = [];
       let current: WorkflowStep | undefined = step;
-
       while (current) {
         path.unshift(current.id);
         if (current.parentStepId) {
@@ -495,13 +72,10 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
           break;
         }
       }
-
       return path;
     };
 
     const parentPath = findParentPath(activeHighlightedStepId);
-
-    // Expand all parents (exclude the highlighted step itself)
     const parentsToExpand = parentPath.slice(0, -1);
     if (parentsToExpand.length > 0) {
       setExpandedSteps(prev => {
@@ -511,7 +85,6 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
       });
     }
 
-    // Scroll to the highlighted step after a short delay to allow for expansion
     setTimeout(() => {
       const element = stepRefs.current.get(activeHighlightedStepId);
       if (element) {
@@ -523,9 +96,7 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
   const handleDisplayModeChange = async (mode: DisplayMode) => {
     setDisplayMode(mode);
     if (user?.id) {
-      await UserPreferencesService.saveUserPreferences(user.id, {
-        workflowDisplayType: mode
-      });
+      await UserPreferencesService.saveUserPreferences(user.id, { workflowDisplayType: mode });
     }
   };
 
@@ -533,11 +104,7 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
 
   const canManageWorkflow = (step: WorkflowStep): boolean => {
     if (!user) return false;
-
-    // EO can manage all workflows
     if (user.role === 'EO') return true;
-
-    // All other roles (DO, VENDOR, EMPLOYEE) can only manage steps assigned to them
     return step.assignedTo === user.id;
   };
 
@@ -549,7 +116,6 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
       default: return <Clock className="w-4 h-4 text-gray-500" />;
     }
   };
-
 
   const getHierarchicalWorkflowNumber = (step: WorkflowStep) => {
     const level1 = step.level_1 || 0;
@@ -563,68 +129,48 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
       const aLevel1 = a.level_1 || 0;
       const bLevel1 = b.level_1 || 0;
       if (aLevel1 !== bLevel1) return aLevel1 - bLevel1;
-
       const aLevel2 = a.level_2 || 0;
       const bLevel2 = b.level_2 || 0;
       if (aLevel2 !== bLevel2) return aLevel2 - bLevel2;
-
-      const aLevel3 = a.level_3 || 0;
-      const bLevel3 = b.level_3 || 0;
-      return aLevel3 - bLevel3;
+      return (a.level_3 || 0) - (b.level_3 || 0);
     });
   };
 
+  const canAddSubWorkflow = (step: WorkflowStep) =>
+    (step.level_2 === 0 && step.level_3 === 0) || (step.level_2 !== 0 && step.level_3 === 0);
+
   const toggleExpanded = (stepId: string) => {
-    const newExpanded = new Set(expandedSteps);
-    if (newExpanded.has(stepId)) {
-      newExpanded.delete(stepId);
-    } else {
-      newExpanded.add(stepId);
-    }
-    setExpandedSteps(newExpanded);
+    setExpandedSteps(prev => {
+      const next = new Set(prev);
+      next.has(stepId) ? next.delete(stepId) : next.add(stepId);
+      return next;
+    });
   };
 
   const toggleDetailView = (stepId: string) => {
-    if (viewingStepDetailsId === stepId) {
-      setViewingStepDetailsId(null);
-    } else {
-      setViewingStepDetailsId(stepId);
-    }
+    setViewingStepDetailsId(prev => prev === stepId ? null : stepId);
   };
 
   const toggleDocUpload = (stepId: string) => {
-    const newShowDocUpload = new Set(showDocUpload);
-    if (newShowDocUpload.has(stepId)) {
-      newShowDocUpload.delete(stepId);
-    } else {
-      newShowDocUpload.add(stepId);
-    }
-    setShowDocUpload(newShowDocUpload);
+    setShowDocUpload(prev => {
+      const next = new Set(prev);
+      next.has(stepId) ? next.delete(stepId) : next.add(stepId);
+      return next;
+    });
   };
 
   const toggleProgressHistory = (stepId: string) => {
-    const newShowHistory = new Set(showProgressHistory);
-    if (newShowHistory.has(stepId)) {
-      newShowHistory.delete(stepId);
-    } else {
-      newShowHistory.add(stepId);
-    }
-    setShowProgressHistory(newShowHistory);
-  };
-
-  const getChildren = (parentId: string) => {
-    return ticket.workflow.filter(step => step.parentStepId === parentId);
-  };
-
-  const canAddSubWorkflow = (step: WorkflowStep) => {
-    return (step.level_2 === 0 && step.level_3 === 0) || (step.level_2 !== 0 && step.level_3 === 0);
+    setShowProgressHistory(prev => {
+      const next = new Set(prev);
+      next.has(stepId) ? next.delete(stepId) : next.add(stepId);
+      return next;
+    });
   };
 
   const handleAddSubWorkflow = (parentStep: WorkflowStep) => {
     setParentStepForNewStep(parentStep);
     setAddingSubTaskForStepId(parentStep.id);
     setExpandedSteps(prev => new Set([...prev, parentStep.id]));
-
     setTimeout(() => {
       subTaskFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 100);
@@ -645,576 +191,6 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
   const handleBulkSuccess = () => {
     setShowBulkModal(false);
     setBulkParentStep(null);
-  };
-
-  const WorkflowForm: React.FC<{ step?: WorkflowStep; parentStep?: WorkflowStep | null; onSubmit: (data: any) => void; onCancel: () => void }> = ({
-    step,
-    parentStep,
-    onSubmit,
-    onCancel
-  }) => {
-    const [formData, setFormData] = useState({
-      title: step?.title || '',
-      description: step?.description || '',
-      status: step?.status || 'NOT_STARTED',
-      assignedTo: step?.assignedTo || '',
-      dueDate: step?.dueDate ? new Date(step.dueDate).toISOString().split('T')[0] : '',
-      startDate: step?.startDate ? new Date(step.startDate).toISOString().split('T')[0] : '',
-      isParallel: step?.is_parallel !== false,
-      dependencyMode: step?.dependency_mode || 'all',
-      dependentOnStepIds: [] as string[],
-      progress: step?.progress !== undefined ? step.progress : 0,
-      progressComment: '',
-      dependencies: step?.dependencies || [],
-      mandatoryDocuments: step?.mandatory_documents || [],
-      optionalDocuments: step?.optional_documents || [],
-      fileReferenceTemplateId: '',
-      selectedFileReferences: [] as SelectedFileReference[],
-      customFileReferences: [] as CustomFileReference[],
-      referenceMode: 'none' as 'none' | 'template' | 'custom'
-    });
-    const [availableDependencySteps, setAvailableDependencySteps] = useState<WorkflowStep[]>([]);
-    const [fileReferenceTemplates, setFileReferenceTemplates] = useState<FileReferenceTemplate[]>([]);
-    const [completionFile, setCompletionFile] = useState<File | null>(null);
-    const [fileError, setFileError] = useState<string | null>(null);
-    const fileInputRef = React.useRef<HTMLInputElement>(null);
-    const [progressFiles, setProgressFiles] = useState<File[]>([]);
-    const [progressFileError, setProgressFileError] = useState<string | null>(null);
-    const progressFileInputRef = React.useRef<HTMLInputElement>(null);
-
-    const isCompletingStep = formData.status === 'COMPLETED' && step && step.status !== 'COMPLETED';
-    const requiresFileUpload = isCompletingStep && user?.role === 'DO';
-    const isEO = user?.role === 'EO';
-    const isDependencyLocked = step?.is_dependency_locked || false;
-
-    React.useEffect(() => {
-      if (!step && !formData.isParallel && isEO) {
-        const available = DependencyService.getAvailableDependencySteps(null, ticket.workflow);
-        setAvailableDependencySteps(available);
-      }
-    }, [formData.isParallel, ticket.workflow, isEO, step]);
-
-    React.useEffect(() => {
-      const loadTemplates = async () => {
-        if (isEO && !step) {
-          const templates = await FileReferenceService.getAllTemplates(true);
-          setFileReferenceTemplates(templates);
-        }
-      };
-      loadTemplates();
-    }, [isEO, step]);
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-
-      const validation = FileService.validateFile(file);
-      if (!validation.valid) {
-        setFileError(validation.error || 'Invalid file');
-        setCompletionFile(null);
-        return;
-      }
-
-      setFileError(null);
-      setCompletionFile(file);
-    };
-
-    const handleRemoveFile = () => {
-      setCompletionFile(null);
-      setFileError(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    };
-
-    const handleProgressFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = Array.from(e.target.files || []);
-      if (files.length === 0) return;
-
-      const invalidFiles: string[] = [];
-      const validFiles: File[] = [];
-
-      files.forEach(file => {
-        const validation = FileService.validateFile(file);
-        if (!validation.valid) {
-          invalidFiles.push(`${file.name}: ${validation.error}`);
-        } else {
-          validFiles.push(file);
-        }
-      });
-
-      if (invalidFiles.length > 0) {
-        setProgressFileError(`Invalid files:\n${invalidFiles.join('\n')}`);
-      } else {
-        setProgressFileError(null);
-      }
-
-      setProgressFiles(prev => [...prev, ...validFiles]);
-    };
-
-    const handleRemoveProgressFile = (index: number) => {
-      setProgressFiles(prev => prev.filter((_, i) => i !== index));
-      setProgressFileError(null);
-      if (progressFileInputRef.current) {
-        progressFileInputRef.current.value = '';
-      }
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-
-      if (requiresFileUpload && !completionFile) {
-        const hasExistingCert = await checkCompletionCertificate(step!.id);
-        if (!hasExistingCert) {
-          alert('Completion certificate is mandatory for Manager role. Please upload evidence/completion certificate before marking this workflow as completed.');
-          return;
-        }
-      }
-
-      if (completionFile && step && user) {
-        try {
-          await FileService.uploadStepDocument(
-            {
-              file: completionFile,
-              stepId: step.id,
-              ticketId: ticket.id,
-              userId: user.id,
-              isMandatory: true,
-              isCompletionCertificate: true,
-            }
-          );
-        } catch (error) {
-          alert('Failed to upload completion certificate: ' + (error instanceof Error ? error.message : 'Unknown error'));
-          return;
-        }
-      }
-
-      // Add progress files, file reference template, and selected references to submission data
-      const dataWithFiles = {
-        ...formData,
-        progressFiles: progressFiles.length > 0 ? progressFiles : undefined,
-        fileReferenceTemplateId: formData.fileReferenceTemplateId || undefined,
-        selectedFileReferences: formData.selectedFileReferences.length > 0 ? formData.selectedFileReferences : undefined
-      };
-
-      onSubmit(dataWithFiles);
-    };
-
-    return (
-      <form onSubmit={handleSubmit} className="border border-gray-300 rounded-lg p-4 bg-gray-50 space-y-4">
-        <div className="flex justify-between items-center">
-          <h4 className="text-lg font-medium text-gray-900">
-            {step ? 'Edit Workflow' : parentStep ? `Add Sub-workflow to ${getHierarchicalWorkflowNumber(parentStep)}` : 'Add New Workflow'}
-          </h4>
-          {parentStep && (
-            <span className="text-sm text-gray-600 bg-blue-100 px-3 py-1 rounded-full">
-              Parent: {parentStep.title}
-            </span>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
-            <input
-              type="text"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
-            <select
-              value={formData.assignedTo}
-              onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Unassigned</option>
-              {users.map(user => (
-                <option key={user.id} value={user.id}>{user.name}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-          <textarea
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-            <select
-              value={formData.status}
-              onChange={(e) => {
-                const newStatus = e.target.value;
-                const updates: any = { status: newStatus };
-                if (newStatus === 'WIP' && !formData.startDate && !step?.startDate) {
-                  updates.startDate = new Date().toISOString().split('T')[0];
-                }
-                setFormData({ ...formData, ...updates });
-              }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="NOT_STARTED">Not Started</option>
-              <option value="WIP">WIP (Active)</option>
-              <option value="COMPLETED">Completed</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-            <input
-              type="date"
-              value={formData.startDate}
-              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Due Date {!isEO && <span className="text-xs text-gray-500">(EO Only)</span>}</label>
-            <input
-              type="date"
-              value={formData.dueDate}
-              onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              min={formData.startDate || new Date().toISOString().split('T')[0]}
-              disabled={!isEO}
-            />
-          </div>
-        </div>
-
-        {isEO && !step && (
-          <FileReferenceConfigurator
-            templates={fileReferenceTemplates}
-            selectedTemplateId={formData.fileReferenceTemplateId}
-            selectedReferences={formData.selectedFileReferences}
-            customReferences={formData.customFileReferences}
-            referenceMode={formData.referenceMode}
-            onTemplateChange={(templateId) => setFormData({ ...formData, fileReferenceTemplateId: templateId })}
-            onReferencesChange={(references) => setFormData({ ...formData, selectedFileReferences: references })}
-            onCustomReferencesChange={(references) => setFormData({ ...formData, customFileReferences: references })}
-            onReferenceModeChange={(mode) => setFormData({ ...formData, referenceMode: mode })}
-          />
-        )}
-
-        {step && (
-          <FileReferenceInfoDisplay stepId={step.id} ticketId={ticket.id} showFullInterface={true} />
-        )}
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Execution Mode {!isEO && <span className="text-xs text-gray-500">(EO Only)</span>}</label>
-          <div className="flex items-center space-x-6">
-            <label className={`flex items-center ${isEO ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`}>
-              <input
-                type="radio"
-                name="executionMode"
-                value="parallel"
-                checked={formData.isParallel === true}
-                onChange={() => setFormData({ ...formData, isParallel: true })}
-                className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
-                disabled={!isEO}
-              />
-              <span className="ml-2 text-sm text-gray-700">Parallel (Can run concurrently)</span>
-            </label>
-            <label className={`flex items-center ${isEO ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`}>
-              <input
-                type="radio"
-                name="executionMode"
-                value="serial"
-                checked={formData.isParallel === false}
-                onChange={() => setFormData({ ...formData, isParallel: false })}
-                className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
-                disabled={!isEO}
-              />
-              <span className="ml-2 text-sm text-gray-700">Serial (Must run sequentially)</span>
-            </label>
-          </div>
-          <p className="text-xs text-gray-500 mt-1">
-            Parallel allows this step to execute simultaneously with other parallel steps. Serial requires previous steps to complete first.
-          </p>
-        </div>
-
-        <DependencySelector
-          isParallel={formData.isParallel}
-          dependencyMode={formData.dependencyMode}
-          selectedDependencies={formData.dependentOnStepIds}
-          availableSteps={availableDependencySteps}
-          isDependencyLocked={isDependencyLocked}
-          isEditMode={!!step}
-          isEO={isEO}
-          onDependencyModeChange={(mode) => setFormData({ ...formData, dependencyMode: mode })}
-          onSelectedDependenciesChange={(deps) => setFormData({ ...formData, dependentOnStepIds: deps })}
-        />
-
-        {formData.status === 'WIP' && (
-          <div className="space-y-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-            {step && step.allocatedSpecs && step.allocatedSpecs.length > 0 && (
-              <div className="bg-white border border-blue-300 rounded-lg p-3 mb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Calculator className="w-4 h-4 text-blue-600" />
-                    <label className="text-sm font-medium text-gray-700">
-                      Auto-Calculate Progress from Specs
-                    </label>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      if (!step.id) return;
-                      try {
-                        const newValue = !step.progressAutoCalculated;
-                        await SpecAllocationProgressService.toggleAutoCalculatedProgress(step.id, newValue);
-
-                        const updatedProgress = newValue
-                          ? await SpecAllocationProgressService.calculateStepProgress(step.id)
-                          : formData.progress;
-
-                        setFormData({
-                          ...formData,
-                          progress: updatedProgress
-                        });
-
-                        alert(`Auto-calculation ${newValue ? 'enabled' : 'disabled'}`);
-                        window.location.reload();
-                      } catch (error) {
-                        alert('Failed to toggle auto-calculation');
-                      }
-                    }}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      step.progressAutoCalculated ? 'bg-blue-600' : 'bg-gray-300'
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        step.progressAutoCalculated ? 'translate-x-6' : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-                <p className="text-xs text-gray-600 mt-1 ml-6">
-                  When enabled, progress is automatically calculated based on verified/approved spec quantities
-                </p>
-              </div>
-            )}
-
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-sm font-medium text-gray-700">
-                  Progress: {formData.progress}%
-                </label>
-                {step?.progressAutoCalculated && (
-                  <span className="flex items-center space-x-1 text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
-                    <Calculator className="w-3 h-3" />
-                    <span>Auto-calculated</span>
-                  </span>
-                )}
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={formData.progress}
-                onChange={(e) => setFormData({ ...formData, progress: parseInt(e.target.value) })}
-                disabled={step?.progressAutoCalculated}
-                className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600 ${
-                  step?.progressAutoCalculated ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-              />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>0%</span>
-                <span>25%</span>
-                <span>50%</span>
-                <span>75%</span>
-                <span>100%</span>
-              </div>
-              {step?.progressAutoCalculated && (
-                <p className="text-xs text-gray-600 mt-1">
-                  Progress is auto-calculated from spec allocations. Disable auto-calculation to set manually.
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Progress Comment {user?.role === 'DO' && <span className="text-blue-600">(Manager)</span>}
-              </label>
-              <textarea
-                value={formData.progressComment}
-                onChange={(e) => setFormData({ ...formData, progressComment: e.target.value })}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Add a comment about the current progress (optional)..."
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Add notes about what has been completed, any blockers, or next steps.
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Supporting Documents (Optional) {user?.role === 'DO' && <span className="text-blue-600">(Manager)</span>}
-              </label>
-              <p className="text-xs text-gray-600 mb-2">
-                Upload evidence or documents to support your progress update (optional).
-              </p>
-
-              {progressFileError && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-2 mb-2">
-                  <p className="text-xs text-red-800 whitespace-pre-line">{progressFileError}</p>
-                </div>
-              )}
-
-              {progressFiles.length > 0 && (
-                <div className="space-y-2 mb-3">
-                  {progressFiles.map((file, index) => (
-                    <div key={index} className="border-2 border-green-300 bg-green-50 rounded-lg p-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <FileText className="w-4 h-4 text-green-600" />
-                          <div>
-                            <p className="text-sm font-medium text-green-900">{file.name}</p>
-                            <p className="text-xs text-green-700">
-                              {FileService.formatFileSize(file.size)}
-                            </p>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveProgressFile(index)}
-                          className="text-red-600 hover:text-red-800 text-sm"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 text-center hover:border-blue-400 transition-colors">
-                <input
-                  ref={progressFileInputRef}
-                  type="file"
-                  className="hidden"
-                  accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx"
-                  multiple
-                  onChange={handleProgressFilesChange}
-                />
-                <Upload className="w-6 h-6 text-gray-400 mx-auto mb-2" />
-                <button
-                  type="button"
-                  onClick={() => progressFileInputRef.current?.click()}
-                  className="text-blue-600 hover:text-blue-700 font-medium text-sm"
-                >
-                  Click to upload files
-                </button>
-                <p className="text-xs text-gray-500 mt-1">
-                  PDF, Images, Word, Excel (max 5MB per file)
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {requiresFileUpload && (
-          <div className="border-2 border-red-300 bg-red-50 rounded-lg p-4">
-            <div className="flex items-start space-x-2 mb-3">
-              <Upload className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-red-800">Mandatory: Completion Certificate Required</p>
-                <p className="text-xs text-red-700 mt-1">
-                  As a Manager, you must upload evidence or a completion certificate before marking this workflow as completed. This is mandatory and cannot be skipped.
-                </p>
-              </div>
-            </div>
-
-            {fileError && (
-              <div className="bg-red-50 border border-red-200 rounded p-2 mb-2">
-                <p className="text-xs text-red-800">{fileError}</p>
-              </div>
-            )}
-
-            {completionFile ? (
-              <div className="border-2 border-green-300 bg-green-50 rounded p-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <FileText className="w-5 h-5 text-green-600" />
-                    <div>
-                      <p className="text-sm font-medium text-green-900">{completionFile.name}</p>
-                      <p className="text-xs text-green-700">
-                        {FileService.formatFileSize(completionFile.size)}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleRemoveFile}
-                    className="text-red-600 hover:text-red-800 text-sm"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="border-2 border-dashed border-red-300 rounded p-3 text-center hover:border-red-400 transition-colors bg-white">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  className="hidden"
-                  accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx"
-                  onChange={handleFileChange}
-                />
-                <Upload className="w-6 h-6 text-red-500 mx-auto mb-1" />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="text-red-600 hover:text-red-700 font-medium text-sm"
-                >
-                  Click to upload certificate (Required)
-                </button>
-                <p className="text-xs text-gray-600 mt-1">
-                  PDF, Images, Word, Excel (max 5MB)
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="flex flex-col items-end space-y-2">
-          {requiresFileUpload && !completionFile && (
-            <p className="text-xs text-red-600 font-medium">
-              ⚠️ You must upload a completion certificate before submitting
-            </p>
-          )}
-          <div className="flex space-x-2">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors duration-200"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200"
-            >
-              {step ? 'Update Workflow' : 'Add Workflow'}
-            </button>
-          </div>
-        </div>
-      </form>
-    );
   };
 
   const handleAddWorkflow = async (data: any) => {
@@ -1241,9 +217,7 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
         customFileReferences: data.referenceMode === 'custom' ? data.customFileReferences : undefined,
         referenceMode: data.referenceMode
       };
-
       await addStep(ticket.id, stepData);
-
       setShowAddForm(false);
       setParentStepForNewStep(null);
       setAddingSubTaskForStepId(null);
@@ -1256,210 +230,15 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
 
   const handleUpdateWorkflow = async (data: any) => {
     if (!editingStep) return;
-
-    if (data.status === 'COMPLETED') {
-      const fileReferences = await FileReferenceService.getStepFileReferences(editingStep.id);
-      const mandatoryReferences = fileReferences.filter(ref => ref.isMandatory);
-      const incompleteMandatory = mandatoryReferences.filter(ref => !ref.documentId);
-
-      if (incompleteMandatory.length > 0) {
-        const refNames = incompleteMandatory.map(ref => `- ${ref.referenceName}`).join('\n');
-        alert(`Cannot complete workflow. The following mandatory file references have not been uploaded:\n\n${refNames}\n\nPlease upload all mandatory files before marking this workflow as completed.`);
-        return;
-      }
-
-      const validationResult = await DependencyService.validateStepCompletion(editingStep, ticket.workflow);
-      if (!validationResult.canComplete) {
-        const incompleteTitles = validationResult.incompleteDependencies
-          .map(s => `- ${s.title} (Status: ${s.status})`)
-          .join('\n');
-        alert(`Cannot complete this workflow due to incomplete dependencies.\n\n${validationResult.message}\n\nIncomplete dependencies:\n${incompleteTitles}`);
-        return;
-      }
-
-      if (editingStep.mandatory_documents && editingStep.mandatory_documents.length > 0) {
-        const hasMandatoryDocs = await checkMandatoryDocuments(editingStep.id, editingStep.mandatory_documents.length);
-        if (!hasMandatoryDocs) {
-          alert(`Cannot complete this workflow. Please upload all ${editingStep.mandatory_documents.length} mandatory documents first.`);
-          return;
-        }
-      }
-
-      if (user?.role === 'DO') {
-        const hasCompletionCert = await checkCompletionCertificate(editingStep.id);
-        if (!hasCompletionCert) {
-          alert('Completion certificate is mandatory for Manager role. Please upload evidence/completion certificate before marking this workflow as completed.');
-          return;
-        }
-      }
-
-      const mandatoryRefsComplete = await FileReferenceService.checkMandatoryReferencesComplete(editingStep.id);
-      if (!mandatoryRefsComplete) {
-        const incompleteRefs = await FileReferenceService.getIncompleteReferences(editingStep.id);
-        if (incompleteRefs.length > 0) {
-          const refList = incompleteRefs.map(ref => `- ${ref.referenceName}`).join('\n');
-          alert(`Cannot complete this workflow. Please upload all required file references first:\n\n${refList}`);
-          return;
-        }
-      }
-    }
-
-    try {
-      const updateData: any = {
-        title: data.title,
-        description: data.description,
-        status: data.status,
-        assignedTo: data.assignedTo || undefined,
-        completedAt: data.status === 'COMPLETED' ? new Date() : undefined,
-        dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
-        startDate: data.startDate ? new Date(data.startDate) : undefined,
-        is_parallel: data.isParallel,
-        progress: data.progress,
-        dependencies: data.dependencies,
-        mandatory_documents: data.mandatoryDocuments,
-        optional_documents: data.optionalDocuments
-      };
-
-      // Pass progressComment as remarks to be captured in audit log
-      const remarks = data.progressComment && data.progressComment.trim() ? data.progressComment.trim() : undefined;
-
-      // Always update the step with all fields first
-      await updateStep(ticket.id, editingStep.id, updateData, remarks);
-
-      // If progress files are present, upload them and create additional audit log entry
-      if (data.progressFiles && data.progressFiles.length > 0 && user?.id) {
-        // Create audit log for file uploads
-        const auditLogId = await TicketService.createAuditLog({
-          ticketId: ticket.id,
-          stepId: editingStep.id,
-          action: 'PROGRESS_DOCUMENTS_UPLOADED',
-          actionCategory: 'document_action',
-          description: `${data.progressFiles.length} progress document(s) uploaded. ${data.progressComment ? `Comment: ${data.progressComment}` : ''}`,
-          performedBy: user.id,
-          metadata: {
-            progress: data.progress,
-            comment: data.progressComment || null,
-            fileCount: data.progressFiles.length,
-          },
-        });
-
-        // Upload all files
-        if (auditLogId) {
-          const uploadPromises = data.progressFiles.map((file: File) =>
-            FileService.uploadProgressDocument(file, editingStep.id, ticket.id, user.id, auditLogId)
-          );
-
-          const results = await Promise.allSettled(uploadPromises);
-          const successCount = results.filter(r => r.status === 'fulfilled').length;
-          const failCount = results.filter(r => r.status === 'rejected').length;
-
-          if (failCount > 0) {
-            console.warn(`${failCount} of ${data.progressFiles.length} files failed to upload`);
-          }
-        }
-      }
-
-      // Also save as comment for reference
-      if (data.progressComment && data.progressComment.trim() && user?.id) {
-        await TicketService.addStepComment(editingStep.id, data.progressComment, user.id);
-      }
-
-      setEditingStep(null);
-    } catch (error) {
-      alert('Failed to update workflow');
-    }
+    await executeUpdateWorkflow({ data, editingStep, ticket, user, updateStep, setEditingStep });
   };
 
   const handleFieldUpdate = async (stepId: string, field: keyof WorkflowStep, value: any) => {
-    const step = ticket.workflow.find(s => s.id === stepId);
-    if (!step) {
-      throw new Error('Step not found');
-    }
-
-    if (field === 'status' && value === 'COMPLETED') {
-      const fileReferences = await FileReferenceService.getStepFileReferences(step.id);
-      const mandatoryReferences = fileReferences.filter(ref => ref.isMandatory);
-      const incompleteMandatory = mandatoryReferences.filter(ref => !ref.documentId);
-
-      if (incompleteMandatory.length > 0) {
-        const refNames = incompleteMandatory.map(ref => `- ${ref.referenceName}`).join('\n');
-        throw new Error(`Cannot complete workflow. The following mandatory file references have not been uploaded:\n\n${refNames}\n\nPlease upload all mandatory files before marking this workflow as completed.`);
-      }
-
-      const validationResult = await DependencyService.validateStepCompletion(step, ticket.workflow);
-      if (!validationResult.canComplete) {
-        const incompleteTitles = validationResult.incompleteDependencies
-          .map(s => `- ${s.title} (Status: ${s.status})`)
-          .join('\n');
-        throw new Error(`Cannot complete this workflow due to incomplete dependencies.\n\n${validationResult.message}\n\nIncomplete dependencies:\n${incompleteTitles}`);
-      }
-
-      if (step.mandatory_documents && step.mandatory_documents.length > 0) {
-        const hasMandatoryDocs = await checkMandatoryDocuments(step.id, step.mandatory_documents.length);
-        if (!hasMandatoryDocs) {
-          throw new Error(`Cannot complete this workflow. Please upload all ${step.mandatory_documents.length} mandatory documents first.`);
-        }
-      }
-
-      if (user?.role === 'DO') {
-        const hasCompletionCert = await checkCompletionCertificate(step.id);
-        if (!hasCompletionCert) {
-          throw new Error('Completion certificate is mandatory for Manager role. Please upload evidence/completion certificate before marking this workflow as completed.');
-        }
-      }
-
-      const mandatoryRefsComplete = await FileReferenceService.checkMandatoryReferencesComplete(step.id);
-      if (!mandatoryRefsComplete) {
-        const incompleteRefs = await FileReferenceService.getIncompleteReferences(step.id);
-        if (incompleteRefs.length > 0) {
-          const refList = incompleteRefs.map(ref => `- ${ref.referenceName}`).join('\n');
-          throw new Error(`Cannot complete this workflow. Please upload all required file references first:\n\n${refList}`);
-        }
-      }
-    }
-
-    const updateData: any = {};
-
-    if (field === 'title') updateData.title = value;
-    if (field === 'description') updateData.description = value;
-    if (field === 'status') {
-      updateData.status = value;
-      if (value === 'COMPLETED') updateData.completedAt = new Date();
-    }
-    if (field === 'assignedTo') updateData.assignedTo = value || undefined;
-    if (field === 'dueDate') updateData.dueDate = value ? new Date(value) : undefined;
-    if (field === 'startDate') updateData.startDate = value ? new Date(value) : undefined;
-    if (field === 'is_parallel') updateData.is_parallel = value;
-    if (field === 'progress') updateData.progress = value;
-    if (field === 'dependency_mode') updateData.dependency_mode = value;
-
-    await updateStep(ticket.id, step.id, updateData);
-  };
-
-  const checkMandatoryDocuments = async (stepId: string, requiredCount: number): Promise<boolean> => {
-    try {
-      const documents = await FileService.getStepDocuments(stepId);
-      const mandatoryCount = documents.filter(d => d.isMandatory).length;
-      return mandatoryCount >= requiredCount;
-    } catch (error) {
-      console.error('Failed to check mandatory documents:', error);
-      return false;
-    }
-  };
-
-  const checkCompletionCertificate = async (stepId: string): Promise<boolean> => {
-    try {
-      const documents = await FileService.getStepDocuments(stepId);
-      return documents.some(d => d.isCompletionCertificate);
-    } catch (error) {
-      console.error('Failed to check completion certificate:', error);
-      return false;
-    }
+    await executeFieldUpdate({ stepId, field, value, ticket, user, updateStep });
   };
 
   const handleDeleteWorkflow = async (stepId: string) => {
     if (!confirm('Are you sure you want to delete this workflow? All sub-workflows will also be deleted.')) return;
-
     try {
       await deleteStep(ticket.id, stepId);
     } catch (error) {
@@ -1467,466 +246,54 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
     }
   };
 
-  const getStepActions = (step: WorkflowStep): ActionIconDefinition[] => {
-    const actions: ActionIconDefinition[] = [];
-
-    // For Work Order module, add allocation actions
-    if (ticket.moduleId === '550e8400-e29b-41d4-a716-446655440106' && canManageWorkflow(step)) {
-      const subActions: ActionIconDefinition[] = [];
-
-      if (onCreateSpec) {
-        subActions.push({
-          id: 'createSpec',
-          icon: PlusCircle,
-          label: 'Add Specs',
-          action: () => onCreateSpec(step.id, step.title),
-          category: 'edit',
-          color: 'text-blue-600'
-        });
-      }
-
-      if (onAllocateSpec) {
-        subActions.push({
-          id: 'allocateSpecs',
-          icon: FileCheck,
-          label: 'Add from Master',
-          action: () => onAllocateSpec(step.id, step.title),
-          category: 'edit',
-          color: 'text-green-600'
-        });
-      }
-
-      if (subActions.length > 0) {
-        actions.push({
-          id: 'add',
-          icon: PlusCircle,
-          label: 'Add',
-          action: () => {},
-          category: 'edit',
-          color: 'text-blue-600',
-          subActions: subActions
-        });
-      }
-    }
-
-    // For Work Order module, add view specs action (available to all users)
-    if (ticket.moduleId === '550e8400-e29b-41d4-a716-446655440106' && onViewStepSpecs) {
-      actions.push({
-        id: 'viewSpecs',
-        icon: FileCheck,
-        label: 'View Specs',
-        action: () => onViewStepSpecs(step.id, step.title),
-        category: 'view',
-        color: 'text-purple-600'
-      });
-    }
-
-    // Chat / Clarification (available to all users)
-    if (onOpenClarification) {
-      actions.push({
-        id: 'chat',
-        icon: MessageCircle,
-        label: 'Chat',
-        action: () => onOpenClarification(step.id, step.title, step.assignedTo),
-        category: 'communication',
-        color: 'text-indigo-600'
-      });
-    }
-
-    // Track Progress (available to all users)
-    if (onViewProgress) {
-      actions.push({
-        id: 'trackProgress',
-        icon: TrendingUp,
-        label: 'Track Progress',
-        action: () => onViewProgress(step.id, step.title),
-        category: 'view',
-        color: 'text-blue-600'
-      });
-    }
-
-    // Upload Documents
-    actions.push({
-      id: 'upload',
-      icon: Upload,
-      label: 'View Documents',
-      action: () => {
-        if (onViewDocuments) {
-          onViewDocuments(step.id, step.title);
-        } else {
-          toggleDocUpload(step.id);
-        }
-      },
-      category: 'document',
-      color: 'text-gray-600'
+  const getStepActions = (step: WorkflowStep) =>
+    getStepActionsHelper(step, {
+      moduleId: ticket.moduleId,
+      canManageWorkflows,
+      canManageWorkflow,
+      canAddSubWorkflow,
+      onCreateSpec,
+      onAllocateSpec,
+      onViewStepSpecs,
+      onOpenClarification,
+      onViewProgress,
+      onViewDocuments,
+      toggleDocUpload,
+      handleAddSubWorkflow,
+      handleBulkAddSubSteps,
+      handleDeleteWorkflow,
+      setEditingStep,
+      setAddingSubTaskForStepId,
     });
-
-    // Add single sub-workflow
-    if (canManageWorkflows && canAddSubWorkflow(step)) {
-      actions.push({
-        id: 'addSingle',
-        icon: Plus,
-        label: 'Add single sub-workflow',
-        action: () => handleAddSubWorkflow(step),
-        category: 'edit',
-        color: 'text-blue-600'
-      });
-
-      // Bulk add sub-workflows
-      actions.push({
-        id: 'bulkAdd',
-        icon: Layers,
-        label: 'Bulk add multiple sub-workflows',
-        action: () => handleBulkAddSubSteps(step),
-        category: 'edit',
-        color: 'text-green-600'
-      });
-    }
-
-    // Edit workflow
-    if (canManageWorkflow(step)) {
-      actions.push({
-        id: 'edit',
-        icon: Edit,
-        label: 'Edit workflow',
-        action: () => {
-          setEditingStep(step);
-          setAddingSubTaskForStepId(null);
-        },
-        category: 'edit',
-        color: 'text-blue-600'
-      });
-
-      // Delete workflow
-      if (canManageWorkflows) {
-        actions.push({
-          id: 'delete',
-          icon: Trash2,
-          label: 'Delete workflow',
-          action: () => handleDeleteWorkflow(step.id),
-          category: 'admin',
-          color: 'text-red-600'
-        });
-      }
-    }
-
-    return actions;
-  };
-
-  const renderStep = (step: WorkflowStep, depth: number = 0) => {
-    const children = getChildren(step.id);
-    const hasChildren = children.length > 0;
-    const isExpanded = expandedSteps.has(step.id);
-    const assignedUser = step.assignedTo ? users.find(u => u.id === step.assignedTo) : undefined;
-
-    const hierarchyColors = getHierarchyColors(step.level_1, step.level_2, step.level_3);
-    const hierarchyLevel = getHierarchyLevel(step.level_1, step.level_2, step.level_3);
-    const hierarchyInfo = getHierarchyLevelInfo(step.level_1, step.level_2, step.level_3);
-    const hierarchyIcon = getHierarchyIcon(hierarchyLevel);
-    const borderStyle = getHierarchyBorderStyle(hierarchyLevel);
-    const statusColor = getStatusBadgeColor(step.status, step.level_1, step.level_2, step.level_3);
-
-    // Check if this step is highlighted
-    const isHighlighted = activeHighlightedStepId === step.id;
-
-    return (
-      <div key={step.id} className={`ml-${depth * 6} mb-2`}>
-        {editingStep?.id === step.id && canManageWorkflow(step) ? (
-          <WorkflowForm
-            step={step}
-            onSubmit={handleUpdateWorkflow}
-            onCancel={() => setEditingStep(null)}
-          />
-        ) : (
-          <div
-            ref={(el) => {
-              if (el) {
-                stepRefs.current.set(step.id, el);
-              } else {
-                stepRefs.current.delete(step.id);
-              }
-            }}
-            className={`
-              ${hierarchyColors.background} ${borderStyle} ${hierarchyColors.border}
-              rounded-lg p-3 transition-all duration-300
-              ${hierarchyColors.backgroundHover} ${hierarchyColors.borderHover} hover:shadow-md
-              ${isHighlighted ? 'ring-[6px] ring-teal-500 ring-opacity-70 shadow-2xl scale-[1.03] animate-pulse-subtle bg-gradient-to-r from-teal-100 to-cyan-100 border-l-8 border-teal-600' : ''}
-              ${viewingStepDetailsId === step.id ? 'ring-2 ring-blue-400 border-blue-400' : ''}
-            `}
-          >
-            <div
-              className="flex justify-between items-start cursor-pointer"
-              onClick={() => toggleDetailView(step.id)}
-            >
-              <div className="flex-1">
-                <div className="flex items-center space-x-2 mb-1">
-                  {hasChildren && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleExpanded(step.id);
-                      }}
-                      className="p-0.5 hover:bg-white rounded transition-colors duration-200"
-                    >
-                      {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                    </button>
-                  )}
-                  <span className={`${hierarchyColors.badge} text-xs font-bold px-2.5 py-1 rounded shadow-sm flex items-center space-x-1`}>
-                    <span className="text-sm">{hierarchyIcon}</span>
-                    <span>{getHierarchicalWorkflowNumber(step)}</span>
-                  </span>
-                  <span className={`${hierarchyColors.badge} text-xs px-2 py-1 rounded-full opacity-75`}>
-                    {hierarchyInfo.label}
-                  </span>
-                  <div className="flex items-center space-x-1">
-                    <span className={`flex items-center space-x-1 text-xs font-semibold px-2.5 py-1 rounded-full border ${statusColor}`}>
-                      {getStatusIcon(step.status)}
-                      <span>{step.status.replace('_', ' ')}</span>
-                    </span>
-                    {(step.status === 'WIP' || step.status === 'NOT_STARTED') && (
-                      <span
-                        className="flex items-center space-x-1 text-xs px-2 py-1 rounded-full bg-green-50 text-green-700 border border-green-200"
-                        title="Status updates automatically based on spec progress"
-                      >
-                        <TrendingUp className="w-3 h-3" />
-                        <span>Auto</span>
-                      </span>
-                    )}
-                  </div>
-                  <span className={`flex items-center space-x-1 text-xs px-2 py-1 rounded-full ${step.is_parallel ? 'bg-blue-100 text-blue-700 border border-blue-300' : 'bg-orange-100 text-orange-700 border border-orange-300'}`} title={step.is_parallel ? 'Can run concurrently with other parallel steps' : 'Must run sequentially after previous steps'}>
-                    {step.is_parallel ? <Workflow className="w-3 h-3" /> : <ArrowRight className="w-3 h-3" />}
-                    <span>{step.is_parallel ? 'Parallel' : 'Serial'}</span>
-                  </span>
-                  {hasChildren && (
-                    <span className={`text-xs ${hierarchyColors.text} ${hierarchyColors.badge} px-2 py-1 rounded shadow-sm`}>
-                      {children.length} sub-workflow{children.length !== 1 ? 's' : ''}
-                    </span>
-                  )}
-                  <FileReferenceStatusBadge stepId={step.id} />
-                </div>
-                <h4 className={`text-sm font-semibold ${hierarchyColors.text} mb-1`}>{step.title}</h4>
-                {step.description && (
-                  <p className="text-xs text-gray-600 mb-2">{step.description}</p>
-                )}
-
-                <div className="text-xs text-gray-500 space-y-1">
-                  {assignedUser && (
-                    <div className="flex items-center space-x-1">
-                      <Users className="w-3 h-3" />
-                      <span>{assignedUser.name}</span>
-                    </div>
-                  )}
-                  {step.startDate && (
-                    <div className="flex items-center space-x-1">
-                      <Clock className="w-3 h-3" />
-                      <span>Started: {new Date(step.startDate).toLocaleDateString()}</span>
-                    </div>
-                  )}
-                  {step.status === 'WIP' && step.progress !== undefined && step.progress > 0 && (
-                    <div className="mt-2">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-medium text-gray-700">Progress</span>
-                        <div className="flex items-center space-x-1">
-                          {step.progressAutoCalculated && (
-                            <span className="flex items-center space-x-0.5 text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded" title="Auto-calculated from spec allocations">
-                              <Calculator className="w-3 h-3" />
-                            </span>
-                          )}
-                          <span className="text-xs font-semibold text-blue-600">{step.progress}%</span>
-                        </div>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${step.progress}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  )}
-                  {step.mandatory_documents && step.mandatory_documents.length > 0 && (
-                    <div className="flex items-center space-x-1 text-orange-600">
-                      <FileText className="w-3 h-3" />
-                      <span>Mandatory docs required</span>
-                      {step.certificateUploaded && (
-                        <span className="text-green-600">✓ Uploaded</span>
-                      )}
-                    </div>
-                  )}
-                  {step.completionCertificateRequired && (
-                    <div className="flex items-center space-x-1 text-red-600">
-                      <FileText className="w-3 h-3" />
-                      <span>Completion certificate required</span>
-                    </div>
-                  )}
-                </div>
-
-                <DependencyBadge step={step} allSteps={ticket.workflow} />
-                <SpecProgressIndicator stepId={step.id} ticketId={ticket.id} />
-              </div>
-
-              <div className="flex items-center ml-4" onClick={(e) => e.stopPropagation()}>
-                <IconDisplayWrapper
-                  actions={getStepActions(step)}
-                  preferences={displayPreferences ?? undefined}
-                  loading={!displayPreferences && !!user}
-                />
-              </div>
-            </div>
-
-            <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
-              {showProgressHistory.has(step.id) && (
-                <div className="mt-3">
-                  <div className="mb-3 flex items-center space-x-2 bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-2 rounded-lg border border-blue-200">
-                    <History className="w-4 h-4 text-blue-600" />
-                    <h5 className="text-sm font-semibold text-blue-900">Progress History & Updates</h5>
-                  </div>
-                  <ProgressHistoryView
-                    step={step}
-                    ticketId={ticket.id}
-                    onRefresh={() => window.location.reload()}
-                  />
-                </div>
-              )}
-
-              {showDocUpload.has(step.id) && (
-                <div className="mt-3 space-y-4">
-                  <div>
-                    <div className="mb-2 flex items-center space-x-2 bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-2 rounded-lg border border-blue-200">
-                      <FileText className="w-4 h-4 text-blue-600" />
-                      <h5 className="text-sm font-semibold text-blue-900">File References (Template-Based)</h5>
-                    </div>
-                    <FileReferenceUpload
-                      stepId={step.id}
-                      ticketId={ticket.id}
-                      onUploadComplete={() => window.location.reload()}
-                      onViewDocument={(doc) => onViewDocument?.(doc, step)}
-                    />
-                  </div>
-                  <div>
-                    <div className="mb-2 flex items-center space-x-2 bg-gradient-to-r from-green-50 to-emerald-50 px-4 py-2 rounded-lg border border-green-200">
-                      <Upload className="w-4 h-4 text-green-600" />
-                      <h5 className="text-sm font-semibold text-green-900">Step Documents (General Upload)</h5>
-                    </div>
-                    <WorkflowDocumentUpload
-                      step={step}
-                      ticketId={ticket.id}
-                      onViewDocument={(doc) => onViewDocument?.(doc, step)}
-                    />
-                  </div>
-                  <div>
-                    <div className="mb-2 flex items-center space-x-2 bg-gradient-to-r from-purple-50 to-pink-50 px-4 py-2 rounded-lg border border-purple-200">
-                      <FileText className="w-4 h-4 text-purple-600" />
-                      <h5 className="text-sm font-semibold text-purple-900">Progress Documents</h5>
-                    </div>
-                    <ProgressDocuments
-                      step={step}
-                      ticketId={ticket.id}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {viewingStepDetailsId === step.id && (
-              <WorkflowDetailView
-                step={step}
-                ticket={ticket}
-                users={users}
-                canManage={canManageWorkflow(step)}
-                onClose={() => setViewingStepDetailsId(null)}
-                onUpdate={async (field, value) => {
-                  await handleFieldUpdate(step.id, field, value);
-                }}
-                onViewSpecs={() => {
-                  onViewStepSpecs?.(step.id, step.title);
-                }}
-                onViewProgress={() => {
-                  onViewProgress?.(step.id, step.title);
-                }}
-                onViewDocuments={() => {
-                  if (onViewDocuments) {
-                    onViewDocuments(step.id, step.title);
-                  } else {
-                    toggleDocUpload(step.id);
-                  }
-                }}
-                onViewClarifications={() => {
-                  onOpenClarification?.(step.id, step.title, step.assignedTo);
-                }}
-                dependencies={ticket.workflow.filter(s => step.dependencies?.includes(s.id))}
-                allSteps={ticket.workflow}
-              />
-            )}
-          </div>
-        )}
-
-        {(hasChildren || addingSubTaskForStepId === step.id) && (isExpanded || !hasChildren) && (
-          <div className="mt-2">
-            {addingSubTaskForStepId === step.id && canManageWorkflows && (
-              <div ref={subTaskFormRef} className="mb-4 ml-8">
-                <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-3 mb-2">
-                  <p className="text-sm font-medium text-blue-800">
-                    Adding Sub-Task under: <span className="font-bold">{step.title}</span>
-                  </p>
-                </div>
-                <WorkflowForm
-                  parentStep={step}
-                  onSubmit={handleAddWorkflow}
-                  onCancel={() => {
-                    setAddingSubTaskForStepId(null);
-                    setParentStepForNewStep(null);
-                  }}
-                />
-              </div>
-            )}
-            {getSortedWorkflows(children).map(child => renderStep(child, depth + 1))}
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const filterWorkflow = (step: WorkflowStep): boolean => {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      const titleMatch = step.title.toLowerCase().includes(query);
-      const descMatch = step.description?.toLowerCase().includes(query);
-      if (!titleMatch && !descMatch) return false;
+      if (!step.title.toLowerCase().includes(query) && !step.description?.toLowerCase().includes(query)) return false;
     }
-
-    if (filterStatus && step.status !== filterStatus) {
-      return false;
-    }
-
-    if (filterAssignedTo && step.assignedTo !== filterAssignedTo) {
-      return false;
-    }
-
+    if (filterStatus && step.status !== filterStatus) return false;
+    if (filterAssignedTo && step.assignedTo !== filterAssignedTo) return false;
     if (filterHierarchyLevel) {
       const level = getHierarchyLevel(step.level_1, step.level_2, step.level_3);
-      if (level.toString() !== filterHierarchyLevel) {
-        return false;
-      }
+      if (level.toString() !== filterHierarchyLevel) return false;
     }
-
     return true;
   };
 
-  const filterWorkflowsRecursive = (steps: WorkflowStep[]): WorkflowStep[] => {
-    return steps.filter(step => {
+  const getChildren = (parentId: string) => ticket.workflow.filter(s => s.parentStepId === parentId);
+
+  const filterWorkflowsRecursive = (steps: WorkflowStep[]): WorkflowStep[] =>
+    steps.filter(step => {
       const matchesFilter = filterWorkflow(step);
       const children = getChildren(step.id);
       const hasMatchingChildren = children.length > 0 && filterWorkflowsRecursive(children).length > 0;
-
       return matchesFilter || hasMatchingChildren;
     });
-  };
 
   const rootSteps = ticket.workflow.filter(step => !step.parentStepId);
+
   const filteredRootSteps = useMemo(() => {
-    if (!searchQuery && !filterStatus && !filterAssignedTo && !filterHierarchyLevel) {
-      return rootSteps;
-    }
+    if (!searchQuery && !filterStatus && !filterAssignedTo && !filterHierarchyLevel) return rootSteps;
     return filterWorkflowsRecursive(rootSteps);
   }, [rootSteps, searchQuery, filterStatus, filterAssignedTo, filterHierarchyLevel]);
 
@@ -1957,271 +324,64 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ ticket, canMana
   }
 
   return (
-    <div className="space-y-2">
-      <div className="relative">
-        {canManageWorkflows && (
-          <h3 className="text-base font-medium text-gray-900">Workflow</h3>
-        )}
-        <TopRightControls>
-          {ticket.workflow.length > 0 && (
-            <CollapsibleFilterPanel
-              isOpen={isFilterPanelOpen}
-              onToggle={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
-              onClear={clearAllFilters}
-              activeFilterCount={activeFilterCount}
-              position="right"
-              direction="down"
-              panelClassName="w-[500px]"
-            >
-              <div className="space-y-3">
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search workflows..."
-                    className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
-                    <select
-                      value={filterStatus}
-                      onChange={(e) => setFilterStatus(e.target.value as WorkflowStepStatus | '')}
-                      className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    >
-                      <option value="">All Status</option>
-                      <option value="NOT_STARTED">Not Started</option>
-                      <option value="WIP">WIP (Active)</option>
-                      <option value="COMPLETED">Completed</option>
-                      <option value="CLOSED">Closed</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Assigned To</label>
-                    <select
-                      value={filterAssignedTo}
-                      onChange={(e) => setFilterAssignedTo(e.target.value)}
-                      className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    >
-                      <option value="">All Users</option>
-                      {users.map(u => (
-                        <option key={u.id} value={u.id}>{u.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="col-span-2">
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Hierarchy Level</label>
-                    <select
-                      value={filterHierarchyLevel}
-                      onChange={(e) => setFilterHierarchyLevel(e.target.value as '1' | '2' | '3' | '')}
-                      className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    >
-                      <option value="">All Levels</option>
-                      <option value="1">Level 1</option>
-                      <option value="2">Level 2</option>
-                      <option value="3">Level 3</option>
-                    </select>
-                  </div>
-                </div>
-
-                {activeFilterCount > 0 && (
-                  <div className="pt-2 border-t border-gray-200">
-                    <div className="flex items-center justify-between text-xs text-gray-600">
-                      <span>Showing {filteredRootSteps.length} of {rootSteps.length} workflows</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </CollapsibleFilterPanel>
-          )}
-          <ViewTypeToggle value={displayMode} onChange={handleDisplayModeChange} />
-          {canManageWorkflows && !showAddForm && !editingStep && (
-            <>
-              <button
-                onClick={() => {
-                  setParentStepForNewStep(null);
-                  setShowAddForm(true);
-                  setAddingSubTaskForStepId(null);
-                }}
-                className="bg-blue-600 text-white p-1.5 rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                title="Add Workflow"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-              <button
-                onClick={handleBulkAdd}
-                className="bg-green-600 text-white p-1.5 rounded-lg hover:bg-green-700 transition-colors duration-200"
-                title="Bulk Add Workflows"
-              >
-                <Layers className="w-4 h-4" />
-              </button>
-            </>
-          )}
-        </TopRightControls>
-      </div>
-
-      {ticket.workflow.length > 0 && (
-        <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg px-3 py-1.5 border border-gray-200">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-gray-600">Legend:</span>
-            <div className="flex items-center space-x-3">
-              {hierarchyColorLegend.map((item) => (
-                <div key={item.level} className="flex items-center space-x-1">
-                  <div className={`w-3 h-3 ${item.color} rounded border border-gray-400`}></div>
-                  <span className="text-xs text-gray-700 font-medium">{item.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showAddForm && canManageWorkflows && (
-        <WorkflowForm
-          parentStep={parentStepForNewStep}
-          onSubmit={handleAddWorkflow}
-          onCancel={() => {
-            setShowAddForm(false);
-            setParentStepForNewStep(null);
-          }}
-        />
-      )}
-
-      <div className="space-y-2">
-        {filteredRootSteps.length === 0 && hasActiveFilters ? (
-          <div className="text-center py-8 bg-gray-50 border border-gray-200 rounded-lg">
-            <p className="text-gray-500">No workflows match your search criteria.</p>
-            <button
-              onClick={clearAllFilters}
-              className="mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
-            >
-              Clear filters to see all workflows
-            </button>
-          </div>
-        ) : displayMode === 'card' ? (
-          getSortedWorkflows(filteredRootSteps).map(step => renderStep(step, 0))
-        ) : displayMode === 'table' ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full bg-white border border-gray-200 rounded-lg">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">#</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Title</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Status</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Assigned To</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Progress</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Dependencies</th>
-                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-700">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {getSortedWorkflows(filteredRootSteps).map(step => (
-                  <tr key={step.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 text-sm text-gray-900 cursor-pointer" onClick={() => toggleExpanded(step.id)}>
-                      {getHierarchicalWorkflowNumber(step)}
-                    </td>
-                    <td className="px-4 py-2 text-sm text-gray-900 cursor-pointer" onClick={() => toggleExpanded(step.id)}>
-                      {step.title}
-                    </td>
-                    <td className="px-4 py-2 text-sm cursor-pointer" onClick={() => toggleExpanded(step.id)}>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(step.status)}`}>
-                        {step.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2 text-sm text-gray-700 cursor-pointer" onClick={() => toggleExpanded(step.id)}>
-                      {users.find(u => u.id === step.assignedTo)?.name || 'Unassigned'}
-                    </td>
-                    <td className="px-4 py-2 text-sm cursor-pointer" onClick={() => toggleExpanded(step.id)}>
-                      <div className="flex items-center space-x-2">
-                        <div className="flex-1 bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-blue-600 h-2 rounded-full"
-                            style={{ width: `${step.progress || 0}%` }}
-                          ></div>
-                        </div>
-                        <span className="text-xs text-gray-600 w-10">{step.progress || 0}%</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-2 text-sm cursor-pointer" onClick={() => toggleExpanded(step.id)}>
-                      {step.dependsOn && step.dependsOn.length > 0 && (
-                        <span className="text-xs text-gray-600">{step.dependsOn.length} deps</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-2 text-center" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex justify-center">
-                        <IconDisplayWrapper
-                          actions={getStepActions(step)}
-                          preferences={displayPreferences ?? undefined}
-                          loading={!displayPreferences && !!user}
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="space-y-1">
-            {getSortedWorkflows(filteredRootSteps).map(step => (
-              <div
-                key={step.id}
-                className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
-              >
-                <div className="flex items-center space-x-3 flex-1 cursor-pointer" onClick={() => toggleExpanded(step.id)}>
-                  <span className="text-sm font-medium text-gray-700 w-16">
-                    {getHierarchicalWorkflowNumber(step)}
-                  </span>
-                  <span className="text-sm text-gray-900 flex-1">{step.title}</span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(step.status)}`}>
-                    {step.status}
-                  </span>
-                  <span className="text-xs text-gray-600">
-                    {users.find(u => u.id === step.assignedTo)?.name || 'Unassigned'}
-                  </span>
-                  <div className="flex items-center space-x-2 w-32">
-                    <div className="flex-1 bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-blue-600 h-2 rounded-full"
-                        style={{ width: `${step.progress || 0}%` }}
-                      ></div>
-                    </div>
-                    <span className="text-xs text-gray-600">{step.progress || 0}%</span>
-                  </div>
-                </div>
-                <div onClick={(e) => e.stopPropagation()} className="ml-3">
-                  <IconDisplayWrapper
-                    actions={getStepActions(step)}
-                    preferences={displayPreferences ?? undefined}
-                    loading={!displayPreferences && !!user}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {showBulkModal && (
-        <BulkStepCreationModal
-          ticketId={ticket.id}
-          parentStep={bulkParentStep || undefined}
-          existingSteps={ticket.workflow}
-          onClose={() => {
-            setShowBulkModal(false);
-            setBulkParentStep(null);
-          }}
-          onSuccess={handleBulkSuccess}
-        />
-      )}
-
-    </div>
+    <StepListContainer
+      ticket={ticket}
+      filteredRootSteps={filteredRootSteps}
+      rootSteps={rootSteps}
+      hasActiveFilters={hasActiveFilters}
+      activeFilterCount={activeFilterCount}
+      displayMode={displayMode}
+      handleDisplayModeChange={handleDisplayModeChange}
+      canManageWorkflows={canManageWorkflows}
+      showAddForm={showAddForm}
+      setShowAddForm={setShowAddForm}
+      editingStep={editingStep}
+      parentStepForNewStep={parentStepForNewStep}
+      setParentStepForNewStep={setParentStepForNewStep}
+      isFilterPanelOpen={isFilterPanelOpen}
+      setIsFilterPanelOpen={setIsFilterPanelOpen}
+      searchQuery={searchQuery}
+      setSearchQuery={setSearchQuery}
+      filterStatus={filterStatus}
+      setFilterStatus={setFilterStatus}
+      filterAssignedTo={filterAssignedTo}
+      setFilterAssignedTo={setFilterAssignedTo}
+      filterHierarchyLevel={filterHierarchyLevel}
+      setFilterHierarchyLevel={setFilterHierarchyLevel}
+      clearAllFilters={clearAllFilters}
+      onBulkAdd={handleBulkAdd}
+      showBulkModal={showBulkModal}
+      bulkParentStep={bulkParentStep}
+      onCloseBulkModal={() => { setShowBulkModal(false); setBulkParentStep(null); }}
+      onBulkSuccess={handleBulkSuccess}
+      expandedSteps={expandedSteps}
+      showDocUpload={showDocUpload}
+      showProgressHistory={showProgressHistory}
+      viewingStepDetailsId={viewingStepDetailsId}
+      addingSubTaskForStepId={addingSubTaskForStepId}
+      subTaskFormRef={subTaskFormRef}
+      stepRefs={stepRefs}
+      activeHighlightedStepId={activeHighlightedStepId}
+      canManageWorkflow={canManageWorkflow}
+      toggleExpanded={toggleExpanded}
+      toggleDetailView={toggleDetailView}
+      toggleDocUpload={toggleDocUpload}
+      toggleProgressHistory={toggleProgressHistory}
+      setEditingStep={setEditingStep}
+      setAddingSubTaskForStepId={setAddingSubTaskForStepId}
+      handleUpdateWorkflow={handleUpdateWorkflow}
+      handleAddWorkflow={handleAddWorkflow}
+      handleFieldUpdate={handleFieldUpdate}
+      getStepActionsFn={getStepActions}
+      getHierarchicalWorkflowNumber={getHierarchicalWorkflowNumber}
+      getStatusIcon={getStatusIcon}
+      getSortedWorkflows={getSortedWorkflows}
+      onViewDocument={onViewDocument}
+      onViewStepSpecs={onViewStepSpecs}
+      onViewProgress={onViewProgress}
+      onViewDocuments={onViewDocuments}
+      onOpenClarification={onOpenClarification}
+    />
   );
 };
 

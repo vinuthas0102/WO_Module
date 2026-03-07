@@ -7,7 +7,6 @@ import {
   SpecAllocationProgressWithDetails
 } from '../../services/specAllocationProgressService';
 import { useAuth } from '../../context/AuthContext';
-import { TicketService } from '../../services/ticketService';
 
 interface SpecAllocationProgressTrackerProps {
   allocationId: string;
@@ -122,20 +121,6 @@ export const SpecAllocationProgressTracker: React.FC<SpecAllocationProgressTrack
 
     try {
       await SpecAllocationProgressService.updateProgressStatus(entryId, status, user.id);
-
-      await TicketService.createAuditLog({
-        ticketId,
-        stepId: workflowStepId,
-        action: status === 'submitted' ? 'SPEC_PROGRESS_SUBMITTED' : status === 'verified' ? 'SPEC_PROGRESS_VERIFIED' : 'SPEC_PROGRESS_APPROVED',
-        actionCategory: 'workflow_action',
-        description: `Spec progress entry #${entries.find(e => e.id === entryId)?.entryNumber} ${status}`,
-        performedBy: user.id,
-        metadata: {
-          entryId,
-          allocationId,
-          status,
-        },
-      });
 
       await loadEntries();
       if (selectedEntry && selectedEntry.id === entryId) {

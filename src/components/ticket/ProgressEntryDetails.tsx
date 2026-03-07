@@ -3,7 +3,6 @@ import { TrendingUp, User, Clock, CreditCard as Edit2, Save, X, Download, FileTe
 import { ProgressEntryWithDocuments, ProgressTrackingService } from '../../services/progressTrackingService';
 import { FileService } from '../../services/fileService';
 import { useAuth } from '../../context/AuthContext';
-import { TicketService } from '../../services/ticketService';
 
 interface ProgressEntryDetailsProps {
   entry: ProgressEntryWithDocuments;
@@ -106,23 +105,6 @@ export const ProgressEntryDetails: React.FC<ProgressEntryDetailsProps> = ({
           );
         }
       }
-
-      // Create audit log
-      await TicketService.createAuditLog({
-        ticketId: entry.ticketId,
-        stepId: entry.stepId,
-        action: 'PROGRESS_ENTRY_UPDATED',
-        actionCategory: 'workflow_action',
-        description: `Progress entry #${entry.entryNumber} updated: ${editedProgress}%`,
-        performedBy: user.id,
-        metadata: {
-          entryId: entry.id,
-          entryNumber: entry.entryNumber,
-          oldProgress: entry.progressPercentage,
-          newProgress: editedProgress,
-          filesAdded: uploadingFiles.length,
-        },
-      });
 
       setIsEditing(false);
       setUploadingFiles([]);

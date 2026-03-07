@@ -95,6 +95,13 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
       case 'WORKFLOW_DELETED': return 'bg-red-100 text-red-800 border-red-300';
       case 'UPDATED': return 'bg-green-100 text-green-800 border-green-300';
       case 'DELETED': return 'bg-red-100 text-red-800 border-red-300';
+      case 'PROGRESS_ENTRY_CREATED': return 'bg-green-100 text-green-800 border-green-300';
+      case 'PROGRESS_ENTRY_UPDATED': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'SPEC_PROGRESS_CREATED': return 'bg-green-100 text-green-800 border-green-300';
+      case 'SPEC_PROGRESS_UPDATED': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'SPEC_PROGRESS_SUBMITTED': return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'SPEC_PROGRESS_VERIFIED': return 'bg-green-100 text-green-800 border-green-300';
+      case 'SPEC_PROGRESS_DOCUMENT_UPLOADED': return 'bg-blue-100 text-blue-800 border-blue-300';
       default: return 'bg-gray-100 text-gray-800 border-gray-300';
     }
   };
@@ -136,6 +143,20 @@ const AuditTrail: React.FC<AuditTrailProps> = ({ ticket, viewingDocument, onClos
         return 'Document attached';
       case 'COMMENT_ADDED':
         return 'Comment added';
+      case 'PROGRESS_ENTRY_CREATED':
+        return entry.remarks || 'Progress entry created';
+      case 'PROGRESS_ENTRY_UPDATED':
+        return entry.remarks || 'Progress entry updated';
+      case 'SPEC_PROGRESS_CREATED':
+        return entry.remarks || 'Spec progress entry created';
+      case 'SPEC_PROGRESS_UPDATED':
+        return entry.remarks || 'Spec progress entry updated';
+      case 'SPEC_PROGRESS_SUBMITTED':
+        return 'Spec progress submitted for verification';
+      case 'SPEC_PROGRESS_VERIFIED':
+        return 'Spec progress verified';
+      case 'SPEC_PROGRESS_DOCUMENT_UPLOADED':
+        return 'Spec progress document uploaded';
       default:
         // Convert SNAKE_CASE to readable format
         return entry.action

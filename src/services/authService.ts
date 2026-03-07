@@ -91,8 +91,12 @@ export class AuthService {
         return null;
       }
 
-      // Ensure user exists in database
-      await this.ensureUserExistsInDatabase(mockUser);
+      // Ensure user exists in database (non-blocking - login succeeds even if this fails)
+      try {
+        await this.ensureUserExistsInDatabase(mockUser);
+      } catch (syncError) {
+        console.warn('Could not sync user to database, continuing with mock data:', syncError);
+      }
 
       return {
         ...mockUser,

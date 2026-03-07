@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   TrendingUp, AlertCircle, Loader,
-  Clock, ChevronRight, Send, ArrowDown, MessageSquare
+  Clock, ChevronRight, Send, ArrowDown, MessageSquare, Upload, X, FileIcon
 } from 'lucide-react';
 import {
   ProgressEntry,
@@ -10,6 +10,7 @@ import {
 } from '../../services/progressTrackingService';
 import { ProgressEntryDetails } from './ProgressEntryDetails';
 import { useAuth } from '../../context/AuthContext';
+import { FileService } from '../../services/fileService';
 import { WorkflowStep } from '../../types';
 
 interface TrackProgressSectionProps {
@@ -32,8 +33,11 @@ export const TrackProgressSection: React.FC<TrackProgressSectionProps> = ({
   const [newComment, setNewComment] = useState('');
   const [creating, setCreating] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadEntries();
@@ -41,6 +45,16 @@ export const TrackProgressSection: React.FC<TrackProgressSectionProps> = ({
 
   useEffect(() => {
     scrollToBottom();
+  }, [entries]);
+
+  // Set initial progress from latest entry
+  useEffect(() => {
+    if (entries.length > 0) {
+      const latestEntry = entries.find(e => e.isLatest);
+      if (latestEntry) {
+        setNewProgress(latestEntry.progressPercentage);
+      }
+    }
   }, [entries]);
 
   const scrollToBottom = (smooth = true) => {
@@ -79,6 +93,41 @@ export const TrackProgressSection: React.FC<TrackProgressSectionProps> = ({
     }
   };
 
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    const validFiles: File[] = [];
+    const errors: string[] = [];
+
+    files.forEach(file => {
+      const validation = FileService.validateFile(file);
+      if (validation.valid) {
+        validFiles.push(file);
+      } else {
+        errors.push(`${file.name}: ${validation.error}`);
+      }
+    });
+
+    if (errors.length > 0) {
+      alert(`Some files were rejected:\n${errors.join('\n')}`);
+    }
+
+    setSelectedFiles(prev => [...prev, ...validFiles]);
+    // Reset input so same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
   const handleCreateEntry = async () => {
     if (!user) return;
 
@@ -94,7 +143,9 @@ export const TrackProgressSection: React.FC<TrackProgressSectionProps> = ({
 
     try {
       setCreating(true);
-      await ProgressTrackingService.createProgressEntry({
+
+      // Create the progress entry first
+      const newEntry = await ProgressTrackingService.createProgressEntry({
         stepId: step.id,
         ticketId,
         progressPercentage: newProgress,
@@ -102,8 +153,36 @@ export const TrackProgressSection: React.FC<TrackProgressSectionProps> = ({
         userId: user.id,
       });
 
-      setNewProgress(step.progress || 0);
+      // Upload files if any are selected
+      if (selectedFiles.length > 0) {
+        setUploadingFiles(true);
+        const uploadErrors: string[] = [];
+
+        for (const file of selectedFiles) {
+          try {
+            await FileService.uploadProgressDocument(
+              step.id,
+              ticketId,
+              user.id,
+              file,
+              newEntry.id
+            );
+          } catch (error) {
+            console.error(`Failed to upload ${file.name}:`, error);
+            uploadErrors.push(file.name);
+          }
+        }
+
+        if (uploadErrors.length > 0) {
+          alert(`Progress entry created, but some files failed to upload:\n${uploadErrors.join(', ')}`);
+        }
+      }
+
+      // Clear form but keep progress at current level
       setNewComment('');
+      setSelectedFiles([]);
+      setUploadingFiles(false);
+
       await loadEntries();
       onRefresh?.();
     } catch (error) {
@@ -111,6 +190,7 @@ export const TrackProgressSection: React.FC<TrackProgressSectionProps> = ({
       alert(`Failed to create entry: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setCreating(false);
+      setUploadingFiles(false);
     }
   };
 
@@ -360,16 +440,75 @@ export const TrackProgressSection: React.FC<TrackProgressSectionProps> = ({
                 </div>
                 <button
                   onClick={handleCreateEntry}
-                  disabled={creating || !newComment.trim()}
+                  disabled={creating || uploadingFiles || !newComment.trim()}
                   className="px-4 py-2.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 h-fit"
                 >
-                  {creating ? (
+                  {creating || uploadingFiles ? (
                     <Loader className="w-4 h-4 animate-spin" />
                   ) : (
                     <Send className="w-4 h-4" />
                   )}
-                  <span className="font-medium text-sm">{creating ? 'Sending...' : 'Send'}</span>
+                  <span className="font-medium text-sm">
+                    {uploadingFiles ? 'Uploading...' : creating ? 'Sending...' : 'Send'}
+                  </span>
                 </button>
+              </div>
+
+              {/* File Upload Section */}
+              <div className="border-t border-gray-200 pt-3">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-semibold text-gray-600">
+                    Attach Files (Optional)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={creating || uploadingFiles}
+                    className="flex items-center space-x-1 px-2 py-1 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Upload className="w-3 h-3" />
+                    <span>Add Files</span>
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                </div>
+
+                <p className="text-xs text-gray-400 mb-2">
+                  Max 5MB per file • PDF, Images, Word, Excel
+                </p>
+
+                {selectedFiles.length > 0 && (
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {selectedFiles.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded px-2 py-1.5 text-xs"
+                      >
+                        <div className="flex items-center space-x-2 flex-1 min-w-0">
+                          <FileIcon className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                          <span className="text-gray-700 truncate font-medium">{file.name}</span>
+                          <span className="text-gray-400 flex-shrink-0">
+                            ({formatFileSize(file.size)})
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFile(index)}
+                          disabled={creating || uploadingFiles}
+                          className="ml-2 text-red-500 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -1,5 +1,16 @@
 # Demo User Credentials
 
+> **⚠️ DEMO/PROOF-OF-CONCEPT SECURITY NOTICE**
+>
+> This is a demonstration system with simplified security architecture.
+> - Custom authentication with plaintext passwords
+> - Unrestricted anonymous database access
+> - NOT production-ready
+>
+> **See [SECURITY.md](SECURITY.md) for complete security disclosure.**
+
+---
+
 This document provides login credentials for testing the TrackSphere demo environment.
 
 ## Access URL
@@ -57,7 +68,7 @@ Standard user access for creating tickets and tracking work progress.
    - **Finance Officer**: Access to finance approval workflows
    - **Employees**: Standard access for ticket creation and progress tracking
 
-4. **Security Notice**: These credentials are publicly visible in this demo environment. Never use these patterns in production.
+4. **Security Notice**: These credentials are publicly visible in this demo environment. This system uses custom authentication with plaintext passwords - acceptable ONLY for controlled demos with admin-managed users. See [SECURITY.md](SECURITY.md) for complete disclosure. Never use these patterns or this architecture in production.
 
 ---
 

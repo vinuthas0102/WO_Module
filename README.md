@@ -1,6 +1,19 @@
 # Ticket Tracker Application
 
-A comprehensive, production-ready ticket tracking system built with React, TypeScript, and Supabase. The application supports role-based access control, multi-module configuration, complete ticket lifecycle management, work order tracking, finance approval workflows, and real-time data persistence.
+> **⚠️ DEMO/PROOF-OF-CONCEPT NOTICE**
+>
+> **This is a demonstration system for internal review and testing purposes only.**
+>
+> - **NOT production-ready** - simplified security architecture for rapid prototyping
+> - **Custom authentication** with plaintext passwords (administrator-managed users only)
+> - **Unrestricted database access** via anonymous role with broad RLS policies
+> - **For production use:** 4-6 weeks of security hardening required
+>
+> See [SECURITY.md](SECURITY.md) for complete security disclosure and production migration path.
+
+---
+
+A comprehensive ticket tracking system built with React, TypeScript, and Supabase. The application supports role-based access control, multi-module configuration, complete ticket lifecycle management, work order tracking, finance approval workflows, and real-time data persistence.
 
 ## Features
 
@@ -261,10 +274,21 @@ The output is a static SPA and can be deployed to any static host:
 
 ## Security Considerations
 
+**⚠️ This is a demo system with intentional security simplifications.**
+
+For complete security disclosure including:
+- Custom authentication with plaintext passwords
+- Unrestricted anonymous database access
+- RLS policy architecture decisions
+- Production migration requirements
+
+**Please review [SECURITY.md](SECURITY.md) in detail.**
+
+Demo security features:
 - All database access goes through Supabase with parameterized queries
-- Row Level Security enforced at the database layer — unauthorized rows are never returned
-- File uploads are stored in private Supabase Storage buckets with signed URL access
-- Secrets are never exposed in client-side code (only `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are public by design in Supabase's architecture)
+- File uploads are stored in Supabase Storage buckets
+- Admin-managed user accounts only (no self-registration)
+- Separate demo database (not shared with any production data)
 
 ## Troubleshooting
 

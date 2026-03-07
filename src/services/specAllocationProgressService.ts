@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { TicketService } from './ticketService';
 
 export interface SpecAllocationProgress {
   id: string;
@@ -203,6 +204,18 @@ export class SpecAllocationProgressService {
       const previousCumulative = existingEntries.reduce((sum, entry) => sum + entry.workDoneQuantity, 0);
       const cumulativeQuantity = previousCumulative + workDoneQuantity;
 
+      // Get allocation and spec details for audit log
+      const { data: allocation, error: allocError } = await supabase
+        .from('work_order_spec_allocations')
+        .select(`
+          workflow_step_id,
+          work_order_spec_details(spec_number, description, unit)
+        `)
+        .eq('id', allocationId)
+        .single();
+
+      if (allocError) throw allocError;
+
       const { data, error } = await supabase
         .from('spec_allocation_progress_tracking')
         .insert([
@@ -219,11 +232,36 @@ export class SpecAllocationProgressService {
             created_by: userId,
           },
         ])
-        .select('id')
+        .select(`
+          id,
+          creator:users!spec_allocation_progress_tracking_created_by_fkey(name)
+        `)
         .single();
 
       if (error) throw error;
       if (!data) throw new Error('Failed to create progress entry');
+
+      // Create audit log
+      const userName = data.creator?.name || 'Unknown User';
+      const specDetail = allocation?.work_order_spec_details as any;
+      const specInfo = specDetail ? `Spec ${specDetail.spec_number}` : 'Spec';
+      const commentSnippet = comment ? ` - ${comment.substring(0, 100)}${comment.length > 100 ? '...' : ''}` : '';
+      await TicketService.createAuditLog({
+        ticketId,
+        stepId: allocation?.workflow_step_id || undefined,
+        action: 'SPEC_PROGRESS_CREATED',
+        actionCategory: 'workflow_action',
+        description: `${specInfo} progress entry #${entryNumber} created: ${workDoneQuantity} ${specDetail?.unit || 'units'} by ${userName}${commentSnippet}`,
+        performedBy: userId,
+        metadata: {
+          allocationId,
+          entryNumber,
+          workDoneQuantity,
+          cumulativeQuantity,
+          measurementDate,
+          comment: comment || null,
+        },
+      });
 
       return data.id;
     } catch (error) {
@@ -261,7 +299,8 @@ export class SpecAllocationProgressService {
     entryId: string,
     workDoneQuantity: number,
     comment: string | undefined,
-    measurementDate: string
+    measurementDate: string,
+    userId?: string
   ): Promise<void> {
     try {
       const entry = await this.getProgressEntryWithDetails(entryId);
@@ -270,10 +309,24 @@ export class SpecAllocationProgressService {
         throw new Error('Only draft entries can be edited');
       }
 
+      const oldQuantity = entry.workDoneQuantity;
+
       const allEntries = await this.getProgressEntries(entry.allocationId);
       const previousEntries = allEntries.filter(e => e.entryNumber < entry.entryNumber);
       const previousCumulative = previousEntries.reduce((sum, e) => sum + e.workDoneQuantity, 0);
       const cumulativeQuantity = previousCumulative + workDoneQuantity;
+
+      // Get allocation and spec details for audit log
+      const { data: allocation, error: allocError } = await supabase
+        .from('work_order_spec_allocations')
+        .select(`
+          workflow_step_id,
+          work_order_spec_details(spec_number, description, unit)
+        `)
+        .eq('id', entry.allocationId)
+        .single();
+
+      if (allocError) throw allocError;
 
       const { error } = await supabase
         .from('spec_allocation_progress_tracking')
@@ -302,6 +355,40 @@ export class SpecAllocationProgressService {
           if (updateError) throw updateError;
         }
       }
+
+      // Create audit log
+      if (userId) {
+        const { data: user } = await supabase
+          .from('users')
+          .select('name')
+          .eq('id', userId)
+          .single();
+
+        const userName = user?.name || 'Unknown User';
+        const specDetail = allocation?.work_order_spec_details as any;
+        const specInfo = specDetail ? `Spec ${specDetail.spec_number}` : 'Spec';
+        const quantityChange = oldQuantity !== workDoneQuantity
+          ? ` (${oldQuantity} → ${workDoneQuantity} ${specDetail?.unit || 'units'})`
+          : '';
+
+        await TicketService.createAuditLog({
+          ticketId: entry.ticketId,
+          stepId: allocation?.workflow_step_id || undefined,
+          action: 'SPEC_PROGRESS_UPDATED',
+          actionCategory: 'workflow_action',
+          description: `${specInfo} progress entry #${entry.entryNumber} updated${quantityChange} by ${userName}`,
+          performedBy: userId,
+          oldData: JSON.stringify({ workDoneQuantity: oldQuantity }),
+          newData: JSON.stringify({ workDoneQuantity }),
+          metadata: {
+            allocationId: entry.allocationId,
+            entryNumber: entry.entryNumber,
+            oldQuantity,
+            newQuantity: workDoneQuantity,
+            comment: comment || null,
+          },
+        });
+      }
     } catch (error) {
       console.error('Error updating progress entry:', error);
       throw error;
@@ -315,6 +402,34 @@ export class SpecAllocationProgressService {
   ): Promise<void> {
     try {
       const updateData: any = { status };
+
+      // Get entry details for audit log
+      const { data: entry, error: entryError } = await supabase
+        .from('spec_allocation_progress_tracking')
+        .select(`
+          entry_number,
+          ticket_id,
+          allocation_id,
+          work_done_quantity,
+          status as old_status
+        `)
+        .eq('id', entryId)
+        .single();
+
+      if (entryError) throw entryError;
+      if (!entry) throw new Error('Progress entry not found');
+
+      // Get allocation and spec details for audit log
+      const { data: allocation, error: allocError } = await supabase
+        .from('work_order_spec_allocations')
+        .select(`
+          workflow_step_id,
+          work_order_spec_details(spec_number, description, unit)
+        `)
+        .eq('id', entry.allocation_id)
+        .single();
+
+      if (allocError) throw allocError;
 
       if (status === 'submitted') {
         updateData.submitted_by = userId;
@@ -332,6 +447,47 @@ export class SpecAllocationProgressService {
         .eq('id', entryId);
 
       if (error) throw error;
+
+      // Create audit log
+      const { data: user } = await supabase
+        .from('users')
+        .select('name')
+        .eq('id', userId)
+        .single();
+
+      const userName = user?.name || 'Unknown User';
+      const specDetail = allocation?.work_order_spec_details as any;
+      const specInfo = specDetail ? `Spec ${specDetail.spec_number}` : 'Spec';
+
+      if (status === 'submitted') {
+        await TicketService.createAuditLog({
+          ticketId: entry.ticket_id,
+          stepId: allocation?.workflow_step_id || undefined,
+          action: 'SPEC_PROGRESS_SUBMITTED',
+          actionCategory: 'workflow_action',
+          description: `${specInfo} progress entry #${entry.entry_number} submitted for verification by ${userName}`,
+          performedBy: userId,
+          metadata: {
+            allocationId: entry.allocation_id,
+            entryNumber: entry.entry_number,
+            workDoneQuantity: entry.work_done_quantity,
+          },
+        });
+      } else if (status === 'verified') {
+        await TicketService.createAuditLog({
+          ticketId: entry.ticket_id,
+          stepId: allocation?.workflow_step_id || undefined,
+          action: 'SPEC_PROGRESS_VERIFIED',
+          actionCategory: 'status_change',
+          description: `${specInfo} progress entry #${entry.entry_number} verified by ${userName}`,
+          performedBy: userId,
+          metadata: {
+            allocationId: entry.allocation_id,
+            entryNumber: entry.entry_number,
+            workDoneQuantity: entry.work_done_quantity,
+          },
+        });
+      }
     } catch (error) {
       console.error('Error updating progress status:', error);
       throw error;
@@ -344,6 +500,32 @@ export class SpecAllocationProgressService {
     userId: string
   ): Promise<string> {
     try {
+      // Get progress entry details for audit log
+      const { data: progress, error: progressError } = await supabase
+        .from('spec_allocation_progress_tracking')
+        .select(`
+          entry_number,
+          ticket_id,
+          allocation_id
+        `)
+        .eq('id', progressId)
+        .single();
+
+      if (progressError) throw progressError;
+      if (!progress) throw new Error('Progress entry not found');
+
+      // Get allocation and spec details for audit log
+      const { data: allocation, error: allocError } = await supabase
+        .from('work_order_spec_allocations')
+        .select(`
+          workflow_step_id,
+          work_order_spec_details(spec_number, description, unit)
+        `)
+        .eq('id', progress.allocation_id)
+        .single();
+
+      if (allocError) throw allocError;
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
       const filePath = `spec-progress-docs/${progressId}/${fileName}`;
@@ -371,6 +553,35 @@ export class SpecAllocationProgressService {
 
       if (error) throw error;
       if (!data) throw new Error('Failed to save document record');
+
+      // Create audit log
+      const { data: user } = await supabase
+        .from('users')
+        .select('name')
+        .eq('id', userId)
+        .single();
+
+      const userName = user?.name || 'Unknown User';
+      const specDetail = allocation?.work_order_spec_details as any;
+      const specInfo = specDetail ? `Spec ${specDetail.spec_number}` : 'Spec';
+      const fileSizeKB = (file.size / 1024).toFixed(2);
+
+      await TicketService.createAuditLog({
+        ticketId: progress.ticket_id,
+        stepId: allocation?.workflow_step_id || undefined,
+        action: 'SPEC_PROGRESS_DOCUMENT_UPLOADED',
+        actionCategory: 'document_action',
+        description: `${specInfo} progress entry #${progress.entry_number}: Document "${file.name}" uploaded by ${userName} (${fileSizeKB} KB)`,
+        performedBy: userId,
+        metadata: {
+          allocationId: progress.allocation_id,
+          entryNumber: progress.entry_number,
+          documentId: data.id,
+          fileName: file.name,
+          fileSize: file.size,
+          contentType: file.type,
+        },
+      });
 
       return data.id;
     } catch (error) {

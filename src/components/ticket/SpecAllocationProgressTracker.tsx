@@ -192,23 +192,9 @@ export const SpecAllocationProgressTracker: React.FC<SpecAllocationProgressTrack
         selectedEntry.id,
         editedWorkDoneQuantity,
         editedComment,
-        editedMeasurementDate
+        editedMeasurementDate,
+        user.id
       );
-
-      await TicketService.createAuditLog({
-        ticketId,
-        stepId: workflowStepId,
-        action: 'SPEC_PROGRESS_UPDATED',
-        actionCategory: 'workflow_action',
-        description: `Spec progress entry #${selectedEntry.entryNumber} updated`,
-        performedBy: user.id,
-        metadata: {
-          entryId: selectedEntry.id,
-          allocationId,
-          oldQuantity: selectedEntry.workDoneQuantity,
-          newQuantity: editedWorkDoneQuantity,
-        },
-      });
 
       await loadEntries();
       const updated = await SpecAllocationProgressService.getProgressEntryWithDetails(selectedEntry.id);

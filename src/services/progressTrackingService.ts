@@ -1,5 +1,6 @@
 import { supabase, handleSupabaseError, isSupabaseAvailable } from '../lib/supabase';
 import { validateUUID } from '../lib/utils';
+import { TicketService } from './ticketService';
 
 export interface ProgressEntry {
   id: string;
@@ -231,6 +232,23 @@ export class ProgressTrackingService {
         throw insertError;
       }
 
+      // Create audit log
+      const userName = newEntry.creator?.name || 'Unknown User';
+      const commentSnippet = data.comment ? ` - ${data.comment.substring(0, 100)}${data.comment.length > 100 ? '...' : ''}` : '';
+      await TicketService.createAuditLog({
+        ticketId: data.ticketId,
+        stepId: data.stepId,
+        action: 'PROGRESS_ENTRY_CREATED',
+        actionCategory: 'workflow_action',
+        description: `Progress entry #${entryNumber} created: ${data.progressPercentage}% by ${userName}${commentSnippet}`,
+        performedBy: data.userId,
+        metadata: {
+          entryNumber,
+          progressPercentage: data.progressPercentage,
+          comment: data.comment || null,
+        },
+      });
+
       return {
         id: newEntry.id,
         stepId: newEntry.step_id,
@@ -273,10 +291,10 @@ export class ProgressTrackingService {
     }
 
     try {
-      // First verify this is the latest entry
+      // First verify this is the latest entry and get old progress
       const { data: existingEntry, error: checkError } = await supabase!
         .from('workflow_step_progress_tracking')
-        .select('is_latest, created_by')
+        .select('is_latest, created_by, progress_percentage, entry_number, ticket_id, step_id')
         .eq('id', entryId)
         .single();
 
@@ -287,6 +305,8 @@ export class ProgressTrackingService {
       if (!existingEntry.is_latest) {
         throw new Error('Only the latest progress entry can be updated');
       }
+
+      const oldProgress = existingEntry.progress_percentage;
 
       // Update the entry
       const { data: updatedEntry, error: updateError } = await supabase!
@@ -309,6 +329,28 @@ export class ProgressTrackingService {
         console.error('Error updating progress entry:', updateError);
         throw updateError;
       }
+
+      // Create audit log
+      const updaterName = updatedEntry.updater?.name || 'Unknown User';
+      const progressChange = oldProgress !== data.progressPercentage
+        ? ` (${oldProgress}% → ${data.progressPercentage}%)`
+        : '';
+      await TicketService.createAuditLog({
+        ticketId: existingEntry.ticket_id,
+        stepId: existingEntry.step_id,
+        action: 'PROGRESS_ENTRY_UPDATED',
+        actionCategory: 'workflow_action',
+        description: `Progress entry #${existingEntry.entry_number} updated${progressChange} by ${updaterName}`,
+        performedBy: data.userId,
+        oldData: JSON.stringify({ progressPercentage: oldProgress }),
+        newData: JSON.stringify({ progressPercentage: data.progressPercentage }),
+        metadata: {
+          entryNumber: existingEntry.entry_number,
+          oldProgress,
+          newProgress: data.progressPercentage,
+          comment: data.comment || null,
+        },
+      });
 
       return {
         id: updatedEntry.id,

@@ -1,8 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  TrendingUp, AlertCircle, Loader,
-  Clock, ChevronRight, Send, ArrowDown, MessageSquare, Upload, X, FileIcon
-} from 'lucide-react';
+import { TrendingUp, AlertCircle, Loader, Clock, ChevronRight, Send, ArrowDown, MessageSquare, Upload, X, File as FileIcon } from 'lucide-react';
 import {
   ProgressEntry,
   ProgressTrackingService,

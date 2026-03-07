@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LogIn, Eye, EyeOff } from 'lucide-react';
+import { LogIn, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const LoginForm: React.FC = () => {
@@ -42,6 +42,16 @@ const LoginForm: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 flex items-center justify-center px-4">
       <div className="max-w-md w-full bg-white bg-opacity-95 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-white border-opacity-20">
+        <div className="mb-6 bg-gradient-to-r from-orange-500 to-amber-500 text-white p-4 rounded-xl shadow-lg">
+          <div className="flex items-center justify-center space-x-2">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <div className="text-center">
+              <div className="font-bold text-sm">DEMO ENVIRONMENT</div>
+              <div className="text-xs mt-1">For Internal Team Review - Test the workflow with sample credentials below</div>
+            </div>
+          </div>
+        </div>
+
         <div className="text-center mb-8">
           <div className="mx-auto w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg transform rotate-3 hover:rotate-0 transition-transform duration-300">
             <LogIn className="w-10 h-10 text-white" />

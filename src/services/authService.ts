@@ -422,6 +422,24 @@ export class AuthService {
         active: true,
         created_at: new Date(),
         updated_at: new Date()
+      },
+      {
+        id: '550e8400-e29b-41d4-a716-446655440106',
+        name: 'Work Order Management',
+        description: 'Comprehensive work order management system for tracking items, specifications, and workflow execution',
+        icon: 'ClipboardList',
+        color: 'from-orange-500 to-red-500',
+        schema_id: 'work_order_management',
+        config: {
+          categories: ['Construction', 'Maintenance', 'Repair', 'Installation', 'Inspection', 'General'],
+          itemCategories: ['Materials', 'Equipment', 'Tools', 'Consumables', 'Services'],
+          specCategories: ['Civil Work', 'Electrical Work', 'Plumbing Work', 'HVAC Work', 'Carpentry', 'Painting'],
+          units: ['nos', 'kgs', 'meters', 'sqft', 'sqm', 'liters', 'units', 'boxes', 'bags', 'rolls'],
+          ticketPrefix: 'WO'
+        },
+        active: true,
+        created_at: new Date(),
+        updated_at: new Date()
       }
     ];
 

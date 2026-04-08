@@ -90,7 +90,7 @@ export const CollapsibleFilterPanel: React.FC<CollapsibleFilterPanelProps> = ({
       <button
         ref={buttonRef}
         onClick={onToggle}
-        className={`relative flex items-center space-x-1 px-2 py-1.5 text-xs rounded-lg border transition-all duration-200 ${
+        className={`relative flex items-center space-x-2 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${
           isOpen
             ? 'bg-blue-600 text-white border-blue-500 shadow-lg'
             : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 shadow-sm hover:shadow-md'
@@ -99,10 +99,10 @@ export const CollapsibleFilterPanel: React.FC<CollapsibleFilterPanelProps> = ({
         aria-label="Toggle search and filters"
         title="Search & Filters"
       >
-        <Filter className="w-3.5 h-3.5" />
+        <Filter className="w-4 h-4" />
         <span className="hidden sm:inline">Filters</span>
         {activeFilterCount > 0 && (
-          <span className="absolute -top-1 -right-1 flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-red-500 rounded-full animate-pulse">
+          <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full animate-pulse shadow-md">
             {activeFilterCount}
           </span>
         )}

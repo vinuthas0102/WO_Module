@@ -492,9 +492,9 @@ const DashboardPage: React.FC = () => {
         />
 
         {/* Unified Summary Frame */}
-        <div className="bg-white rounded-xl border-2 border-gray-200 shadow-md overflow-hidden">
+        <div className="bg-white rounded-xl border border-gray-300 shadow-lg overflow-hidden">
           {/* Frame Header with Controls */}
-          <div className="sticky top-16 z-20 bg-white border-b-2 border-gray-200 px-6 py-3 flex justify-end items-center">
+          <div className="sticky top-16 z-20 bg-gradient-to-b from-gray-50 to-white border-b border-gray-200 px-6 py-4 flex justify-end items-center shadow-sm">
             <SearchPanel
               filters={searchFilters}
               onFiltersChange={setSearchFilters}
@@ -504,7 +504,7 @@ const DashboardPage: React.FC = () => {
           </div>
 
           {/* Work Order Cards */}
-          <div className="p-6">
+          <div className="p-6 bg-white">
             <TicketGrid
               tickets={filteredTickets}
               onTicketClick={handleTicketClick}

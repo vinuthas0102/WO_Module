@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Grid3X3, List, Table } from 'lucide-react';
+import { Search, Grid3x3 as Grid3X3, List, Table } from 'lucide-react';
 import { TicketStatus } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { useTickets } from '../../context/TicketContext';
@@ -60,40 +60,40 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ filters, onFiltersChange, vie
   });
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3">
       <div className="flex items-center bg-white rounded-lg border border-gray-300 shadow-sm">
         <button
           onClick={() => onViewModeChange('grid')}
-          className={`p-1.5 rounded-l-lg transition-colors duration-200 ${
+          className={`p-2 rounded-l-lg transition-colors duration-200 ${
             viewMode === 'grid'
               ? 'bg-blue-500 text-white shadow-sm'
               : 'text-gray-600 hover:bg-gray-100'
           }`}
           title="Grid View"
         >
-          <Grid3X3 className="w-3.5 h-3.5" />
+          <Grid3X3 className="w-4 h-4" />
         </button>
         <button
           onClick={() => onViewModeChange('list')}
-          className={`p-1.5 transition-colors duration-200 ${
+          className={`p-2 transition-colors duration-200 ${
             viewMode === 'list'
               ? 'bg-blue-500 text-white shadow-sm'
               : 'text-gray-600 hover:bg-gray-100'
           }`}
           title="List View"
         >
-          <List className="w-3.5 h-3.5" />
+          <List className="w-4 h-4" />
         </button>
         <button
           onClick={() => onViewModeChange('table')}
-          className={`p-1.5 rounded-r-lg transition-colors duration-200 ${
+          className={`p-2 rounded-r-lg transition-colors duration-200 ${
             viewMode === 'table'
               ? 'bg-blue-500 text-white shadow-sm'
               : 'text-gray-600 hover:bg-gray-100'
           }`}
           title="Table View"
         >
-          <Table className="w-3.5 h-3.5" />
+          <Table className="w-4 h-4" />
         </button>
       </div>
 

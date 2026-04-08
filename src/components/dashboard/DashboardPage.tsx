@@ -300,202 +300,191 @@ const DashboardPage: React.FC = () => {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-gray-50">
-      <Header />
+  const welcomeMessage = `Welcome back, ${user?.name}! You have access to ${
+    user?.role === 'EO' ? 'all tickets across departments' :
+    user?.role === 'DO' ? `${user.department} department tickets` :
+    'your personal tickets'
+  }.`;
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-        <div className="mb-2 bg-white bg-opacity-60 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-white border-opacity-20 relative z-50">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              {selectedModule && (
-                <div className="flex items-center space-x-3">
-                  <div className="text-4xl">
-                    {getIconComponent(selectedModule.icon)}
+  const actionsMenuComponent = (
+    <div ref={actionsMenuRef}>
+      <button
+        onClick={() => setShowActionsMenu(!showActionsMenu)}
+        className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-3 rounded-lg transition-all duration-200 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105 border border-white border-opacity-30"
+        title="Actions Menu"
+      >
+        <MoreVertical className="w-5 h-5" />
+      </button>
+
+      {showActionsMenu && (
+        <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-[9999]">
+          <div>
+            <button
+              onClick={() => setShowCreateSubmenu(!showCreateSubmenu)}
+              className="w-full px-4 py-3 text-left hover:bg-orange-50 transition-colors flex items-center justify-between text-gray-700 hover:text-orange-600"
+            >
+              <div className="flex items-center space-x-3">
+                <div className="bg-orange-500 p-2 rounded-lg shadow-sm">
+                  <Plus className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <div className="font-semibold text-sm">Create</div>
+                  <div className="text-xs text-gray-500">New {terminology} options</div>
+                </div>
+              </div>
+              <ChevronRight className={`w-4 h-4 transition-transform ${showCreateSubmenu ? 'rotate-90' : ''}`} />
+            </button>
+
+            {showCreateSubmenu && (
+              <div className="bg-blue-50 border-t border-blue-100 py-1.5 px-2">
+                <button
+                  onClick={() => {
+                    setCopiedTicket(null);
+                    setShowCreateForm(true);
+                    closeActionsMenu();
+                  }}
+                  className="w-full px-3 py-2.5 text-left hover:bg-white hover:shadow-sm rounded-md transition-all flex items-center space-x-3 text-gray-700 hover:text-blue-600"
+                >
+                  <div className="bg-blue-500 p-1.5 rounded-md shadow-sm">
+                    <TicketIcon className="w-3.5 h-3.5 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-blue-700">
-                      {selectedModule.name}
-                    </h2>
-                    <p className="text-gray-700 text-sm">
-                      Welcome back, {user?.name}! You have access to{' '}
-                      {user?.role === 'EO' ? 'all tickets across departments' :
-                       user?.role === 'DO' ? `${user.department} department tickets` :
-                       'your personal tickets'}.
-                    </p>
+                    <div className="font-medium text-sm text-blue-700">Single {terminology.charAt(0).toUpperCase() + terminology.slice(1)}</div>
+                    <div className="text-xs text-blue-600">Create one {terminology}</div>
                   </div>
-                </div>
-              )}
-            </div>
+                </button>
 
-            <div className="relative z-[100]" ref={actionsMenuRef}>
+                <button
+                  onClick={() => {
+                    setShowCopyTicketModal(true);
+                    closeActionsMenu();
+                  }}
+                  className="w-full px-3 py-2.5 text-left hover:bg-white hover:shadow-sm rounded-md transition-all flex items-center space-x-3 text-gray-700 hover:text-teal-600 mt-1"
+                >
+                  <div className="bg-teal-500 p-1.5 rounded-md shadow-sm">
+                    <Plus className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <div>
+                    <div className="font-medium text-sm text-teal-700">Copy from Old</div>
+                    <div className="text-xs text-teal-600">Clone existing {terminology}</div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setShowBulkCreateModal(true);
+                    closeActionsMenu();
+                  }}
+                  className="w-full px-3 py-2.5 text-left hover:bg-white hover:shadow-sm rounded-md transition-all flex items-center space-x-3 text-gray-700 hover:text-green-600 mt-1"
+                >
+                  <div className="bg-green-600 p-1.5 rounded-md shadow-sm">
+                    <Layers className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <div>
+                    <div className="font-medium text-sm text-green-700">Bulk Create</div>
+                    <div className="text-xs text-green-600">Multiple {terminologyPlural}</div>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {user?.role === 'EO' && (
+            <>
               <button
-                onClick={() => setShowActionsMenu(!showActionsMenu)}
-                className="bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition-all duration-200 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105"
-                title="Actions Menu"
+                onClick={() => { setShowUserManagement(true); closeActionsMenu(); }}
+                className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center space-x-3 text-gray-700 hover:text-gray-900 border-t border-gray-100"
               >
-                <MoreVertical className="w-5 h-5" />
+                <div className="bg-blue-600 p-2 rounded-lg">
+                  <Users className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <div className="font-medium text-sm">User Management</div>
+                  <div className="text-xs text-gray-500">Manage system users</div>
+                </div>
               </button>
 
-              {showActionsMenu && (
-                <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-[9999]">
-                  <div>
-                    <button
-                      onClick={() => setShowCreateSubmenu(!showCreateSubmenu)}
-                      className="w-full px-4 py-3 text-left hover:bg-orange-50 transition-colors flex items-center justify-between text-gray-700 hover:text-orange-600"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="bg-orange-500 p-2 rounded-lg shadow-sm">
-                          <Plus className="w-4 h-4 text-white" />
-                        </div>
-                        <div>
-                          <div className="font-semibold text-sm">Create</div>
-                          <div className="text-xs text-gray-500">New {terminology} options</div>
-                        </div>
-                      </div>
-                      <ChevronRight className={`w-4 h-4 transition-transform ${showCreateSubmenu ? 'rotate-90' : ''}`} />
-                    </button>
-
-                    {showCreateSubmenu && (
-                      <div className="bg-blue-50 border-t border-blue-100 py-1.5 px-2">
-                        <button
-                          onClick={() => {
-                            setCopiedTicket(null);
-                            setShowCreateForm(true);
-                            closeActionsMenu();
-                          }}
-                          className="w-full px-3 py-2.5 text-left hover:bg-white hover:shadow-sm rounded-md transition-all flex items-center space-x-3 text-gray-700 hover:text-blue-600"
-                        >
-                          <div className="bg-blue-500 p-1.5 rounded-md shadow-sm">
-                            <TicketIcon className="w-3.5 h-3.5 text-white" />
-                          </div>
-                          <div>
-                            <div className="font-medium text-sm text-blue-700">Single {terminology.charAt(0).toUpperCase() + terminology.slice(1)}</div>
-                            <div className="text-xs text-blue-600">Create one {terminology}</div>
-                          </div>
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            setShowCopyTicketModal(true);
-                            closeActionsMenu();
-                          }}
-                          className="w-full px-3 py-2.5 text-left hover:bg-white hover:shadow-sm rounded-md transition-all flex items-center space-x-3 text-gray-700 hover:text-teal-600 mt-1"
-                        >
-                          <div className="bg-teal-500 p-1.5 rounded-md shadow-sm">
-                            <Plus className="w-3.5 h-3.5 text-white" />
-                          </div>
-                          <div>
-                            <div className="font-medium text-sm text-teal-700">Copy from Old</div>
-                            <div className="text-xs text-teal-600">Clone existing {terminology}</div>
-                          </div>
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            setShowBulkCreateModal(true);
-                            closeActionsMenu();
-                          }}
-                          className="w-full px-3 py-2.5 text-left hover:bg-white hover:shadow-sm rounded-md transition-all flex items-center space-x-3 text-gray-700 hover:text-green-600 mt-1"
-                        >
-                          <div className="bg-green-600 p-1.5 rounded-md shadow-sm">
-                            <Layers className="w-3.5 h-3.5 text-white" />
-                          </div>
-                          <div>
-                            <div className="font-medium text-sm text-green-700">Bulk Create</div>
-                            <div className="text-xs text-green-600">Multiple {terminologyPlural}</div>
-                          </div>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {user?.role === 'EO' && (
-                    <>
-                      <button
-                        onClick={() => { setShowUserManagement(true); closeActionsMenu(); }}
-                        className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center space-x-3 text-gray-700 hover:text-gray-900 border-t border-gray-100"
-                      >
-                        <div className="bg-blue-600 p-2 rounded-lg">
-                          <Users className="w-4 h-4 text-white" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-sm">User Management</div>
-                          <div className="text-xs text-gray-500">Manage system users</div>
-                        </div>
-                      </button>
-
-                      <button
-                        onClick={() => { setShowUserPreferences(true); closeActionsMenu(); }}
-                        className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center space-x-3 text-gray-700 hover:text-gray-900"
-                      >
-                        <div className="bg-gray-600 p-2 rounded-lg">
-                          <Settings className="w-4 h-4 text-white" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-sm">Display Preferences</div>
-                          <div className="text-xs text-gray-500">Customize icon display</div>
-                        </div>
-                      </button>
-
-                      <button
-                        onClick={() => { setShowAdminPanel(true); closeActionsMenu(); }}
-                        className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center space-x-3 text-gray-700 hover:text-gray-900"
-                      >
-                        <div className="bg-gray-700 p-2 rounded-lg">
-                          <Settings className="w-4 h-4 text-white" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-sm">Admin Setup</div>
-                          <div className="text-xs text-gray-500">Configure fields & modules</div>
-                        </div>
-                      </button>
-
-                      <button
-                        onClick={() => { setShowFileReferenceManager(true); closeActionsMenu(); }}
-                        className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center space-x-3 text-gray-700 hover:text-gray-900"
-                      >
-                        <div className="bg-cyan-600 p-2 rounded-lg">
-                          <FileJson className="w-4 h-4 text-white" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-sm">File References</div>
-                          <div className="text-xs text-gray-500">Manage file reference templates</div>
-                        </div>
-                      </button>
-
-                      <button
-                        onClick={() => { setShowItemMasterManager(true); closeActionsMenu(); }}
-                        className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center space-x-3 text-gray-700 hover:text-gray-900"
-                      >
-                        <div className="bg-orange-600 p-2 rounded-lg">
-                          <Package className="w-4 h-4 text-white" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-sm">WO Items Master</div>
-                          <div className="text-xs text-gray-500">Manage work order items</div>
-                        </div>
-                      </button>
-
-                      <button
-                        onClick={() => { setShowSpecMasterManager(true); closeActionsMenu(); }}
-                        className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center space-x-3 text-gray-700 hover:text-gray-900"
-                      >
-                        <div className="bg-green-600 p-2 rounded-lg">
-                          <FileCheck className="w-4 h-4 text-white" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-sm">WO Specs Master</div>
-                          <div className="text-xs text-gray-500">Manage work order specifications</div>
-                        </div>
-                      </button>
-                    </>
-                  )}
+              <button
+                onClick={() => { setShowUserPreferences(true); closeActionsMenu(); }}
+                className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center space-x-3 text-gray-700 hover:text-gray-900"
+              >
+                <div className="bg-gray-600 p-2 rounded-lg">
+                  <Settings className="w-4 h-4 text-white" />
                 </div>
-              )}
-            </div>
-          </div>
+                <div>
+                  <div className="font-medium text-sm">Display Preferences</div>
+                  <div className="text-xs text-gray-500">Customize icon display</div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => { setShowAdminPanel(true); closeActionsMenu(); }}
+                className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center space-x-3 text-gray-700 hover:text-gray-900"
+              >
+                <div className="bg-gray-700 p-2 rounded-lg">
+                  <Settings className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <div className="font-medium text-sm">Admin Setup</div>
+                  <div className="text-xs text-gray-500">Configure fields & modules</div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => { setShowFileReferenceManager(true); closeActionsMenu(); }}
+                className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center space-x-3 text-gray-700 hover:text-gray-900"
+              >
+                <div className="bg-cyan-600 p-2 rounded-lg">
+                  <FileJson className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <div className="font-medium text-sm">File References</div>
+                  <div className="text-xs text-gray-500">Manage file reference templates</div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => { setShowItemMasterManager(true); closeActionsMenu(); }}
+                className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center space-x-3 text-gray-700 hover:text-gray-900"
+              >
+                <div className="bg-orange-600 p-2 rounded-lg">
+                  <Package className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <div className="font-medium text-sm">WO Items Master</div>
+                  <div className="text-xs text-gray-500">Manage work order items</div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => { setShowSpecMasterManager(true); closeActionsMenu(); }}
+                className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center space-x-3 text-gray-700 hover:text-gray-900"
+              >
+                <div className="bg-green-600 p-2 rounded-lg">
+                  <FileCheck className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <div className="font-medium text-sm">WO Specs Master</div>
+                  <div className="text-xs text-gray-500">Manage work order specifications</div>
+                </div>
+              </button>
+            </>
+          )}
         </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-gray-50">
+      <Header
+        showWelcome={true}
+        moduleIcon={selectedModule?.icon}
+        welcomeMessage={welcomeMessage}
+        actionsMenu={actionsMenuComponent}
+      />
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
 
         <StatusCards
           onStatusFilter={setStatusFilter}

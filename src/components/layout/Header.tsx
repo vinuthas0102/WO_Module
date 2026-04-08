@@ -7,7 +7,25 @@ import { htmlExportService } from '../../services/htmlExportService';
 import NotificationBadge from '../common/NotificationBadge';
 import NotificationPanel from '../common/NotificationPanel';
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  showWelcome?: boolean;
+  moduleIcon?: string;
+  welcomeMessage?: string;
+  actionsMenu?: React.ReactNode;
+}
+
+const getIconComponent = (iconName: string) => {
+  const iconMap: Record<string, string> = {
+    'Wrench': '🔧',
+    'AlertTriangle': '⚠️',
+    'Users': '👥',
+    'FileText': '📄',
+    'Briefcase': '💼'
+  };
+  return iconMap[iconName] || '📋';
+};
+
+const Header: React.FC<HeaderProps> = ({ showWelcome = false, moduleIcon, welcomeMessage, actionsMenu }) => {
   const { user, logout, selectedModule, setSelectedModule } = useAuth();
   const { unreadCount } = useNotifications();
   const envConfig = getEnvironmentConfig();
@@ -85,7 +103,7 @@ const Header: React.FC = () => {
                 </div>
                 <h1 className="text-xl font-bold text-white">TrackSphere</h1>
               </div>
-              {selectedModule && (
+              {selectedModule && !showWelcome && (
                 <div className="flex items-center space-x-2">
                   <span className="text-blue-200">|</span>
                   <span className="text-sm font-medium text-blue-100">{selectedModule.name}</span>
@@ -172,6 +190,31 @@ const Header: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {showWelcome && selectedModule && (
+          <div className="border-t border-blue-500 border-opacity-30 pt-3 pb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="text-4xl">
+                  {getIconComponent(moduleIcon || selectedModule.icon)}
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">
+                    {selectedModule.name}
+                  </h2>
+                  <p className="text-blue-100 text-sm">
+                    {welcomeMessage || `Welcome back, ${user?.name}!`}
+                  </p>
+                </div>
+              </div>
+              {actionsMenu && (
+                <div className="relative z-[100]">
+                  {actionsMenu}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </header>
     </>

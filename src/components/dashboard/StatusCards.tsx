@@ -1,5 +1,5 @@
-import React from 'react';
-import { FileText, Clock, Play, CheckCircle, XCircle } from 'lucide-react';
+import React, { useRef, useState, useEffect } from 'react';
+import { FileText, Clock, Play, CheckCircle, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { TicketStatus } from '../../types';
 import { useTickets } from '../../context/TicketContext';
 
@@ -10,6 +10,9 @@ interface StatusCardsProps {
 
 const StatusCards: React.FC<StatusCardsProps> = ({ onStatusFilter, activeFilter }) => {
   const { tickets } = useTickets();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   const statusConfig = [
     {
@@ -67,23 +70,60 @@ const StatusCards: React.FC<StatusCardsProps> = ({ onStatusFilter, activeFilter 
     return tickets.filter(ticket => ticket.status === status).length;
   };
 
-  const activeStatusLabel = activeFilter
-    ? statusConfig.find(c => c.status === activeFilter)?.label
-    : null;
+  const updateScrollButtons = () => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
+    }
+  };
+
+  useEffect(() => {
+    updateScrollButtons();
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', updateScrollButtons);
+      window.addEventListener('resize', updateScrollButtons);
+      return () => {
+        container.removeEventListener('scroll', updateScrollButtons);
+        window.removeEventListener('resize', updateScrollButtons);
+      };
+    }
+  }, []);
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollContainerRef.current) {
+      const scrollAmount = 320; // Approximate width of one card plus gap
+      const newScrollLeft = direction === 'left'
+        ? scrollContainerRef.current.scrollLeft - scrollAmount
+        : scrollContainerRef.current.scrollLeft + scrollAmount;
+
+      scrollContainerRef.current.scrollTo({
+        left: newScrollLeft,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-5 mb-4 border border-gray-200">
-      {activeStatusLabel && (
-        <div className="mb-3 text-sm font-medium text-gray-700 flex items-center space-x-2">
-          <span className="text-gray-500">Showing:</span>
-          <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full font-semibold">
-            {activeStatusLabel}
-          </span>
-        </div>
-      )}
+      <div className="relative flex items-center">
+        {/* Left Navigation Button */}
+        {canScrollLeft && (
+          <button
+            onClick={() => scroll('left')}
+            className="absolute left-0 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-white shadow-lg border border-gray-300 hover:bg-gray-50 hover:shadow-xl transition-all duration-200 hover:scale-110"
+            aria-label="Scroll left"
+          >
+            <ChevronLeft className="w-5 h-5 text-gray-700" />
+          </button>
+        )}
 
-      <div className="relative">
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory scroll-smooth">
+        {/* Cards Container */}
+        <div
+          ref={scrollContainerRef}
+          className="flex gap-4 overflow-hidden scroll-smooth w-full px-12"
+        >
           {statusConfig.map((config) => {
             const count = getStatusCount(config.status);
             const isActive = activeFilter === config.status;
@@ -94,29 +134,37 @@ const StatusCards: React.FC<StatusCardsProps> = ({ onStatusFilter, activeFilter 
                 key={config.status}
                 onClick={() => onStatusFilter(isActive ? null : config.status)}
                 className={`
-                  cursor-pointer border rounded-xl p-4 transition-all duration-300 transform
-                  backdrop-blur-md snap-center flex-shrink-0
+                  cursor-pointer border rounded-xl p-3 transition-all duration-300 transform
+                  backdrop-blur-md flex-shrink-0
                   ${config.glassColor} ${config.hoverGlass}
                   ${isActive
                     ? 'ring-2 ring-blue-500 ring-opacity-60 shadow-xl scale-110 z-10'
                     : 'shadow-md hover:shadow-lg hover:scale-105'}
-                  min-w-[140px] flex flex-col items-center justify-center space-y-2
+                  w-[280px] h-16 flex flex-row items-center justify-start gap-3
                 `}
                 style={{
                   backdropFilter: 'blur(10px)',
                   WebkitBackdropFilter: 'blur(10px)'
                 }}
               >
-                <IconComponent className={`w-6 h-6 ${isActive ? 'opacity-90' : 'opacity-70'}`} />
-                <div className="text-2xl font-bold">{count}</div>
-                <div className="text-sm font-semibold text-center">{config.label}</div>
+                <IconComponent className={`w-5 h-5 flex-shrink-0 ${isActive ? 'opacity-90' : 'opacity-70'}`} />
+                <div className="text-lg font-bold flex-shrink-0">{count}</div>
+                <div className="text-xs font-semibold">{config.label}</div>
               </div>
             );
           })}
         </div>
 
-        <div className="absolute top-0 right-0 h-full w-16 bg-gradient-to-l from-white to-transparent pointer-events-none" />
-        <div className="absolute top-0 left-0 h-full w-16 bg-gradient-to-r from-white to-transparent pointer-events-none" />
+        {/* Right Navigation Button */}
+        {canScrollRight && (
+          <button
+            onClick={() => scroll('right')}
+            className="absolute right-0 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-white shadow-lg border border-gray-300 hover:bg-gray-50 hover:shadow-xl transition-all duration-200 hover:scale-110"
+            aria-label="Scroll right"
+          >
+            <ChevronRight className="w-5 h-5 text-gray-700" />
+          </button>
+        )}
       </div>
     </div>
   );

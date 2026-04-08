@@ -21,7 +21,7 @@ const StatusCards: React.FC<StatusCardsProps> = ({ onStatusFilter, activeFilter 
       icon: FileText,
       glassColor: 'bg-gray-500/20 border-gray-400/30 text-gray-800',
       hoverGlass: 'hover:bg-gray-500/30 hover:border-gray-400/50',
-      selectedColor: 'bg-gray-400/50 border-gray-500/70'
+      selectedColor: 'bg-gray-600 border-gray-700 text-white shadow-gray-400/50'
     },
     {
       status: 'CREATED' as TicketStatus,
@@ -29,7 +29,7 @@ const StatusCards: React.FC<StatusCardsProps> = ({ onStatusFilter, activeFilter 
       icon: Clock,
       glassColor: 'bg-blue-500/20 border-blue-400/30 text-blue-800',
       hoverGlass: 'hover:bg-blue-500/30 hover:border-blue-400/50',
-      selectedColor: 'bg-blue-400/50 border-blue-500/70'
+      selectedColor: 'bg-blue-600 border-blue-700 text-white shadow-blue-400/50'
     },
     {
       status: 'APPROVED' as TicketStatus,
@@ -37,7 +37,7 @@ const StatusCards: React.FC<StatusCardsProps> = ({ onStatusFilter, activeFilter 
       icon: CheckCircle,
       glassColor: 'bg-teal-500/20 border-teal-400/30 text-teal-800',
       hoverGlass: 'hover:bg-teal-500/30 hover:border-teal-400/50',
-      selectedColor: 'bg-teal-400/50 border-teal-500/70'
+      selectedColor: 'bg-teal-600 border-teal-700 text-white shadow-teal-400/50'
     },
     {
       status: 'ACTIVE' as TicketStatus,
@@ -45,7 +45,7 @@ const StatusCards: React.FC<StatusCardsProps> = ({ onStatusFilter, activeFilter 
       icon: Play,
       glassColor: 'bg-orange-500/20 border-orange-400/30 text-orange-800',
       hoverGlass: 'hover:bg-orange-500/30 hover:border-orange-400/50',
-      selectedColor: 'bg-orange-400/50 border-orange-500/70'
+      selectedColor: 'bg-orange-600 border-orange-700 text-white shadow-orange-400/50'
     },
     {
       status: 'COMPLETED' as TicketStatus,
@@ -53,7 +53,7 @@ const StatusCards: React.FC<StatusCardsProps> = ({ onStatusFilter, activeFilter 
       icon: CheckCircle,
       glassColor: 'bg-green-500/20 border-green-400/30 text-green-800',
       hoverGlass: 'hover:bg-green-500/30 hover:border-green-400/50',
-      selectedColor: 'bg-green-400/50 border-green-500/70'
+      selectedColor: 'bg-green-600 border-green-700 text-white shadow-green-400/50'
     },
     {
       status: 'CLOSED' as TicketStatus,
@@ -61,7 +61,7 @@ const StatusCards: React.FC<StatusCardsProps> = ({ onStatusFilter, activeFilter 
       icon: XCircle,
       glassColor: 'bg-slate-500/20 border-slate-400/30 text-slate-800',
       hoverGlass: 'hover:bg-slate-500/30 hover:border-slate-400/50',
-      selectedColor: 'bg-slate-400/50 border-slate-500/70'
+      selectedColor: 'bg-slate-600 border-slate-700 text-white shadow-slate-400/50'
     },
     {
       status: 'CANCELLED' as TicketStatus,
@@ -69,7 +69,7 @@ const StatusCards: React.FC<StatusCardsProps> = ({ onStatusFilter, activeFilter 
       icon: XCircle,
       glassColor: 'bg-red-500/20 border-red-400/30 text-red-800',
       hoverGlass: 'hover:bg-red-500/30 hover:border-red-400/50',
-      selectedColor: 'bg-red-400/50 border-red-500/70'
+      selectedColor: 'bg-red-600 border-red-700 text-white shadow-red-400/50'
     }
   ];
 
@@ -142,22 +142,22 @@ const StatusCards: React.FC<StatusCardsProps> = ({ onStatusFilter, activeFilter 
                 onClick={() => onStatusFilter(isActive ? null : config.status)}
                 className={`
                   cursor-pointer border-2 rounded-xl p-3.5 transition-all duration-300 transform
-                  backdrop-blur-md flex-shrink-0
+                  flex-shrink-0
                   ${isActive ? config.selectedColor : config.glassColor}
                   ${!isActive && config.hoverGlass}
                   ${isActive
-                    ? 'shadow-xl scale-105 z-10'
-                    : 'shadow-md hover:shadow-lg hover:scale-105'}
+                    ? 'shadow-2xl scale-105 z-10 backdrop-blur-none'
+                    : 'shadow-md hover:shadow-lg hover:scale-105 backdrop-blur-md'}
                   w-[200px] min-h-[4rem] flex flex-row items-center justify-start gap-3
                 `}
-                style={{
+                style={!isActive ? {
                   backdropFilter: 'blur(10px)',
                   WebkitBackdropFilter: 'blur(10px)'
-                }}
+                } : undefined}
               >
                 <IconComponent className={`w-5 h-5 flex-shrink-0 ${isActive ? 'opacity-100' : 'opacity-70'}`} />
-                <div className="text-lg font-bold flex-shrink-0">{count}</div>
-                <div className="text-xs font-semibold whitespace-nowrap">{config.label}</div>
+                <div className={`text-lg font-bold flex-shrink-0 ${isActive ? 'text-white' : ''}`}>{count}</div>
+                <div className={`text-xs font-semibold whitespace-nowrap ${isActive ? 'text-white' : ''}`}>{config.label}</div>
               </div>
             );
           })}

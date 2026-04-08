@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Calendar, User, AlertTriangle, Clock, CheckCircle, XCircle, FileText, Users, Edit, Check, X, RotateCcw, Eye, Play, IndianRupee } from 'lucide-react';
+import { Calendar, User, AlertTriangle, Clock, CheckCircle, XCircle, FileText, Users, CreditCard as Edit, Check, X, RotateCcw, Eye, Play, IndianRupee } from 'lucide-react';
 import { Ticket, User as UserType, ActionIconDefinition, Module } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { useTickets } from '../../context/TicketContext';
@@ -438,7 +438,16 @@ const TicketCard: React.FC<TicketCardProps> = ({
         </div>
 
         {/* Right Stub Area */}
-        <div className="absolute right-0 top-0 bottom-0 w-20 flex flex-col items-center justify-between py-5 bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="absolute right-0 top-0 bottom-0 w-20 flex flex-col items-center py-5 bg-gradient-to-br from-gray-50 to-gray-100">
+          {/* Action Icons */}
+          <div onClick={(e) => e.stopPropagation()} className="mb-4">
+            <IconDisplayWrapper
+              actions={ticketActions}
+              preferences={displayPreferences ?? undefined}
+              loading={!displayPreferences && !!user}
+            />
+          </div>
+
           {/* Ticket Number */}
           <div className="flex-1 flex items-center justify-center">
             <div className="transform -rotate-90 whitespace-nowrap">
@@ -446,15 +455,6 @@ const TicketCard: React.FC<TicketCardProps> = ({
                 {ticket.ticketNumber}
               </span>
             </div>
-          </div>
-
-          {/* Action Icons */}
-          <div onClick={(e) => e.stopPropagation()}>
-            <IconDisplayWrapper
-              actions={ticketActions}
-              preferences={displayPreferences ?? undefined}
-              loading={!displayPreferences && !!user}
-            />
           </div>
         </div>
       </div>

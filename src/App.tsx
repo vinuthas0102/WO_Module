@@ -7,7 +7,6 @@ import LoginForm from './components/auth/LoginForm';
 import ModuleSelection from './components/auth/ModuleSelection';
 import LandingPage from './components/landing/LandingPage';
 import DashboardPage from './components/dashboard/DashboardPage';
-import DemoEnvironmentBanner from './components/common/DemoEnvironmentBanner';
 
 const AppContent: React.FC = () => {
   const { isAuthenticated, isModuleSelected } = useAuth();
@@ -17,20 +16,10 @@ const AppContent: React.FC = () => {
   }
 
   if (!isModuleSelected) {
-    return (
-      <>
-        <DemoEnvironmentBanner />
-        <ModuleSelection />
-      </>
-    );
+    return <ModuleSelection />;
   }
 
-  return (
-    <>
-      <DemoEnvironmentBanner />
-      <DashboardPage />
-    </>
-  );
+  return <DashboardPage />;
 };
 
 const App: React.FC = () => {

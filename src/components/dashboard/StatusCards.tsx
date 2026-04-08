@@ -20,49 +20,56 @@ const StatusCards: React.FC<StatusCardsProps> = ({ onStatusFilter, activeFilter 
       label: 'Draft',
       icon: FileText,
       glassColor: 'bg-gray-500/20 border-gray-400/30 text-gray-800',
-      hoverGlass: 'hover:bg-gray-500/30 hover:border-gray-400/50'
+      hoverGlass: 'hover:bg-gray-500/30 hover:border-gray-400/50',
+      selectedColor: 'bg-gray-400/50 border-gray-500/70'
     },
     {
       status: 'CREATED' as TicketStatus,
       label: 'Created',
       icon: Clock,
       glassColor: 'bg-blue-500/20 border-blue-400/30 text-blue-800',
-      hoverGlass: 'hover:bg-blue-500/30 hover:border-blue-400/50'
+      hoverGlass: 'hover:bg-blue-500/30 hover:border-blue-400/50',
+      selectedColor: 'bg-blue-400/50 border-blue-500/70'
     },
     {
       status: 'APPROVED' as TicketStatus,
       label: 'Approved',
       icon: CheckCircle,
       glassColor: 'bg-teal-500/20 border-teal-400/30 text-teal-800',
-      hoverGlass: 'hover:bg-teal-500/30 hover:border-teal-400/50'
+      hoverGlass: 'hover:bg-teal-500/30 hover:border-teal-400/50',
+      selectedColor: 'bg-teal-400/50 border-teal-500/70'
     },
     {
       status: 'ACTIVE' as TicketStatus,
       label: 'Active',
       icon: Play,
       glassColor: 'bg-orange-500/20 border-orange-400/30 text-orange-800',
-      hoverGlass: 'hover:bg-orange-500/30 hover:border-orange-400/50'
+      hoverGlass: 'hover:bg-orange-500/30 hover:border-orange-400/50',
+      selectedColor: 'bg-orange-400/50 border-orange-500/70'
     },
     {
       status: 'COMPLETED' as TicketStatus,
       label: 'Completed',
       icon: CheckCircle,
       glassColor: 'bg-green-500/20 border-green-400/30 text-green-800',
-      hoverGlass: 'hover:bg-green-500/30 hover:border-green-400/50'
+      hoverGlass: 'hover:bg-green-500/30 hover:border-green-400/50',
+      selectedColor: 'bg-green-400/50 border-green-500/70'
     },
     {
       status: 'CLOSED' as TicketStatus,
       label: 'Closed',
       icon: XCircle,
       glassColor: 'bg-slate-500/20 border-slate-400/30 text-slate-800',
-      hoverGlass: 'hover:bg-slate-500/30 hover:border-slate-400/50'
+      hoverGlass: 'hover:bg-slate-500/30 hover:border-slate-400/50',
+      selectedColor: 'bg-slate-400/50 border-slate-500/70'
     },
     {
       status: 'CANCELLED' as TicketStatus,
       label: 'Cancelled',
       icon: XCircle,
       glassColor: 'bg-red-500/20 border-red-400/30 text-red-800',
-      hoverGlass: 'hover:bg-red-500/30 hover:border-red-400/50'
+      hoverGlass: 'hover:bg-red-500/30 hover:border-red-400/50',
+      selectedColor: 'bg-red-400/50 border-red-500/70'
     }
   ];
 
@@ -93,7 +100,7 @@ const StatusCards: React.FC<StatusCardsProps> = ({ onStatusFilter, activeFilter 
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollContainerRef.current) {
-      const scrollAmount = 320; // Approximate width of one card plus gap
+      const scrollAmount = 240; // Card width (200px) plus gap (40px)
       const newScrollLeft = direction === 'left'
         ? scrollContainerRef.current.scrollLeft - scrollAmount
         : scrollContainerRef.current.scrollLeft + scrollAmount;
@@ -122,7 +129,7 @@ const StatusCards: React.FC<StatusCardsProps> = ({ onStatusFilter, activeFilter 
         {/* Cards Container */}
         <div
           ref={scrollContainerRef}
-          className="flex gap-4 overflow-hidden scroll-smooth w-full px-12"
+          className="flex gap-6 overflow-hidden scroll-smooth w-full px-12"
         >
           {statusConfig.map((config) => {
             const count = getStatusCount(config.status);
@@ -134,22 +141,23 @@ const StatusCards: React.FC<StatusCardsProps> = ({ onStatusFilter, activeFilter 
                 key={config.status}
                 onClick={() => onStatusFilter(isActive ? null : config.status)}
                 className={`
-                  cursor-pointer border rounded-xl p-3 transition-all duration-300 transform
+                  cursor-pointer border-2 rounded-xl p-3.5 transition-all duration-300 transform
                   backdrop-blur-md flex-shrink-0
-                  ${config.glassColor} ${config.hoverGlass}
+                  ${isActive ? config.selectedColor : config.glassColor}
+                  ${!isActive && config.hoverGlass}
                   ${isActive
-                    ? 'ring-2 ring-blue-500 ring-opacity-60 shadow-xl scale-110 z-10'
+                    ? 'shadow-xl scale-105 z-10'
                     : 'shadow-md hover:shadow-lg hover:scale-105'}
-                  w-[280px] h-16 flex flex-row items-center justify-start gap-3
+                  w-[200px] min-h-[4rem] flex flex-row items-center justify-start gap-3
                 `}
                 style={{
                   backdropFilter: 'blur(10px)',
                   WebkitBackdropFilter: 'blur(10px)'
                 }}
               >
-                <IconComponent className={`w-5 h-5 flex-shrink-0 ${isActive ? 'opacity-90' : 'opacity-70'}`} />
+                <IconComponent className={`w-5 h-5 flex-shrink-0 ${isActive ? 'opacity-100' : 'opacity-70'}`} />
                 <div className="text-lg font-bold flex-shrink-0">{count}</div>
-                <div className="text-xs font-semibold">{config.label}</div>
+                <div className="text-xs font-semibold whitespace-nowrap">{config.label}</div>
               </div>
             );
           })}

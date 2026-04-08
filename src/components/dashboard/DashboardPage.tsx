@@ -491,29 +491,26 @@ const DashboardPage: React.FC = () => {
           activeFilter={statusFilter}
         />
 
-        {/* Unified Summary Frame */}
-        <div className="bg-white rounded-xl border border-gray-300 shadow-lg overflow-hidden">
-          {/* Frame Header with Controls */}
-          <div className="sticky top-16 z-20 bg-gradient-to-b from-gray-50 to-white border-b border-gray-200 px-6 py-4 flex justify-end items-center shadow-sm">
-            <SearchPanel
-              filters={searchFilters}
-              onFiltersChange={setSearchFilters}
-              viewMode={viewMode}
-              onViewModeChange={setViewMode}
-            />
-          </div>
+        {/* Controls Section */}
+        <div className="flex justify-end items-center py-3">
+          <SearchPanel
+            filters={searchFilters}
+            onFiltersChange={setSearchFilters}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+          />
+        </div>
 
-          {/* Work Order Cards */}
-          <div className="p-6 bg-white">
-            <TicketGrid
-              tickets={filteredTickets}
-              onTicketClick={handleTicketClick}
-              expandedTickets={expandedTickets}
-              onToggleExpand={handleToggleExpand}
-              onModifyTicket={handleModifyTicket}
-              viewMode={viewMode}
-            />
-          </div>
+        {/* Work Order Cards */}
+        <div>
+          <TicketGrid
+            tickets={filteredTickets}
+            onTicketClick={handleTicketClick}
+            expandedTickets={expandedTickets}
+            onToggleExpand={handleToggleExpand}
+            onModifyTicket={handleModifyTicket}
+            viewMode={viewMode}
+          />
         </div>
       </main>
 

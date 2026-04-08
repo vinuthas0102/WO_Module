@@ -491,11 +491,10 @@ const DashboardPage: React.FC = () => {
           activeFilter={statusFilter}
         />
 
-        <div className="sticky top-16 z-20 bg-gradient-to-r from-blue-50 to-slate-50 border-b border-gray-200 shadow-sm transition-shadow duration-200 -mx-8 px-8 py-2 mb-4">
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-700 font-medium">
-              Showing {filteredTickets.length} {getModuleTerminologyLower(selectedModule?.id, filteredTickets.length !== 1 ? 'plural' : 'singular')}
-            </div>
+        {/* Unified Summary Frame */}
+        <div className="bg-white rounded-xl border-2 border-gray-200 shadow-md overflow-hidden">
+          {/* Frame Header with Controls */}
+          <div className="sticky top-16 z-20 bg-white border-b-2 border-gray-200 px-6 py-3 flex justify-end items-center">
             <SearchPanel
               filters={searchFilters}
               onFiltersChange={setSearchFilters}
@@ -503,16 +502,19 @@ const DashboardPage: React.FC = () => {
               onViewModeChange={setViewMode}
             />
           </div>
-        </div>
 
-        <TicketGrid
-          tickets={filteredTickets}
-          onTicketClick={handleTicketClick}
-          expandedTickets={expandedTickets}
-          onToggleExpand={handleToggleExpand}
-          onModifyTicket={handleModifyTicket}
-          viewMode={viewMode}
-        />
+          {/* Work Order Cards */}
+          <div className="p-6">
+            <TicketGrid
+              tickets={filteredTickets}
+              onTicketClick={handleTicketClick}
+              expandedTickets={expandedTickets}
+              onToggleExpand={handleToggleExpand}
+              onModifyTicket={handleModifyTicket}
+              viewMode={viewMode}
+            />
+          </div>
+        </div>
       </main>
 
       <TicketForm

@@ -100,7 +100,7 @@ const TicketGrid: React.FC<TicketGridProps> = ({
         <div className={`${
           viewMode === 'grid'
             ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'
-            : 'space-y-1.5'
+            : 'space-y-2.5'
         }`}>
           {tickets.map((ticket) => (
             <TicketCard

@@ -113,7 +113,7 @@ const StatusCards: React.FC<StatusCardsProps> = ({ onStatusFilter, activeFilter 
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-5 mb-4 border border-gray-200">
+    <div className="bg-white rounded-lg shadow-lg p-5 mb-2 border border-gray-200">
       <div className="relative flex items-center">
         {/* Left Navigation Button */}
         {canScrollLeft && (

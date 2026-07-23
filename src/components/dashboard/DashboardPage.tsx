@@ -491,8 +491,9 @@ const DashboardPage: React.FC = () => {
           activeFilter={statusFilter}
         />
 
+
         {/* Controls Section */}
-        <div className="flex justify-end items-center py-3">
+        <div className="flex justify-end items-center py-1.5">
           <SearchPanel
             filters={searchFilters}
             onFiltersChange={setSearchFilters}

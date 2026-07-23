@@ -351,7 +351,7 @@ const TicketCard: React.FC<TicketCardProps> = ({
 
         <div className="relative pl-4 pr-4 py-2.5">
           {/* Row 1: Ticket number + badges + actions */}
-          <div className="flex items-center justify-between gap-2 mb-1.5">
+          <div className="flex items-center justify-between gap-2 mb-2">
             <div className="flex items-center gap-2 min-w-0">
               <span className="text-[11px] font-bold text-gray-500 tracking-wide uppercase whitespace-nowrap">
                 {ticket.ticketNumber}
@@ -381,38 +381,38 @@ const TicketCard: React.FC<TicketCardProps> = ({
           </div>
 
           {/* Row 2: Label-data grid */}
-          <div className="flex items-stretch gap-4 text-xs">
+          <div className="flex items-stretch gap-3 text-xs">
             {/* Title */}
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 pr-3 border-r border-gray-100">
               <div className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Title</div>
               <div className="font-semibold text-gray-900 truncate" title={ticket.title}>{ticket.title}</div>
             </div>
             {/* Category */}
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 pr-3 border-r border-gray-100">
               <div className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Category</div>
               <div className="font-medium text-gray-700 truncate max-w-[120px]" title={ticket.category}>{ticket.category}</div>
             </div>
             {/* Department */}
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 pr-3 border-r border-gray-100">
               <div className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Dept</div>
               <div className="font-medium text-gray-700 truncate max-w-[100px]" title={ticket.department}>{ticket.department}</div>
             </div>
             {/* Raised By */}
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 pr-3 border-r border-gray-100">
               <div className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Raised By</div>
               <div className="font-medium text-gray-700 truncate max-w-[100px]" title={createdByUser?.name}>
                 {createdByUser?.name?.split(' ')[0] || 'Unknown'}
               </div>
             </div>
             {/* Assigned To */}
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 pr-3 border-r border-gray-100">
               <div className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Assigned</div>
               <div className="font-medium text-gray-700 truncate max-w-[100px]" title={assignedToUser?.name}>
                 {assignedToUser?.name?.split(' ')[0] || 'Unassigned'}
               </div>
             </div>
             {/* Due Date */}
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 pr-3 border-r border-gray-100">
               <div className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Due Date</div>
               <div className={`font-medium truncate ${isOverdue ? 'text-rose-600 font-bold' : 'text-gray-700'}`}>
                 {ticket.dueDate ? formatDate(ticket.dueDate) : formatDate(ticket.createdAt)}

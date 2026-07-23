@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Minimize2, FileText, Package, ListChecks, ChevronRight } from 'lucide-react';
+import { X, Minimize2, FileText, Package, ListChecks, ChevronRight, FileDown } from 'lucide-react';
 
 interface NavigationCard {
   id: string;
@@ -27,6 +27,7 @@ interface FullScreenNavigableViewProps {
   initialSection?: string;
   navigationCards: NavigationCard[];
   onSectionChange?: (sectionId: string) => void;
+  onExport?: () => void;
   children: (activeSectionId: string) => React.ReactNode;
 }
 
@@ -40,6 +41,7 @@ const FullScreenNavigableView: React.FC<FullScreenNavigableViewProps> = ({
   initialSection,
   navigationCards,
   onSectionChange,
+  onExport,
   children,
 }) => {
   const enabledCards = useMemo(() =>
@@ -98,6 +100,15 @@ const FullScreenNavigableView: React.FC<FullScreenNavigableViewProps> = ({
             <h2 className="text-2xl font-bold">{ticketTitle}</h2>
           </div>
           <div className="flex items-center gap-2 ml-4">
+            {onExport && (
+              <button
+                onClick={onExport}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                title="Export as HTML"
+              >
+                <FileDown className="w-5 h-5" />
+              </button>
+            )}
             <button
               onClick={onClose}
               className="p-2 hover:bg-white/10 rounded-lg transition-colors flex items-center gap-2"

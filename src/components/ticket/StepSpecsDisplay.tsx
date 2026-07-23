@@ -6,6 +6,7 @@ import { WorkOrderSpecDetail, WorkOrderSpecAllocation, Ticket } from '../../type
 import { SpecAllocationProgressTracker } from './SpecAllocationProgressTracker';
 import { SpecAllocationProgressService, SpecAllocationProgressSummary } from '../../services/specAllocationProgressService';
 import FullScreenNavigableView from '../common/FullScreenNavigableView';
+import { exportCurrentScreen } from '../../lib/exportScreen';
 
 interface StepSpecsDisplayProps {
   stepId: string;
@@ -440,6 +441,7 @@ const StepSpecsDisplay: React.FC<StepSpecsDisplayProps> = ({
           }
           initialSection="wo-details"
           navigationCards={navigationCards}
+          onExport={() => exportCurrentScreen({ screenName: `Step_Specs_${ticketNumber}` })}
         >
           {(activeSectionId) => renderSectionContent(activeSectionId)}
         </FullScreenNavigableView>

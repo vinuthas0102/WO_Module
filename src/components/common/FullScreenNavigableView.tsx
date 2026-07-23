@@ -1,6 +1,7 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Minimize2, FileText, Package, ListChecks, ChevronRight, FileDown } from 'lucide-react';
+import { exportCurrentScreen } from '../../lib/exportScreen';
 
 interface NavigationCard {
   id: string;
@@ -27,7 +28,7 @@ interface FullScreenNavigableViewProps {
   initialSection?: string;
   navigationCards: NavigationCard[];
   onSectionChange?: (sectionId: string) => void;
-  onExport?: () => void;
+  exportScreenName?: string;
   children: (activeSectionId: string) => React.ReactNode;
 }
 
@@ -41,9 +42,10 @@ const FullScreenNavigableView: React.FC<FullScreenNavigableViewProps> = ({
   initialSection,
   navigationCards,
   onSectionChange,
-  onExport,
+  exportScreenName,
   children,
 }) => {
+  const overlayRef = useRef<HTMLDivElement>(null);
   const enabledCards = useMemo(() =>
     navigationCards.filter(card => card.enabled),
     [navigationCards]
@@ -91,8 +93,15 @@ const FullScreenNavigableView: React.FC<FullScreenNavigableViewProps> = ({
 
   if (!isOpen) return null;
 
+  const handleExport = () => {
+    exportCurrentScreen({
+      screenName: exportScreenName || `Ticket_${ticketNumber}`,
+      target: overlayRef.current,
+    });
+  };
+
   return createPortal(
-    <div className="fixed inset-0 z-[9999] bg-white flex flex-col">
+    <div ref={overlayRef} className="fixed inset-0 z-[9999] bg-white flex flex-col">
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 shadow-lg">
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
@@ -100,15 +109,13 @@ const FullScreenNavigableView: React.FC<FullScreenNavigableViewProps> = ({
             <h2 className="text-2xl font-bold">{ticketTitle}</h2>
           </div>
           <div className="flex items-center gap-2 ml-4">
-            {onExport && (
-              <button
-                onClick={onExport}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                title="Export as HTML"
-              >
-                <FileDown className="w-5 h-5" />
-              </button>
-            )}
+            <button
+              onClick={handleExport}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              title="Export as HTML"
+            >
+              <FileDown className="w-5 h-5" />
+            </button>
             <button
               onClick={onClose}
               className="p-2 hover:bg-white/10 rounded-lg transition-colors flex items-center gap-2"

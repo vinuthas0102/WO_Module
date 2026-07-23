@@ -53,7 +53,8 @@ function collectAllCSS(): string {
   return chunks.join('\n');
 }
 
-function captureDOM(): string {
+function captureDOM(target?: HTMLElement | null): string {
+  if (target) return target.outerHTML;
   const root = document.getElementById('root');
   if (root) return root.innerHTML;
   return document.body.innerHTML;
@@ -67,9 +68,9 @@ function dateStamp(): string {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-function buildExportHTML(screenName: string): string {
+function buildExportHTML(screenName: string, target?: HTMLElement | null): string {
   const css = collectAllCSS() + '\n' + EXPORT_OVERRIDES_CSS;
-  const dom = captureDOM();
+  const dom = captureDOM(target);
   const now = new Date().toISOString();
 
   return `<!DOCTYPE html>
@@ -109,11 +110,13 @@ function triggerDownload(html: string, filename: string): void {
 export interface ExportScreenOptions {
   /** Logical name of the screen, used in filename and title. */
   screenName?: string;
+  /** Specific DOM element to capture. Defaults to the #root app container. */
+  target?: HTMLElement | null;
 }
 
 export function exportCurrentScreen(options?: ExportScreenOptions): void {
   const screenName = options?.screenName || 'TrackSphere';
-  const html = buildExportHTML(screenName);
+  const html = buildExportHTML(screenName, options?.target);
   const filename = `${screenName.replace(/\s+/g, '_')}_Export_${dateStamp()}.html`;
   triggerDownload(html, filename);
 }

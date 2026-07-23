@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Edit, Trash2, FileCheck, AlertCircle, Maximize2, Package, FileText, ListChecks, TrendingUp, CheckCircle } from 'lucide-react';
+import { CreditCard as Edit, Trash2, FileCheck, AlertCircle, Maximize2, Package, FileText, ListChecks, TrendingUp, CheckCircle } from 'lucide-react';
 import { WorkOrderSpecDetail, Ticket } from '../../types';
 import { WorkOrderSpecService } from '../../services/workOrderSpecService';
 import { SpecAllocationProgressService, SpecAllocationProgressSummary } from '../../services/specAllocationProgressService';
 import { supabase } from '../../lib/supabase';
 import FullScreenNavigableView from '../common/FullScreenNavigableView';
-import { exportCurrentScreen } from '../../lib/exportScreen';
 
 interface WOSpecsDisplayProps {
   ticketId: string;
@@ -524,7 +523,7 @@ const WOSpecsDisplay: React.FC<WOSpecsDisplayProps> = ({
           }
           initialSection="wo-details"
           navigationCards={navigationCards}
-          onExport={() => exportCurrentScreen({ screenName: `WO_Specs_${ticketNumber}` })}
+          exportScreenName={`WO_Specs_${ticketNumber}`}
         >
           {(activeSectionId) => {
             if (activeSectionId === 'wo-info') {
@@ -585,7 +584,7 @@ const WOSpecsDisplay: React.FC<WOSpecsDisplayProps> = ({
             activeColorClass: 'bg-green-600 border-green-600 text-white',
             enabled: true,
           }]}
-          onExport={() => exportCurrentScreen({ screenName: `WO_Specs_${ticketNumber}` })}
+          exportScreenName={`WO_Specs_${ticketNumber}`}
         >
           {() => (
             <div className="bg-white rounded-lg shadow-sm p-6">

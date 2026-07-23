@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Calendar, User, AlertTriangle, Clock, CheckCircle, XCircle, FileText, Users, CreditCard as Edit, Trash2, Plus, Paperclip, Download, Trash, Upload, IndianRupee, Package, FileCheck, RefreshCw, StickyNote, BookOpen, DollarSign } from 'lucide-react';
+import { ArrowLeft, Calendar, User, AlertTriangle, Clock, CheckCircle, XCircle, FileText, Users, CreditCard as Edit, Trash2, Plus, Paperclip, Download, Trash, Upload, IndianRupee, Package, FileCheck, RefreshCw, StickyNote, BookOpen, DollarSign, FileDown } from 'lucide-react';
 import { Ticket, WorkflowStep, FinanceApproval, ActionIconDefinition, UserDisplayPreferences, ClarificationThread, NotificationChannel } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { useTickets } from '../../context/TicketContext';
@@ -24,6 +24,7 @@ import InlineSpecCreation from './InlineSpecCreation';
 import WOInfoDisplay from './WOInfoDisplay';
 import { WorkOrderItemService } from '../../services/workOrderItemService';
 import { WorkOrderSpecService } from '../../services/workOrderSpecService';
+import { exportCurrentScreen } from '../../lib/exportScreen';
 
 interface TicketViewProps {
   ticket: Ticket;
@@ -476,6 +477,13 @@ const TicketView: React.FC<TicketViewProps> = ({ ticket, onClose, onEdit, onDele
               </div>
             </div>
             <div className="flex items-center space-x-3">
+              <button
+                onClick={() => exportCurrentScreen({ screenName: `Ticket_${ticket.ticketNumber}` })}
+                className="p-1.5 text-gray-400 hover:text-teal-600 transition-colors duration-200 hover:bg-teal-50 rounded-lg"
+                title="Export this ticket view as standalone HTML"
+              >
+                <FileDown className="w-4 h-4" />
+              </button>
               {!loadingPreferences && (() => {
                 const actions: ActionIconDefinition[] = [];
 

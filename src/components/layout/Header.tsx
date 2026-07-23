@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { LogOut, User, Clock, Database, Wifi, Grid3x3 as Grid3X3, Download, MessageSquare } from 'lucide-react';
+import { LogOut, User, Clock, Database, Wifi, Grid3x3 as Grid3X3, Download, MessageSquare, FileDown } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { getEnvironmentConfig } from '../../lib/environment';
+import { exportCurrentScreen } from '../../lib/exportScreen';
 
 import NotificationBadge from '../common/NotificationBadge';
 import NotificationPanel from '../common/NotificationPanel';
@@ -120,6 +121,14 @@ const Header: React.FC<HeaderProps> = ({ showWelcome = false, moduleIcon, welcom
             >
               <Download className="w-4 h-4" />
               {isDownloading && <span className="text-xs">...</span>}
+            </button>
+
+            <button
+              onClick={() => exportCurrentScreen({ screenName: selectedModule?.name || 'TrackSphere' })}
+              className="p-2 text-blue-200 hover:text-white transition-all duration-200 hover:bg-teal-500 rounded-lg flex items-center"
+              title="Export current screen as standalone HTML"
+            >
+              <FileDown className="w-4 h-4" />
             </button>
 
             {selectedModule && (

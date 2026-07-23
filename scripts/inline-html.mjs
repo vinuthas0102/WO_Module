@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from 'fs';
+import { readFileSync, writeFileSync, readdirSync, existsSync, statSync, mkdirSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -71,6 +71,15 @@ function main() {
   const sizeMB = Buffer.byteLength(html) / 1024 / 1024;
   console.log(`\nSingle-file HTML created: ${outputPath}`);
   console.log(`Size: ${sizeMB.toFixed(2)} MB`);
+
+  // Also write a .txt copy to public/offline/ so the dev server serves it as
+  // plain text instead of HTML (avoids WebContainer script injection that
+  // would strip the inlined <script> tags from the DOM).
+  const publicOfflineDir = join(projectRoot, 'public', 'offline');
+  if (!existsSync(publicOfflineDir)) mkdirSync(publicOfflineDir, { recursive: true });
+  const txtPath = join(publicOfflineDir, 'tracksphere-offline.txt');
+  writeFileSync(txtPath, html);
+  console.log(`Plain-text copy created: ${txtPath}`);
 
   // Verify no external file references remain in the HTML head
   const headEnd = html.indexOf('</head>');

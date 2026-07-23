@@ -52,9 +52,10 @@ const Header: React.FC<HeaderProps> = ({ showWelcome = false, moduleIcon, welcom
   const handleDownloadOffline = async () => {
     try {
       setIsDownloading(true);
-      const response = await fetch('/offline/tracksphere-offline.html');
+      const response = await fetch('/offline/tracksphere-offline.txt');
       if (!response.ok) throw new Error('Offline file not found');
-      const blob = await response.blob();
+      const htmlContent = await response.text();
+      const blob = new Blob([htmlContent], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

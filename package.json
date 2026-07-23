@@ -12,6 +12,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:offline": "node scripts/generate-snapshot.mjs && vite build --config vite.config.offline.ts && node scripts/inline-html.mjs",
+    "snapshot": "node scripts/generate-snapshot.mjs",
     "lint": "eslint .",
     "preview": "vite preview"
   },

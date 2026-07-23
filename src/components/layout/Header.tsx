@@ -3,7 +3,7 @@ import { LogOut, User, Clock, Database, Wifi, Grid3x3 as Grid3X3, Download, Mess
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { getEnvironmentConfig } from '../../lib/environment';
-import { htmlExportService } from '../../services/htmlExportService';
+
 import NotificationBadge from '../common/NotificationBadge';
 import NotificationPanel from '../common/NotificationPanel';
 
@@ -29,7 +29,7 @@ const Header: React.FC<HeaderProps> = ({ showWelcome = false, moduleIcon, welcom
   const { user, logout, selectedModule, setSelectedModule } = useAuth();
   const { unreadCount } = useNotifications();
   const envConfig = getEnvironmentConfig();
-  const [isExporting, setIsExporting] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
 
@@ -49,34 +49,32 @@ const Header: React.FC<HeaderProps> = ({ showWelcome = false, moduleIcon, welcom
     };
   }, [isPanelOpen]);
 
-  const handleExportHTML = async () => {
+  const handleDownloadOffline = async () => {
     try {
-      setIsExporting(true);
-
-      const screenName = selectedModule?.name || 'TrackSphere';
-      const filename = `${screenName.replace(/\s+/g, '_')}_export`;
-
-      await htmlExportService.exportFullPage({
-        filename,
-        includeTimestamp: true,
-        pageTitle: `${screenName} - TrackSphere Export`
-      });
-
-      setTimeout(() => {
-        alert('Screen exported successfully as ZIP archive with HTML, CSS, and JS files!');
-        setIsExporting(false);
-      }, 500);
+      setIsDownloading(true);
+      const response = await fetch('/offline/tracksphere-offline.html');
+      if (!response.ok) throw new Error('Offline file not found');
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'tracksphere-offline.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setIsDownloading(false);
     } catch (error) {
-      console.error('Export failed:', error);
-      alert('Failed to export screen. Please try again.');
-      setIsExporting(false);
+      console.error('Download failed:', error);
+      alert('Failed to download offline version. Please try again.');
+      setIsDownloading(false);
     }
   };
 
 
   return (
     <>
-      {envConfig.isDemoMode && (
+      {(envConfig.isDemoMode || envConfig.isOfflineMode) && (
         <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-2">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center space-x-2 text-yellow-800">
@@ -114,13 +112,13 @@ const Header: React.FC<HeaderProps> = ({ showWelcome = false, moduleIcon, welcom
 
           <div className="flex items-center space-x-4">
             <button
-              onClick={handleExportHTML}
-              disabled={isExporting}
+              onClick={handleDownloadOffline}
+              disabled={isDownloading}
               className="p-2 text-blue-200 hover:text-white transition-all duration-200 hover:bg-green-500 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1"
-              title="Download current screen as ZIP (HTML, CSS, JS files)"
+              title="Download offline version (single HTML file)"
             >
               <Download className="w-4 h-4" />
-              {isExporting && <span className="text-xs">...</span>}
+              {isDownloading && <span className="text-xs">...</span>}
             </button>
 
             {selectedModule && (

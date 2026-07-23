@@ -1,13 +1,20 @@
 import { createClient } from '@supabase/supabase-js';
 import { Database } from './database.types';
 import { getEnvironmentMode } from './environment';
+import { createMockSupabaseClient } from './mockSupabase';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const createSupabaseClient = () => {
   try {
-    if (getEnvironmentMode() !== 'database') {
+    const mode = getEnvironmentMode();
+
+    if (mode === 'offline') {
+      return createMockSupabaseClient();
+    }
+
+    if (mode !== 'database') {
       return null;
     }
 

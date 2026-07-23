@@ -338,6 +338,109 @@ const TicketCard: React.FC<TicketCardProps> = ({
 
   const accentColor = getTicketAccentColor(ticket.status, ticket.priority);
 
+  if (viewMode === 'list') {
+    return (
+      <div
+        className={`relative bg-white rounded-lg overflow-hidden shadow-sm transition-all duration-200 hover:shadow-md cursor-pointer ${accentColor.shadow} ${
+          isOverdue ? 'ring-2 ring-rose-500' : ''
+        }`}
+        onClick={onClick}
+      >
+        {/* Colored Accent Bar on Left */}
+        <div className={`absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b ${accentColor.gradient}`} />
+
+        <div className="relative pl-4 pr-4 py-2.5">
+          {/* Row 1: Ticket number + badges + actions */}
+          <div className="flex items-center justify-between gap-2 mb-1.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-[11px] font-bold text-gray-500 tracking-wide uppercase whitespace-nowrap">
+                {ticket.ticketNumber}
+              </span>
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded border ${getStatusColor(ticket.status)}`}>
+                {getStatusIcon(ticket.status)}
+                <span>{ticket.status}</span>
+              </span>
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded border ${getPriorityColor(ticket.priority)}`}>
+                {getPriorityIcon(ticket.priority)}
+                <span>{ticket.priority}</span>
+              </span>
+              {isOverdue && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded bg-rose-500 text-white">
+                  <AlertTriangle className="w-3 h-3" />
+                  <span>OVERDUE</span>
+                </span>
+              )}
+            </div>
+            <div onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
+              <IconDisplayWrapper
+                actions={ticketActions}
+                preferences={displayPreferences ?? undefined}
+                loading={!displayPreferences && !!user}
+              />
+            </div>
+          </div>
+
+          {/* Row 2: Label-data grid */}
+          <div className="flex items-stretch gap-4 text-xs">
+            {/* Title */}
+            <div className="flex-1 min-w-0">
+              <div className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Title</div>
+              <div className="font-semibold text-gray-900 truncate" title={ticket.title}>{ticket.title}</div>
+            </div>
+            {/* Category */}
+            <div className="flex-shrink-0">
+              <div className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Category</div>
+              <div className="font-medium text-gray-700 truncate max-w-[120px]" title={ticket.category}>{ticket.category}</div>
+            </div>
+            {/* Department */}
+            <div className="flex-shrink-0">
+              <div className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Dept</div>
+              <div className="font-medium text-gray-700 truncate max-w-[100px]" title={ticket.department}>{ticket.department}</div>
+            </div>
+            {/* Raised By */}
+            <div className="flex-shrink-0">
+              <div className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Raised By</div>
+              <div className="font-medium text-gray-700 truncate max-w-[100px]" title={createdByUser?.name}>
+                {createdByUser?.name?.split(' ')[0] || 'Unknown'}
+              </div>
+            </div>
+            {/* Assigned To */}
+            <div className="flex-shrink-0">
+              <div className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Assigned</div>
+              <div className="font-medium text-gray-700 truncate max-w-[100px]" title={assignedToUser?.name}>
+                {assignedToUser?.name?.split(' ')[0] || 'Unassigned'}
+              </div>
+            </div>
+            {/* Due Date */}
+            <div className="flex-shrink-0">
+              <div className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Due Date</div>
+              <div className={`font-medium truncate ${isOverdue ? 'text-rose-600 font-bold' : 'text-gray-700'}`}>
+                {ticket.dueDate ? formatDate(ticket.dueDate) : formatDate(ticket.createdAt)}
+              </div>
+            </div>
+            {/* Progress */}
+            {user && user.role !== 'EMPLOYEE' && totalWorkflows > 0 && (
+              <div className="flex-shrink-0">
+                <div className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Progress</div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-16 bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className={`h-1.5 rounded-full bg-gradient-to-r ${accentColor.gradient}`}
+                      style={{ width: `${(completedWorkflows / totalWorkflows) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] font-semibold text-gray-600 whitespace-nowrap">
+                    {completedWorkflows}/{totalWorkflows}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <div
